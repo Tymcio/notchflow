@@ -64,7 +64,7 @@ struct MediaScrubberView: View {
     }
 
     private var safeFraction: Double {
-        guard duration > 0 else { return 0 }
+        guard MediaPlaybackState.isUsableTiming(duration) else { return 0 }
         return max(0, min(1, position / duration))
     }
 

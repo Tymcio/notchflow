@@ -7,14 +7,14 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     private var window: NSWindow?
 
-    func show(appState: AppState) {
+    func show(appState: AppState, tab: SettingsTab = .general) {
         NSApp.setActivationPolicy(.regular)
 
         if window == nil {
-            let hosting = NSHostingController(rootView: SettingsView(appState: appState))
+            let hosting = NSHostingController(rootView: SettingsView(appState: appState, initialTab: tab))
 
             let newWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 520, height: 460),
+                contentRect: NSRect(x: 0, y: 0, width: 520, height: 500),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
@@ -26,7 +26,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             newWindow.center()
             window = newWindow
         } else if let hosting = window?.contentViewController as? NSHostingController<SettingsView> {
-            hosting.rootView = SettingsView(appState: appState)
+            hosting.rootView = SettingsView(appState: appState, initialTab: tab)
         }
 
         window?.makeKeyAndOrderFront(nil)

@@ -18,21 +18,22 @@ enum NotchFlowConstants {
     static let hoverTriggerWidth: CGFloat = 200
     static let hoverExpandThreshold: CGFloat = 32
     static let idleBarHeight: CGFloat = 32
+    /// Approximate width of one expanded tab button incl. padding.
+    static let expandedTabSlotWidth: CGFloat = 36
     static let idleWingProtrusion: CGFloat = 54
     static let idleWingInnerOverlap: CGFloat = 12
     static let notchWidthOverlapFudge: CGFloat = 4
     static let idleBottomBleed: CGFloat = 1
     static let defaultNotchCutoutWidth: CGFloat = 184
+    /// Space to leave on the right of the notch for menu bar status items (incl. our own icon).
+    static let menuBarStatusItemReserve: CGFloat = 96
+    /// Gap between the app menu and the idle island left wing.
+    static let menuOverlapMargin: CGFloat = 6
+    /// Tolerance when deciding whether a menu item belongs to the left cluster.
+    static let menuBarItemClusterFudge: CGFloat = 8
+    /// Minimum left-wing width worth showing album artwork; below this the wing is hidden.
+    static let minIdleWingWidthForArtwork: CGFloat = 28
     static let freeNotesLimit = 5
     static let freeClipboardLimit = 5
     static let premiumClipboardLimit = 50
-}
-
-enum FeatureGate {
-    case free
-    case premium
-
-    static func current(isPremium: Bool) -> FeatureGate {
-        isPremium ? .premium : .free
-    }
 }

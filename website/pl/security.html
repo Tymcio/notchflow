@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bezpieczeństwo — NotchFlow</title>
+  <meta name="description" content="Bezpieczeństwo NotchFlow: oficjalne kanały dystrybucji, weryfikacja podpisu kodu, transparentność open source." />
+  <link rel="canonical" href="https://notchflow.eu/pl/security.html" />
+  <link rel="alternate" hreflang="en" href="https://notchflow.eu/security.html" />
+  <link rel="alternate" hreflang="pl" href="https://notchflow.eu/pl/security.html" />
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../theme-init.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Przejdź do treści</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="logo" href="../">
+        <img class="logo-mark" src="../assets/logo-mark.svg" alt="" width="24" height="24" />
+        NotchFlow
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Otwórz menu">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 5h14v1.5H3V5zm0 5h14v1.5H3V10zm0 5h14v1.5H3V15z"/></svg>
+      </button>
+      <nav>
+        <ul class="nav-links" id="nav">
+          <li><a href="../#features">Funkcje</a></li>
+          <li><a href="pricing/">Cennik</a></li>
+          <li><a href="../#download">Pobierz</a></li>
+        </ul>
+      </nav>
+      <div class="header-actions">
+        <div class="lang-switch" role="navigation" aria-label="Język">
+          <a href="../security.html">EN</a>
+          <a href="security.html" aria-current="page">PL</a>
+        </div>
+        <button class="theme-toggle" type="button" aria-label="Zmień motyw">
+          <svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a1 1 0 011 1v1a1 1 0 11-2 0V4a1 1 0 011-1zm0 11a3 3 0 100-6 3 3 0 000 6zm7-4a1 1 0 110 2h-1a1 1 0 110-2h1zM4 10a1 1 0 110 2H3a1 1 0 110-2h1zm11.95 5.36a1 1 0 10-1.41 1.41l.7.71a1 1 0 101.42-1.42l-.71-.7zM5.76 5.76a1 1 0 00-1.41 0l-.71.71a1 1 0 101.42 1.42l.7-.71zM16.24 5.05a1 1 0 10-1.42-1.42l-.7.71a1 1 0 101.41 1.41l.71-.7zM5.05 16.24a1 1 0 00-1.41 1.41l.71.7a1 1 0 101.42-1.42l-.72-.69z"/></svg>
+          <svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.38 2.5a7.5 7.5 0 107.12 12.12A6.5 6.5 0 0111.38 2.5z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="legal-page">
+    <div class="container">
+      <h1>Bezpieczeństwo</h1>
+
+      <h2>Oficjalna dystrybucja</h2>
+      <p>Pobieraj NotchFlow wyłącznie z notchflow.eu lub <a href="https://github.com/Tymcio/notchflow/releases">GitHub Releases</a> opublikowanych przez organizację notchflow.</p>
+      <p>Nigdy nie prosimy o uruchamianie poleceń w Terminalu, wyłączanie Gatekeepera ani usuwanie atrybutów kwarantanny.</p>
+
+      <h2>Weryfikacja aplikacji</h2>
+      <pre><code>spctl -a -vv /Applications/NotchFlow.app
+codesign -dv --verbose=4 /Applications/NotchFlow.app</code></pre>
+
+      <h2>Transparentność buildu</h2>
+      <p>Kod źródłowy jest publiczny na <a href="https://github.com/Tymcio/notchflow">GitHubie</a>. Możesz przejrzeć uprawnienia, sieć i logikę licencjonowania przed lokalnym buildem.</p>
+
+      <p><a href="../">← Wróć na stronę główną</a></p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p class="footer-bottom">© 2026 NotchFlow · <a href="privacy.html">Prywatność</a> · <a href="security.html">Bezpieczeństwo</a></p>
+    </div>
+  </footer>
+
+  <script src="../site.js"></script>
+</body>
+</html>

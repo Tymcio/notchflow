@@ -127,7 +127,7 @@ final class ShelfManager {
         let archiveURL = shelfDirectory.appendingPathComponent("drop-\(UUID().uuidString.prefix(8)).zip")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
-        process.arguments = ["-j", archiveURL.path] + items.map(\.url.path)
+        process.arguments = ["-j", archiveURL.path, "--"] + items.map(\.url.path)
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {

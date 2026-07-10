@@ -69,11 +69,21 @@ struct MediaPlaybackState: Equatable, Sendable {
     }
 
     var hasUsableDuration: Bool {
-        Self.isUsableTiming(duration)
+        duration.isFinite && duration >= 1
     }
 
+    /// Reject bogus sub-second values from mis-parsed notifications.
     static func isUsableTiming(_ value: Double) -> Bool {
         value.isFinite && value >= 1
+    }
+
+    /// Prefer the larger plausible timing value when merging sources.
+    static func preferredTiming(incoming: Double, current: Double) -> Double {
+        if isUsableTiming(incoming) { return incoming }
+        if isUsableTiming(current) { return current }
+        if incoming > current, incoming.isFinite { return incoming }
+        if current.isFinite { return current }
+        return 0
     }
 }
 

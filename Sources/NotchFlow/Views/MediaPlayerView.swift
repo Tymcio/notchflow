@@ -3,14 +3,13 @@ import SwiftUI
 
 struct MediaPlayerView: View {
     let state: MediaPlaybackState
-    let isPremium: Bool
     let onPlayPause: () -> Void
     let onNext: () -> Void
     let onPrevious: () -> Void
     let onSeek: (Double) -> Void
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             HStack(spacing: 12) {
                 ArtworkView(artworkURL: state.artworkURL, artworkData: state.artworkData, trackKey: state.trackKey, size: 52)
 
@@ -37,13 +36,6 @@ struct MediaPlayerView: View {
                 }
             }
 
-            if isPremium, let lyrics = state.lyricsSnippet {
-                Text(lyrics)
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.45))
-                    .lineLimit(1)
-            }
-
             HStack(spacing: 28) {
                 transportButton("backward.fill", action: onPrevious)
                 transportButton(state.isPlaying ? "pause.fill" : "play.fill", action: onPlayPause, large: true)
@@ -59,23 +51,10 @@ struct MediaPlayerView: View {
             Image(systemName: systemName)
                 .font(large ? .title3.weight(.semibold) : .body.weight(.semibold))
                 .foregroundStyle(.white)
-                .frame(width: large ? 36 : 28, height: large ? 36 : 28)
+                .frame(width: large ? 32 : 26, height: large ? 32 : 26)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-}
-
-struct MediaMiniView: View {
-    let state: MediaPlaybackState
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ArtworkView(artworkURL: state.artworkURL, artworkData: state.artworkData, trackKey: state.trackKey, size: 18)
-            Text(state.title)
-                .font(.caption2)
-                .lineLimit(1)
-        }
     }
 }
 
@@ -131,9 +110,7 @@ struct ArtworkView: View {
 
         let expectedTrackKey = trackKey
         Task {
-            let data = await Task.detached {
-                MusicArtworkFetcher.fetchFromURL(artworkURL)
-            }.value
+            let data = await MusicArtworkFetcher.fetchFromURL(artworkURL)
             await MainActor.run {
                 guard expectedTrackKey == trackKey else { return }
                 if let data, let image = NSImage(data: data) {

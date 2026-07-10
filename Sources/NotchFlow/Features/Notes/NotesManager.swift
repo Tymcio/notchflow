@@ -19,6 +19,11 @@ final class NotesManager {
         load()
     }
 
+    func visibleNotes(isPremium: Bool) -> [NoteItem] {
+        let limit = isPremium ? notes.count : NotchFlowConstants.freeNotesLimit
+        return Array(notes.prefix(limit))
+    }
+
     func append(text: String, isPremium: Bool) throws {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -48,9 +53,12 @@ final class NotesManager {
     }
 
     private func persist() {
-        guard let data = try? JSONEncoder().encode(notes) else { return }
-        try? FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? data.write(to: storageURL, options: .atomic)
+        do {
+            let data = try JSONEncoder().encode(notes)
+            try SecureFileWriter.write(data, to: storageURL)
+        } catch {
+            NotchFlowLog.storage.error("Failed to persist notes: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func load() {

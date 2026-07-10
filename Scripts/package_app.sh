@@ -54,6 +54,16 @@ if [[ "${MENU_BAR_APP:-0}" == "1" ]]; then
   LS_UI_ELEMENT="true"
 fi
 
+# Premium gates: free-for-all during beta. Set ENFORCE_LICENSE=1 for release builds.
+LICENSE_PLIST=""
+if [[ "${ENFORCE_LICENSE:-0}" == "1" ]]; then
+  LICENSE_PLIST="$(cat <<LICENSE
+  <key>NFEnforceLicense</key>
+  <true/>
+LICENSE
+)"
+fi
+
 SPARKLE_PLIST=""
 if [[ -n "${SPARKLE_PUBLIC_ED_KEY:-}" ]]; then
   SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-https://notchflow.eu/appcast.xml}"
@@ -96,6 +106,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
 ${SPARKLE_PLIST}
+${LICENSE_PLIST}
   <key>CFBundleURLTypes</key>
   <array>
     <dict>
@@ -116,5 +127,15 @@ ${SPARKLE_PLIST}
 </dict>
 </plist>
 PLIST
+
+# Sign with a stable identity so TCC grants (Accessibility) survive rebuilds.
+# Ad-hoc/linker signatures change CDHash on every build, silently revoking AX trust.
+CODESIGN_IDENTITY="${CODESIGN_IDENTITY:-Apple Development}"
+if security find-identity -v -p codesigning | grep -q "$CODESIGN_IDENTITY"; then
+  codesign --force --sign "$CODESIGN_IDENTITY" "$APP_DIR"
+  echo "Signed with: $CODESIGN_IDENTITY"
+else
+  echo "WARNING: codesign identity '$CODESIGN_IDENTITY' not found — ad-hoc signature; Accessibility grant will break on each rebuild." >&2
+fi
 
 echo "Packaged: $APP_DIR"

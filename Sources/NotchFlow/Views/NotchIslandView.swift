@@ -35,7 +35,8 @@ struct NotchIslandView: View {
     private func idleIsland(geometry: NotchGeometry) -> some View {
         IdleMediaView(
             state: appState.mediaState,
-            wingWidth: geometry.idleWingWidth,
+            leftWingWidth: geometry.idleLeftWingWidth,
+            rightWingWidth: geometry.idleRightWingWidth,
             notchCutoutWidth: geometry.physicalNotchCutoutWidth,
             innerOverlap: NotchFlowConstants.idleWingInnerOverlap
         )
@@ -50,7 +51,8 @@ struct NotchIslandView: View {
             if geometry.hasPhysicalNotch {
                 ExpandedNotchTabBar(
                     activeModule: $appState.activeModule,
-                    isPremium: appState.isPremium
+                    isPremium: appState.isPremium,
+                    notchCutoutWidth: geometry.physicalNotchCutoutWidth
                 )
             } else {
                 IslandTabBar(
@@ -93,7 +95,6 @@ struct NotchIslandView: View {
         case .media:
             MediaPlayerView(
                 state: appState.mediaState,
-                isPremium: appState.isPremium,
                 onPlayPause: { appState.mediaMonitor.togglePlayPause() },
                 onNext: { appState.mediaMonitor.nextTrack() },
                 onPrevious: { appState.mediaMonitor.previousTrack() },
@@ -108,14 +109,5 @@ struct NotchIslandView: View {
         case .mirror:
             CameraMirrorView(appState: appState)
         }
-    }
-}
-
-struct IslandClipShape: Shape {
-    let hasPhysicalNotch: Bool
-    let isExpanded: Bool
-
-    func path(in rect: CGRect) -> Path {
-        NotchShape(hasPhysicalNotch: hasPhysicalNotch, isExpanded: isExpanded).path(in: rect)
     }
 }

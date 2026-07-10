@@ -1,6 +1,7 @@
 import XCTest
 @testable import NotchFlow
 
+@MainActor
 final class NotchGeometryTests: XCTestCase {
     func testVirtualCapsuleDefaultsWhenNoNotch() {
         let settings = NotchSettings.shared
@@ -10,6 +11,86 @@ final class NotchGeometryTests: XCTestCase {
             XCTAssertGreaterThan(geometry.expandedSize.height, 0)
             XCTAssertLessThanOrEqual(geometry.expandedSize.width, NotchFlowConstants.maxExpandedWidth)
         }
+    }
+
+    func testIdleLeftWingHidesWhenMenuUnderFullWing() {
+        let defaultWing = NotchFlowConstants.idleWingProtrusion
+        let notchLeftX: CGFloat = 700
+
+        XCTAssertEqual(
+            NotchGeometry.idleLeftWingWidth(defaultWing: defaultWing, notchLeftX: notchLeftX, appMenuRightEdgeX: nil),
+            defaultWing
+        )
+
+        // Enough room for the full wing (700 - 640 - margin >= 54): keep it.
+        let fits = NotchGeometry.idleLeftWingWidth(
+            defaultWing: defaultWing,
+            notchLeftX: notchLeftX,
+            appMenuRightEdgeX: 640
+        )
+        XCTAssertEqual(fits, defaultWing)
+
+        // Menu would sit under the wing: hide it entirely, no partial width.
+        let hidden = NotchGeometry.idleLeftWingWidth(
+            defaultWing: defaultWing,
+            notchLeftX: notchLeftX,
+            appMenuRightEdgeX: 650
+        )
+        XCTAssertEqual(hidden, 0)
+    }
+
+    func testIdleWingWidthsFullWhenAvoidMenuOverlapWithoutAXData() {
+        let settings = NotchSettings.shared
+        let previous = settings.avoidMenuOverlap
+        settings.avoidMenuOverlap = true
+        defer { settings.avoidMenuOverlap = previous }
+
+        let wings = NotchGeometry.idleWingWidths(
+            settings: settings,
+            defaultWing: NotchFlowConstants.idleWingProtrusion,
+            notchLeftX: 700,
+            hasNotch: true,
+            appMenuRightEdgeX: nil
+        )
+        XCTAssertEqual(wings.left, NotchFlowConstants.idleWingProtrusion)
+        XCTAssertEqual(wings.right, NotchFlowConstants.idleWingProtrusion)
+    }
+
+    func testIdleWingWidthsHideLeftWhenMenuEdgeTooClose() {
+        let settings = NotchSettings.shared
+        let previous = settings.avoidMenuOverlap
+        settings.avoidMenuOverlap = true
+        defer { settings.avoidMenuOverlap = previous }
+
+        let wings = NotchGeometry.idleWingWidths(
+            settings: settings,
+            defaultWing: NotchFlowConstants.idleWingProtrusion,
+            notchLeftX: 700,
+            hasNotch: true,
+            appMenuRightEdgeX: 650
+        )
+        XCTAssertEqual(wings.left, 0)
+        XCTAssertEqual(wings.right, NotchFlowConstants.idleWingProtrusion)
+    }
+
+    func testMinimumExpandedWidthFitsTabBarAroundNotch() {
+        let minimum = NotchGeometry.minimumExpandedWidthForTabBar(cutoutWidth: 184)
+        XCTAssertGreaterThanOrEqual(minimum, 420)
+
+        let leading = CGFloat(IslandModule.leadingTabs.count) * NotchFlowConstants.expandedTabSlotWidth
+        let trailing = CGFloat(IslandModule.trailingTabs.count) * NotchFlowConstants.expandedTabSlotWidth
+        let innerWidth = minimum - 20
+        let spacer = innerWidth - leading - trailing
+        let notchRight = (minimum + 184) / 2
+        XCTAssertGreaterThanOrEqual(10 + leading + spacer, notchRight)
+    }
+
+    func testShouldHideIdleWhenMenuReachesNotch() {
+        let settings = NotchSettings.shared
+        guard let screen = NSScreen.main, screen.safeAreaInsets.top > 0 else { return }
+
+        let geometry = NotchGeometry.make(for: screen, settings: settings, appMenuRightEdgeX: 10_000)
+        XCTAssertTrue(geometry.shouldHideIdleForMenuOverlap)
     }
 }
 

@@ -63,8 +63,16 @@ struct QuickNotesView: View {
                     .lineLimit(1...2)
                     .focused($isComposerFocused)
                     .onSubmit { saveNote() }
+                    .onChange(of: isComposerFocused) { _, focused in
+                        appState.isIslandInputFocused = focused
+                    }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                AppController.panelController?.prepareForTyping()
+                isComposerFocused = true
+            }
 
             Button(action: saveNote) {
                 Image(systemName: "arrow.up")
@@ -83,6 +91,10 @@ struct QuickNotesView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background { composerBackground }
+        .onDisappear {
+            isComposerFocused = false
+            appState.isIslandInputFocused = false
+        }
     }
 
     private var composerBackground: some View {

@@ -1,7 +1,7 @@
 import AppKit
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var appState: AppState?
     private var panelController: NotchPanelController?
     private var statusItem: NSStatusItem?
@@ -46,6 +46,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelController?.showFromMenu()
     }
 
+    func hideIsland() {
+        panelController?.hideFromUser()
+    }
+
     private func configureStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         guard let button = statusItem?.button else { return }
@@ -55,7 +59,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.toolTip = "NotchFlow — najedź na notch, aby otworzyć"
 
         let menu = NSMenu()
-        menu.addItem(withTitle: "Pokaż wyspę Notch", action: #selector(showIslandAction), keyEquivalent: "")
+        menu.delegate = self
+        menu.addItem(withTitle: "Pokaż wyspę Notch", action: #selector(toggleIslandAction), keyEquivalent: "")
         menu.addItem(withTitle: "Ustawienia…", action: #selector(openSettingsAction), keyEquivalent: ",")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Zakończ NotchFlow", action: #selector(quitAction), keyEquivalent: "q")
@@ -67,8 +72,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.menu = menu
     }
 
-    @objc private func showIslandAction() {
-        showIsland()
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        let visible = panelController?.isIslandVisible == true
+        menu.item(at: 0)?.title = visible ? "Ukryj wyspę Notch" : "Pokaż wyspę Notch"
+    }
+
+    @objc private func toggleIslandAction() {
+        if panelController?.isIslandVisible == true {
+            hideIsland()
+        } else {
+            showIsland()
+        }
     }
 
     @objc private func openSettingsAction() {

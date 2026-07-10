@@ -12,20 +12,21 @@ struct CameraMirrorView: View {
                         .frame(height: 100)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(alignment: .topTrailing) {
-                            Label("Live", systemImage: "circle.fill")
+                            Label("Na żywo", systemImage: "circle.fill")
                                 .font(.caption2)
                                 .foregroundStyle(.red)
                                 .padding(6)
                         }
                 } else {
                     Button {
+                        AppController.panelController?.prepareForTyping()
                         Task { await appState.cameraMirrorManager.startPreview() }
                     } label: {
                         VStack(spacing: 8) {
                             Image(systemName: "camera.fill")
                                 .font(.title3)
                                 .foregroundStyle(IslandStyle.primaryText)
-                            Text("Tap to enable camera")
+                            Text("Dotknij, aby włączyć kamerę")
                                 .font(.caption)
                                 .foregroundStyle(IslandStyle.secondaryText)
                         }
@@ -41,14 +42,62 @@ struct CameraMirrorView: View {
                 }
 
                 if appState.cameraMirrorManager.permissionDenied {
-                    Text("Camera access denied. Enable in System Settings.")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Brak dostępu do kamery.")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(IslandStyle.primaryText)
+                        Text("Włącz NotchFlow w Ustawienia systemowe → Prywatność i ochrona → Kamera.")
+                            .font(.caption2)
+                            .foregroundStyle(IslandStyle.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Otwórz ustawienia kamery") {
+                            SystemSettingsLink.openCameraPrivacy()
+                        }
                         .font(.caption2)
-                        .foregroundStyle(IslandStyle.secondaryText)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(IslandStyle.accentText)
+                    }
                 }
             } else {
-                Text("Camera Mirror is a Premium feature.")
-                    .font(.caption)
-                    .foregroundStyle(IslandStyle.secondaryText)
+                VStack(alignment: .leading, spacing: 10) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.white.opacity(0.05))
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6]))
+                            .foregroundStyle(IslandStyle.tertiaryText)
+                        VStack(spacing: 6) {
+                            Image(systemName: "lock.fill")
+                                .font(.title3)
+                                .foregroundStyle(IslandStyle.secondaryText)
+                            Text("Premium")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(IslandStyle.tertiaryText)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 100)
+
+                    Text("Lustro kamery jest funkcją Premium.")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(IslandStyle.primaryText)
+                    Text("Aktywuj licencję w Ustawienia → Licencja, a potem wróć tutaj.")
+                        .font(.caption2)
+                        .foregroundStyle(IslandStyle.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Otwórz aktywację licencji") {
+                        appState.openLicenseSettings()
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.white.opacity(0.14))
+                    }
+                }
             }
         }
         .onDisappear {
@@ -79,5 +128,3 @@ private struct CameraPreviewRepresentable: NSViewRepresentable {
         layer.frame = nsView.bounds
     }
 }
-
-import AppKit

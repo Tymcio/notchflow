@@ -164,7 +164,7 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
             return number.doubleValue
         }
         if let string = value as? String {
-            return Double(string)
+            return MediaTimingParser.seconds(from: string)
         }
         return nil
     }

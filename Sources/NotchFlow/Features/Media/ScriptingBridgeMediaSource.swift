@@ -1,33 +1,50 @@
 import AppKit
 import Foundation
 
-/// ScriptingBridge-backed media source for Spotify and Apple Music.
-/// Falls back gracefully when automation permission is denied.
+/// AppleScript-backed media source for Spotify and Apple Music.
+/// Polls only when explicitly enabled — otherwise relies on distributed notifications.
 final class ScriptingBridgeMediaSource: MediaSourceProviding, @unchecked Sendable {
     private var handler: (@Sendable (MediaPlaybackState) -> Void)?
     private var pollTask: Task<Void, Never>?
     private var latestState = MediaPlaybackState.empty
+    private let pollingCoordinator = PollingCoordinator()
 
     func startMonitoring(handler: @escaping @Sendable (MediaPlaybackState) -> Void) async {
         self.handler = handler
-        pollTask?.cancel()
-        pollTask = Task {
-            while !Task.isCancelled {
-                let state = await fetchState()
-                if state != latestState {
-                    latestState = state
-                    handler(state)
-                }
-                try? await Task.sleep(for: .seconds(1))
-            }
+        await setPollingActive(false)
+        let initial = await fetchState()
+        latestState = initial
+        if initial != .empty {
+            handler(initial)
         }
-        handler(latestState)
     }
 
     func stopMonitoring() async {
+        await setPollingActive(false)
+        handler = nil
+    }
+
+    func setPollingActive(_ active: Bool) async {
+        let changed = await pollingCoordinator.setActive(active)
+        guard changed else { return }
+
         pollTask?.cancel()
         pollTask = nil
-        handler = nil
+
+        guard active, let handler else { return }
+
+        pollTask = Task {
+            while !Task.isCancelled {
+                guard await pollingCoordinator.isActive else { break }
+
+                let state = await fetchState()
+                if shouldEmit(state) {
+                    latestState = state
+                    handler(state)
+                }
+                try? await Task.sleep(for: .seconds(0.75))
+            }
+        }
     }
 
     func togglePlayPause() async {
@@ -46,6 +63,15 @@ final class ScriptingBridgeMediaSource: MediaSourceProviding, @unchecked Sendabl
         MediaPlayerController.seek(to: position, playerBundleID: latestState.bundleIdentifier)
     }
 
+    private func shouldEmit(_ state: MediaPlaybackState) -> Bool {
+        guard state != .empty else { return latestState != .empty }
+        guard state.title == latestState.title else { return true }
+        guard state.isPlaying == latestState.isPlaying else { return true }
+        if abs(state.duration - latestState.duration) > 0.5 { return true }
+        if abs(state.elapsed - latestState.elapsed) > 0.25 { return true }
+        return false
+    }
+
     private func fetchState() async -> MediaPlaybackState {
         if let spotify = fetchSpotifyState() { return spotify }
         if let music = fetchMusicState() { return music }
@@ -53,88 +79,43 @@ final class ScriptingBridgeMediaSource: MediaSourceProviding, @unchecked Sendabl
     }
 
     private func fetchSpotifyState() -> MediaPlaybackState? {
-        guard NSWorkspace.shared.runningApplications.contains(where: { $0.bundleIdentifier == "com.spotify.client" }) else {
-            return nil
-        }
         let script = """
-        tell application "Spotify"
-            if player state is playing or player state is paused then
-                set trackName to name of current track
-                set artistName to artist of current track
-                set albumName to album of current track
-                set playerState to player state as string
-                set trackDuration to duration of current track
-                set playerPosition to player position
-                return trackName & "|||" & artistName & "|||" & albumName & "|||" & playerState & "|||" & (trackDuration as string) & "|||" & (playerPosition as string)
-            end if
-        end tell
+        if application "Spotify" is running then
+            tell application "Spotify"
+                if player state is playing or player state is paused then
+                    return name of current track & "|||" & artist of current track & "|||" & album of current track & "|||" & (player state as string) & "|||" & (duration of current track as string) & "|||" & (player position as string)
+                end if
+            end tell
+        end if
+        return ""
         """
-        return enrichWithArtwork(parseScriptResult(script, bundleID: "com.spotify.client"))
+        return parseScriptResult(script, bundleID: "com.spotify.client")
     }
 
     private func fetchMusicState() -> MediaPlaybackState? {
-        guard NSWorkspace.shared.runningApplications.contains(where: { $0.bundleIdentifier == "com.apple.Music" }) else {
-            return nil
-        }
         let script = """
-        tell application "Music"
-            if player state is playing or player state is paused then
-                set trackName to name of current track
-                set artistName to artist of current track
-                set albumName to album of current track
-                set playerState to player state as string
-                set trackDuration to duration of current track
-                set playerPosition to player position
-                return trackName & "|||" & artistName & "|||" & albumName & "|||" & playerState & "|||" & (trackDuration as string) & "|||" & (playerPosition as string)
-            end if
-        end tell
+        if application "Music" is running then
+            tell application "Music"
+                if player state is playing or player state is paused then
+                    return name of current track & "|||" & artist of current track & "|||" & album of current track & "|||" & (player state as string) & "|||" & (duration of current track as string) & "|||" & (player position as string)
+                end if
+            end tell
+        end if
+        return ""
         """
-        return enrichWithArtwork(parseScriptResult(script, bundleID: "com.apple.Music"))
-    }
-
-    private func enrichWithArtwork(_ state: MediaPlaybackState?) -> MediaPlaybackState? {
-        guard var state else { return nil }
-
-        let trackKey = state.trackKey
-        guard let artworkData = MusicArtworkFetcher.fetch(bundleID: state.bundleIdentifier, trackKey: trackKey) else {
-            return MediaPlaybackState(
-                title: state.title,
-                artist: state.artist,
-                album: state.album,
-                artworkURL: state.artworkURL,
-                artworkData: nil,
-                isPlaying: state.isPlaying,
-                elapsed: state.elapsed,
-                duration: state.duration,
-                bundleIdentifier: state.bundleIdentifier,
-                lyricsSnippet: state.lyricsSnippet
-            )
-        }
-
-        state = MediaPlaybackState(
-            title: state.title,
-            artist: state.artist,
-            album: state.album,
-            artworkURL: state.artworkURL,
-            artworkData: artworkData,
-            isPlaying: state.isPlaying,
-            elapsed: state.elapsed,
-            duration: state.duration,
-            bundleIdentifier: state.bundleIdentifier,
-            lyricsSnippet: state.lyricsSnippet
-        )
-        return state
+        return parseScriptResult(script, bundleID: "com.apple.Music")
     }
 
     private func parseScriptResult(_ script: String, bundleID: String) -> MediaPlaybackState? {
-        guard let output = runAppleScriptReturningString(script) else { return nil }
+        guard let output = runAppleScript(script), !output.isEmpty else { return nil }
         let parts = output.components(separatedBy: "|||")
         guard parts.count >= 6 else { return nil }
 
         let isPlaying = parts[3].lowercased() == "playing"
-        let rawDuration = Double(parts[4]) ?? 0
+        let rawDuration = MediaTimingParser.seconds(from: parts[4]) ?? 0
         let duration = bundleID == "com.spotify.client" ? rawDuration / 1000.0 : rawDuration
-        let elapsed = Double(parts[5]) ?? 0
+        let elapsed = MediaTimingParser.seconds(from: parts[5]) ?? 0
+        let resolvedDuration = duration > 0 ? duration : latestState.duration
 
         return MediaPlaybackState(
             title: parts[0],
@@ -143,17 +124,52 @@ final class ScriptingBridgeMediaSource: MediaSourceProviding, @unchecked Sendabl
             artworkURL: nil,
             artworkData: nil,
             isPlaying: isPlaying,
-            elapsed: elapsed,
-            duration: duration > 0 ? duration : latestState.duration,
+            elapsed: max(0, elapsed),
+            duration: max(0, resolvedDuration),
             bundleIdentifier: bundleID,
-            lyricsSnippet: nil
+            lyricsSnippet: nil,
+            positionSampledAt: Date()
         )
     }
 
-    private func runAppleScriptReturningString(_ script: String) -> String? {
-        guard let appleScript = NSAppleScript(source: script) else { return nil }
-        var error: NSDictionary?
-        guard let output = appleScript.executeAndReturnError(&error).stringValue else { return nil }
-        return output
+    private func runAppleScript(_ source: String) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        let stdin = Pipe()
+        let stdout = Pipe()
+        process.standardInput = stdin
+        process.standardOutput = stdout
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+        } catch {
+            return nil
+        }
+
+        if let data = source.data(using: .utf8) {
+            stdin.fileHandleForWriting.write(data)
+        }
+        stdin.fileHandleForWriting.closeFile()
+
+        let outData = stdout.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return nil }
+
+        guard var raw = String(data: outData, encoding: .utf8) else { return nil }
+        if raw.hasSuffix("\n") {
+            raw.removeLast()
+        }
+        return raw.isEmpty ? nil : raw
+    }
+}
+
+private actor PollingCoordinator {
+    private(set) var isActive = false
+
+    func setActive(_ active: Bool) -> Bool {
+        let changed = isActive != active
+        isActive = active
+        return changed
     }
 }

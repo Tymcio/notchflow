@@ -9,6 +9,8 @@ final class MediaMonitor {
     private let lyricsService = LyricsService()
     private var currentState = MediaPlaybackState.empty
     private var lastFetchedArtworkTrackKey: String?
+    private var islandVisible = false
+    private var scriptingPollingActive = false
 
     init(source: MediaSourceProviding = DistributedMediaSource()) {
         self.source = source
@@ -29,6 +31,13 @@ final class MediaMonitor {
                     await self?.mergeScriptingState(scriptState)
                 }
             }
+        }
+    }
+
+    func updateIslandPresentation(isVisible: Bool, isExpanded: Bool) {
+        islandVisible = isVisible
+        Task {
+            await refreshScriptingPolling()
         }
     }
 
@@ -61,8 +70,8 @@ final class MediaMonitor {
                 artworkURL: scriptState.artworkURL ?? (sameTrack ? merged.artworkURL : nil),
                 artworkData: scriptState.artworkData ?? (sameTrack ? merged.artworkData : nil),
                 isPlaying: scriptState.isPlaying,
-                elapsed: pickTiming(scriptState.elapsed, merged.elapsed),
-                duration: pickTiming(scriptState.duration, merged.duration),
+                elapsed: MediaPlaybackState.preferredTiming(incoming: scriptState.elapsed, current: merged.elapsed),
+                duration: MediaPlaybackState.preferredTiming(incoming: scriptState.duration, current: merged.duration),
                 bundleIdentifier: scriptState.bundleIdentifier ?? merged.bundleIdentifier,
                 lyricsSnippet: merged.lyricsSnippet,
                 positionSampledAt: Date()
@@ -75,8 +84,8 @@ final class MediaMonitor {
                 artworkURL: merged.artworkURL,
                 artworkData: merged.artworkData,
                 isPlaying: scriptState.isPlaying,
-                elapsed: pickTiming(scriptState.elapsed, merged.elapsed),
-                duration: pickTiming(scriptState.duration, merged.duration),
+                elapsed: MediaPlaybackState.preferredTiming(incoming: scriptState.elapsed, current: merged.elapsed),
+                duration: MediaPlaybackState.preferredTiming(incoming: scriptState.duration, current: merged.duration),
                 bundleIdentifier: merged.bundleIdentifier ?? scriptState.bundleIdentifier,
                 lyricsSnippet: merged.lyricsSnippet,
                 positionSampledAt: Date()
@@ -88,7 +97,10 @@ final class MediaMonitor {
     private func applyState(_ state: MediaPlaybackState) async {
         var enriched = mergePreservingMediaAssets(incoming: state, current: currentState)
 
-        if enriched.isPlaying, enriched.lyricsSnippet == nil, isPremiumEligible() {
+        if enriched.isPlaying,
+           enriched.lyricsSnippet == nil,
+           isPremiumEligible(),
+           NotchSettings.shared.lyricsSharingEnabled {
             enriched = MediaPlaybackState(
                 title: enriched.title,
                 artist: enriched.artist,
@@ -113,8 +125,21 @@ final class MediaMonitor {
             enriched = await enrichArtworkIfNeeded(enriched)
         }
 
+        guard enriched != currentState else {
+            await refreshScriptingPolling()
+            return
+        }
+
         currentState = enriched
         onStateChange?(enriched)
+        await refreshScriptingPolling()
+    }
+
+    private func refreshScriptingPolling() async {
+        let needsPolling = currentState.isPlaying && islandVisible
+        guard needsPolling != scriptingPollingActive else { return }
+        scriptingPollingActive = needsPolling
+        await scriptingSource.setPollingActive(needsPolling)
     }
 
     private func mergePreservingMediaAssets(incoming: MediaPlaybackState, current: MediaPlaybackState) -> MediaPlaybackState {
@@ -123,8 +148,8 @@ final class MediaMonitor {
         let isPlaying = incoming.isPlaying
             || (sameTrack && current.isPlaying && incoming.elapsed > current.elapsed + 0.2)
 
-        let elapsed = pickTiming(incoming.elapsed, current.elapsed)
-        let duration = pickTiming(incoming.duration, current.duration)
+        let elapsed = MediaPlaybackState.preferredTiming(incoming: incoming.elapsed, current: current.elapsed)
+        let duration = MediaPlaybackState.preferredTiming(incoming: incoming.duration, current: current.duration)
         let timingUpdated = elapsed != current.elapsed || duration != current.duration
 
         return MediaPlaybackState(
@@ -142,16 +167,6 @@ final class MediaMonitor {
         )
     }
 
-    private func pickTiming(_ incoming: Double, _ current: Double) -> Double {
-        if MediaPlaybackState.isUsableTiming(incoming) {
-            return incoming
-        }
-        if MediaPlaybackState.isUsableTiming(current) {
-            return current
-        }
-        return max(incoming, current)
-    }
-
     private func enrichArtworkIfNeeded(_ state: MediaPlaybackState) async -> MediaPlaybackState {
         guard state.title != "Not Playing", !state.title.isEmpty else { return state }
 
@@ -159,11 +174,15 @@ final class MediaMonitor {
             return state
         }
 
-        let artworkData = await Task.detached { () -> Data? in
-            if let url = state.artworkURL, let data = MusicArtworkFetcher.fetchFromURL(url) {
+        let bundleID = state.bundleIdentifier
+        let trackKey = state.trackKey
+        let artworkURL = state.artworkURL
+
+        let artworkData = await Task.detached(priority: .utility) { () async -> Data? in
+            if let url = artworkURL, let data = await MusicArtworkFetcher.fetchFromURL(url) {
                 return data
             }
-            return MusicArtworkFetcher.fetch(bundleID: state.bundleIdentifier, trackKey: state.trackKey)
+            return await MusicArtworkFetcher.fetch(bundleID: bundleID, trackKey: trackKey)
         }.value
 
         guard let artworkData else { return state }

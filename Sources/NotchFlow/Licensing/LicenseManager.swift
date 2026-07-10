@@ -28,10 +28,10 @@ enum LicenseValidationError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidKey: "The license key is invalid."
-        case .networkFailure: "Could not reach the license server."
-        case .activationLimitReached: "Activation limit reached for this key."
-        case .expired: "Your annual license has expired."
+        case .invalidKey: "Klucz licencyjny jest nieprawidłowy."
+        case .networkFailure: "Nie udało się połączyć z serwerem licencji. Sprawdź internet i spróbuj ponownie."
+        case .activationLimitReached: "Osiągnięto limit aktywacji dla tego klucza (maks. 2 Maci)."
+        case .expired: "Roczna licencja wygasła."
         }
     }
 }
@@ -63,6 +63,7 @@ final class LicenseManager {
             try persist(status: validated)
             status = validated
         } catch {
+            NotchFlowLog.license.error("License refresh failed: \(error.localizedDescription, privacy: .public)")
             if let cached = loadCachedStatus(), isWithinGracePeriod(cached) {
                 status = cached
             } else {
@@ -82,6 +83,10 @@ final class LicenseManager {
         try keychain.delete(key: "license_key")
         try keychain.delete(key: "license_status")
         status = .free
+    }
+
+    var storedLicenseKey: String? {
+        keychain.read(key: "license_key")
     }
 
     private func persist(status: LicenseStatus) throws {
@@ -124,5 +129,3 @@ private struct PersistedLicenseStatus: Codable {
         LicenseStatus(tier: tier, key: key, validatedAt: validatedAt, expiresAt: expiresAt)
     }
 }
-
-import AppKit

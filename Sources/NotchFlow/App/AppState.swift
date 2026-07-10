@@ -14,6 +14,7 @@ final class AppState {
     var notes: [NoteItem] = []
     var clipboardEntries: [ClipboardEntry] = []
     var licenseStatus: LicenseStatus = .free
+    var isIslandInputFocused = false
 
     let mediaMonitor: MediaMonitor
     let shelfManager: ShelfManager
@@ -22,6 +23,7 @@ final class AppState {
     let calendarManager: CalendarManager
     let licenseManager: LicenseManager
     let displayManager: DisplayManager
+    let menuBarLayoutManager: MenuBarLayoutManager
     var settings: NotchSettings
     let notesManager: NotesManager
     let clipboardManager: ClipboardManager
@@ -31,7 +33,9 @@ final class AppState {
     init() {
         let sharedSettings = NotchSettings.shared
         settings = sharedSettings
-        displayManager = DisplayManager(settings: sharedSettings)
+        let menuBarLayoutManager = MenuBarLayoutManager(settings: sharedSettings)
+        self.menuBarLayoutManager = menuBarLayoutManager
+        displayManager = DisplayManager(settings: sharedSettings, menuBarLayoutManager: menuBarLayoutManager)
         mediaMonitor = MediaMonitor()
         shelfManager = ShelfManager()
         hudManager = HUDManager()
@@ -46,7 +50,7 @@ final class AppState {
     }
 
     var isPremium: Bool {
-        licenseStatus.isPremium
+        !LicenseMode.current.isEnforced || licenseStatus.isPremium
     }
 
     var shouldShowIdleNotch: Bool {
@@ -56,27 +60,46 @@ final class AppState {
     var onMediaStateChange: (() -> Void)?
 
     func start() async {
-        settings.isPremiumEnabled = licenseManager.status.isPremium
-        await licenseManager.refreshIfNeeded()
-        settings.isPremiumEnabled = licenseManager.status.isPremium
         licenseStatus = licenseManager.status
+        settings.isPremiumEnabled = isPremium
+        await licenseManager.refreshIfNeeded()
+        licenseStatus = licenseManager.status
+        settings.isPremiumEnabled = isPremium
 
         mediaMonitor.start()
         hudManager.start()
-        pomodoroManager.start()
-        calendarManager.startAutoRefresh()
         clipboardManager.setMonitoringEnabled(settings.clipboardMonitoringEnabled)
         notes = notesManager.notes
         shelfItems = shelfManager.items
         clipboardEntries = clipboardManager.entries
 
         if settings.localAPIEnabled {
-            try? await localAPIServer.start(appState: self)
+            do {
+                try await localAPIServer.start(appState: self)
+            } catch {
+                NotchFlowLog.api.error("Failed to start local API: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 
-    func openSettings() {
-        SettingsWindowController.shared.show(appState: self)
+    func setClipboardMonitoringEnabled(_ enabled: Bool) {
+        settings.clipboardMonitoringEnabled = enabled
+        clipboardManager.setMonitoringEnabled(enabled)
+        if enabled {
+            clipboardManager.captureIfChanged()
+        }
+    }
+
+    func openSettings(tab: SettingsTab = .general) {
+        SettingsWindowController.shared.show(appState: self, tab: tab)
+    }
+
+    func openIntegrationsSettings() {
+        openSettings(tab: .integrations)
+    }
+
+    func openLicenseSettings() {
+        openSettings(tab: .license)
     }
 
     func handleURL(_ url: URL) {
@@ -120,9 +143,7 @@ final class AppState {
         licenseManager.onStatusChange = { [weak self] status in
             guard let self else { return }
             self.licenseStatus = status
-            self.settings.isPremiumEnabled = status.isPremium
+            self.settings.isPremiumEnabled = self.isPremium
         }
     }
 }
-
-import AppKit

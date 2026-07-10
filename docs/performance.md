@@ -31,7 +31,9 @@ sample $(pgrep NotchFlow) 5 -file /tmp/notchflow-sample.txt
 
 ## Architecture rules
 
-- No polling loops for media, HUD, or license checks
-- Mouse tracking limited to global `mouseMoved` events (no Accessibility unless required)
-- Media monitor sleeps when playback paused (notification-driven only)
+- No unconditional polling loops for media, HUD, or license checks
+- AppleScript media polling runs only while the island is visible and playback is active
+- Menu bar overlap layout is event-driven (`didActivateApplicationNotification` + delayed refresh)
+- Mouse tracking coalesced on `mouseMoved` (no Accessibility polling for menu layout)
+- Media monitor uses distributed notifications as the primary source; scripting bridge is a timing supplement only when needed
 - Hide-for-app check uses `NSWorkspace.didActivateApplicationNotification` instead of timers

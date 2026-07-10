@@ -6,6 +6,29 @@ struct LocalAPIConfig: Codable {
     let baseURL: String
 }
 
+private struct LocalAPIStatusResponse: Encodable {
+    let playing: Bool
+    let title: String
+    let premium: Bool
+    let islandVisible: Bool
+}
+
+private struct LocalAPINoteResponse: Encodable {
+    let text: String
+}
+
+private struct LocalAPIClipboardItemResponse: Encodable {
+    let value: String
+}
+
+private struct LocalAPIOKResponse: Encodable {
+    let ok: Bool
+}
+
+private struct LocalAPIErrorResponse: Encodable {
+    let error: String
+}
+
 @MainActor
 final class LocalAPIServer {
     private var listener: NWListener?
@@ -48,9 +71,12 @@ final class LocalAPIServer {
         let config = LocalAPIConfig(port: port, baseURL: "http://127.0.0.1:\(port)")
         let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appendingPathComponent("NotchFlow/api.json")
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if let data = try? JSONEncoder().encode(config) {
-            try? data.write(to: url, options: .atomic)
+        do {
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(config)
+            try SecureFileWriter.write(data, to: url)
+        } catch {
+            NotchFlowLog.api.error("Failed to persist API config: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -78,10 +104,14 @@ final class LocalAPIServer {
 
     private func route(request: String) async -> String {
         let lines = request.components(separatedBy: "\r\n")
-        guard let requestLine = lines.first else { return httpResponse(status: 400, body: #"{"error":"bad request"}"#) }
+        guard let requestLine = lines.first else {
+            return httpResponse(status: 400, reason: "Bad Request", body: encode(LocalAPIErrorResponse(error: "bad request")))
+        }
 
         let parts = requestLine.split(separator: " ")
-        guard parts.count >= 2 else { return httpResponse(status: 400, body: #"{"error":"bad request"}"#) }
+        guard parts.count >= 2 else {
+            return httpResponse(status: 400, reason: "Bad Request", body: encode(LocalAPIErrorResponse(error: "bad request")))
+        }
 
         let method = String(parts[0])
         let path = String(parts[1])
@@ -89,75 +119,98 @@ final class LocalAPIServer {
         let authLine = lines.first { $0.lowercased().hasPrefix("authorization:") }
         let authValue = authLine?.components(separatedBy: ": ").dropFirst().joined(separator: ": ")
         guard APIAuth.validate(authValue) else {
-            return httpResponse(status: 401, body: #"{"error":"unauthorized"}"#)
+            return httpResponse(status: 401, reason: "Unauthorized", body: encode(LocalAPIErrorResponse(error: "unauthorized")))
         }
 
         guard let appState else {
-            return httpResponse(status: 503, body: #"{"error":"unavailable"}"#)
+            return httpResponse(status: 503, reason: "Service Unavailable", body: encode(LocalAPIErrorResponse(error: "unavailable")))
         }
 
         switch (method, path) {
         case ("GET", "/v1/status"):
-            let body = """
-            {"playing":\(appState.mediaState.isPlaying),"title":"\(escape(appState.mediaState.title))","premium":\(appState.isPremium),"islandVisible":\(AppController.appDelegate != nil)}
-            """
-            return httpResponse(status: 200, body: body)
+            let body = encode(LocalAPIStatusResponse(
+                playing: appState.mediaState.isPlaying,
+                title: appState.mediaState.title,
+                premium: appState.isPremium,
+                islandVisible: AppController.panelController?.isIslandVisible ?? false
+            ))
+            return httpResponse(status: 200, reason: "OK", body: body)
 
         case ("POST", "/v1/media/play-pause"):
             appState.mediaMonitor.togglePlayPause()
-            return httpResponse(status: 200, body: #"{"ok":true}"#)
+            return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
 
         case ("POST", "/v1/media/next"):
             appState.mediaMonitor.nextTrack()
-            return httpResponse(status: 200, body: #"{"ok":true}"#)
+            return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
 
         case ("POST", "/v1/media/previous"):
             appState.mediaMonitor.previousTrack()
-            return httpResponse(status: 200, body: #"{"ok":true}"#)
+            return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
 
         case ("GET", "/v1/notes"):
-            let notes = appState.notesManager.notes.map { "{\"text\":\"\(escape($0.text))\"}" }.joined(separator: ",")
-            return httpResponse(status: 200, body: "[\(notes)]")
+            guard appState.isPremium else {
+                return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "premium required")))
+            }
+            let notes = appState.notesManager.visibleNotes(isPremium: true)
+                .map { LocalAPINoteResponse(text: $0.text) }
+            return httpResponse(status: 200, reason: "OK", body: encode(notes))
 
         case ("POST", "/v1/notes"):
+            guard appState.isPremium else {
+                return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "premium required")))
+            }
             if let bodyStart = request.range(of: "\r\n\r\n") {
                 let body = String(request[bodyStart.upperBound...])
                 if let text = extractJSONValue(body, key: "text") {
-                    try? appState.notesManager.append(text: text, isPremium: appState.isPremium)
-                    appState.notes = appState.notesManager.notes
+                    do {
+                        try appState.notesManager.append(text: text, isPremium: appState.isPremium)
+                        appState.notes = appState.notesManager.notes
+                    } catch {
+                        NotchFlowLog.api.error("Failed to append note via API: \(error.localizedDescription, privacy: .public)")
+                    }
                 }
             }
-            return httpResponse(status: 200, body: #"{"ok":true}"#)
+            return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
 
         case ("GET", "/v1/clipboard"):
+            guard appState.isPremium else {
+                return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "premium required")))
+            }
             let items = appState.clipboardManager.visibleEntries(isPremium: appState.isPremium)
-                .map { "{\"value\":\"\(escape($0.value))\"}" }
-                .joined(separator: ",")
-            return httpResponse(status: 200, body: "[\(items)]")
+                .map { LocalAPIClipboardItemResponse(value: $0.value) }
+            return httpResponse(status: 200, reason: "OK", body: encode(items))
 
         case ("POST", "/v1/island/show"):
             AppController.appDelegate?.showIsland()
-            return httpResponse(status: 200, body: #"{"ok":true}"#)
+            return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
 
         case ("POST", "/v1/mirror/toggle"):
+            guard appState.isPremium else {
+                return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "premium required")))
+            }
             if appState.cameraMirrorManager.isActive {
                 appState.cameraMirrorManager.stopPreview()
             } else {
                 await appState.cameraMirrorManager.startPreview()
             }
-            return httpResponse(status: 200, body: #"{"ok":true}"#)
+            return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
 
         default:
-            return httpResponse(status: 404, body: #"{"error":"not found"}"#)
+            return httpResponse(status: 404, reason: "Not Found", body: encode(LocalAPIErrorResponse(error: "not found")))
         }
     }
 
-    private func httpResponse(status: Int, body: String) -> String {
-        "HTTP/1.1 \(status) OK\r\nContent-Type: application/json\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)"
+    private func httpResponse(status: Int, reason: String, body: String) -> String {
+        "HTTP/1.1 \(status) \(reason)\r\nContent-Type: application/json\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)"
     }
 
-    private func escape(_ value: String) -> String {
-        value.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+    private func encode<T: Encodable>(_ value: T) -> String {
+        guard let data = try? JSONEncoder().encode(value),
+              let json = String(data: data, encoding: .utf8) else {
+            return #"{"error":"encoding failed"}"#
+        }
+        return json
     }
 
     private func extractJSONValue(_ body: String, key: String) -> String? {

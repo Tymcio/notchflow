@@ -32,22 +32,10 @@ enum IslandModule: String, CaseIterable, Identifiable, Sendable {
     static var leadingTabs: [IslandModule] { [.media, .calendar] }
     static var trailingTabs: [IslandModule] { [.notes, .clipboard, .mirror] }
 
-    var wingSide: IslandModuleWingSide {
-        switch self {
-        case .media, .calendar: .leading
-        case .notes, .clipboard, .mirror: .trailing
-        }
-    }
-
     var requiresPremium: Bool {
         switch self {
         case .mirror: true
         default: false
         }
     }
-}
-
-enum IslandModuleWingSide {
-    case leading
-    case trailing
 }

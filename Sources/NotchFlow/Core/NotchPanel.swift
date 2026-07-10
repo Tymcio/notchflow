@@ -7,6 +7,9 @@ import SwiftUI
 final class NotchPanel: NSPanel {
     private let hostingView: NSHostingView<NotchIslandView>
 
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+
     init(rootView: NotchIslandView) {
         hostingView = NSHostingView(rootView: rootView)
         super.init(
@@ -23,6 +26,11 @@ final class NotchPanel: NSPanel {
         hostingView.rootView = rootView
     }
 
+    func activateForInput() {
+        NSApp.activate(ignoringOtherApps: true)
+        makeKeyAndOrderFront(nil)
+    }
+
     func setFrame(_ frame: CGRect, animated: Bool) {
         if animated {
             NSAnimationContext.runAnimationGroup { context in
@@ -33,6 +41,10 @@ final class NotchPanel: NSPanel {
         } else {
             setFrame(frame, display: true)
         }
+    }
+
+    func setIgnoresMouseEvents(_ ignore: Bool) {
+        ignoresMouseEvents = ignore
     }
 
     private func configurePanel() {
@@ -56,7 +68,8 @@ final class NotchPanelController: ObservableObject {
 
     private var panel: NotchPanel?
     private var hideTask: Task<Void, Never>?
-    private var forceVisibleUntil: Date?
+    private var escapeMonitor: Any?
+    private var suppressAutoShow = false
     private let displayManager: DisplayManager
     private let appState: AppState
     private var cancellables = Set<AnyCancellable>()
@@ -64,15 +77,30 @@ final class NotchPanelController: ObservableObject {
     init(displayManager: DisplayManager, appState: AppState) {
         self.displayManager = displayManager
         self.appState = appState
+        AppController.panelController = self
         appState.onMediaStateChange = { [weak self] in
             self?.handleMediaStateChange()
         }
         bind()
     }
 
+    func prepareForTyping() {
+        ensurePanel()
+        panel?.activateForInput()
+    }
+
     func showFromMenu() {
-        forceVisibleUntil = Date().addingTimeInterval(8)
+        suppressAutoShow = false
         presentExpanded()
+    }
+
+    func hideFromUser() {
+        suppressAutoShow = true
+        dismissImmediately()
+    }
+
+    var isIslandVisible: Bool {
+        isVisible
     }
 
     private func bind() {
@@ -84,6 +112,7 @@ final class NotchPanelController: ObservableObject {
             .store(in: &cancellables)
 
         displayManager.$geometry
+            .removeDuplicates()
             .sink { [weak self] _ in
                 self?.repositionIfVisible(animated: true)
                 self?.refreshViewIfVisible()
@@ -95,15 +124,6 @@ final class NotchPanelController: ObservableObject {
                 hidden ? self?.dismissImmediately() : self?.updateVisibility(hovering: self?.displayManager.isPointerNearNotch ?? false)
             }
             .store(in: &cancellables)
-
-        // Refresh idle visibility when playback state changes
-        Timer.publish(every: 0.5, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self, !self.isExpanded else { return }
-                self.updateIdleVisibility()
-            }
-            .store(in: &cancellables)
     }
 
     private func updateVisibility(hovering: Bool) {
@@ -112,13 +132,19 @@ final class NotchPanelController: ObservableObject {
             return
         }
 
-        if hovering || shouldForceVisible() {
+        if hovering {
+            suppressAutoShow = false
             hideTask?.cancel()
             presentExpanded()
             return
         }
 
-        if appState.shouldShowIdleNotch {
+        if suppressAutoShow {
+            scheduleHide()
+            return
+        }
+
+        if appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap {
             presentIdle()
             return
         }
@@ -126,9 +152,8 @@ final class NotchPanelController: ObservableObject {
         scheduleHide()
     }
 
-    private func updateIdleVisibility() {
-        guard !isExpanded, !displayManager.isPointerNearNotch, !shouldForceVisible() else { return }
-        handleMediaStateChange()
+    private var shouldHideIdleForMenuOverlap: Bool {
+        displayManager.geometry?.shouldHideIdleForMenuOverlap == true
     }
 
     private func handleMediaStateChange() {
@@ -137,11 +162,18 @@ final class NotchPanelController: ObservableObject {
             return
         }
 
-        if isExpanded || shouldForceVisible() || displayManager.isPointerNearNotch {
+        if isExpanded || displayManager.isPointerNearNotch {
             return
         }
 
-        if appState.shouldShowIdleNotch {
+        if suppressAutoShow {
+            if isVisible {
+                dismissImmediately()
+            }
+            return
+        }
+
+        if appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap {
             if !isVisible || isExpanded {
                 presentIdle()
             }
@@ -150,15 +182,9 @@ final class NotchPanelController: ObservableObject {
         }
     }
 
-    private func shouldForceVisible() -> Bool {
-        if let forceVisibleUntil, Date() < forceVisibleUntil { return true }
-        forceVisibleUntil = nil
-        return false
-    }
-
     private func shouldKeepVisible() -> Bool {
-        if shouldForceVisible() { return true }
         if displayManager.isPointerNearNotch { return true }
+        if appState.isIslandInputFocused { return true }
         if let panel, panel.isVisible, panel.frame.insetBy(dx: -8, dy: -8).contains(NSEvent.mouseLocation) {
             return true
         }
@@ -170,23 +196,54 @@ final class NotchPanelController: ObservableObject {
         let needsRefresh = !isVisible || !isExpanded
         isExpanded = true
         isVisible = true
+        syncMediaPolling()
         if needsRefresh {
             refreshView()
         }
         repositionIfVisible(animated: needsRefresh)
+        panel?.setIgnoresMouseEvents(false)
         panel?.orderFrontRegardless()
+        installEscapeMonitorIfNeeded()
     }
 
     private func presentIdle() {
+        displayManager.refreshMenuLayoutNow()
+        guard !shouldHideIdleForMenuOverlap else {
+            if isVisible, !isExpanded {
+                dismissImmediately()
+            }
+            return
+        }
         ensurePanel()
         let needsRefresh = !isVisible || isExpanded
         isExpanded = false
         isVisible = true
+        syncMediaPolling()
         if needsRefresh {
             refreshView()
         }
         repositionIfVisible(animated: needsRefresh)
+        panel?.setIgnoresMouseEvents(true)
         panel?.orderFrontRegardless()
+        installEscapeMonitorIfNeeded()
+    }
+
+    private func installEscapeMonitorIfNeeded() {
+        guard escapeMonitor == nil else { return }
+        escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.keyCode == 53 else { return event }
+            Task { @MainActor in
+                self?.hideFromUser()
+            }
+            return nil
+        }
+    }
+
+    private func removeEscapeMonitor() {
+        if let escapeMonitor {
+            NSEvent.removeMonitor(escapeMonitor)
+            self.escapeMonitor = nil
+        }
     }
 
     private func ensurePanel() {
@@ -201,7 +258,9 @@ final class NotchPanelController: ObservableObject {
             try? await Task.sleep(for: .milliseconds(280))
             await MainActor.run {
                 guard !self.shouldKeepVisible() else { return }
-                if self.appState.shouldShowIdleNotch {
+                if self.suppressAutoShow {
+                    self.dismissImmediately()
+                } else if self.appState.shouldShowIdleNotch, !self.shouldHideIdleForMenuOverlap {
                     self.presentIdle()
                 } else {
                     self.dismissImmediately()
@@ -212,9 +271,14 @@ final class NotchPanelController: ObservableObject {
 
     private func dismissImmediately() {
         hideTask?.cancel()
+        removeEscapeMonitor()
+        appState.isIslandInputFocused = false
         isVisible = false
         isExpanded = false
+        syncMediaPolling()
         displayManager.activePanelFrame = nil
+        panel?.makeFirstResponder(nil)
+        panel?.resignKey()
         panel?.orderOut(nil)
     }
 
@@ -240,5 +304,9 @@ final class NotchPanelController: ObservableObject {
             geometry: displayManager.geometry,
             appState: appState
         )
+    }
+
+    private func syncMediaPolling() {
+        appState.mediaMonitor.updateIslandPresentation(isVisible: isVisible, isExpanded: isExpanded)
     }
 }

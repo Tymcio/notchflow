@@ -8,7 +8,7 @@ struct CalendarTabView: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 6) {
             header
             weekdayHeader
             monthGrid
@@ -61,7 +61,7 @@ struct CalendarTabView: View {
     }
 
     private var monthGrid: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             ForEach(weeks) { week in
                 HStack(spacing: 0) {
                     Text("\(week.weekNumber)")
@@ -89,7 +89,7 @@ struct CalendarTabView: View {
         Text("\(day.number)")
             .font(.caption2.monospacedDigit())
             .foregroundStyle(textColor)
-            .frame(width: 22, height: 22)
+            .frame(width: 20, height: 20)
             .background {
                 if day.isToday {
                     Circle().fill(Color.white.opacity(0.92))

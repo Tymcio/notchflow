@@ -18,6 +18,7 @@ struct KeychainStore {
 
         var attributes = query
         attributes[kSecValueData as String] = data
+        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         let status = SecItemAdd(attributes as CFDictionary, nil)
         guard status == errSecSuccess else {
             throw KeychainError.unhandled(status)

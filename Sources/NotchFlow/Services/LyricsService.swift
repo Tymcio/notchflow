@@ -16,15 +16,28 @@ struct LyricsService {
                 return nil
             }
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-            if let synced = json?["syncedLyrics"] as? String, !synced.isEmpty {
-                return synced.components(separatedBy: "\n").first
+            if let synced = json?["syncedLyrics"] as? String, let line = firstLyricLine(synced) {
+                return line
             }
-            if let plain = json?["plainLyrics"] as? String, !plain.isEmpty {
-                return plain.components(separatedBy: "\n").first
+            if let plain = json?["plainLyrics"] as? String, let line = firstLyricLine(plain) {
+                return line
             }
             return nil
         } catch {
             return nil
         }
+    }
+
+    /// Returns the first non-empty lyric line with LRC tags like `[00:14.74]` or `[ar:…]` removed.
+    private func firstLyricLine(_ raw: String) -> String? {
+        for line in raw.components(separatedBy: "\n") {
+            let stripped = line
+                .replacingOccurrences(of: #"\[[^\]]*\]"#, with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespaces)
+            if !stripped.isEmpty {
+                return stripped
+            }
+        }
+        return nil
     }
 }

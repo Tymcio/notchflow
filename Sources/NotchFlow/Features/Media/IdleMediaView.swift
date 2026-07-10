@@ -2,32 +2,43 @@ import SwiftUI
 
 struct IdleMediaView: View {
     let state: MediaPlaybackState
-    let wingWidth: CGFloat
+    let leftWingWidth: CGFloat
+    let rightWingWidth: CGFloat
     let notchCutoutWidth: CGFloat
     let innerOverlap: CGFloat
 
     var body: some View {
         HStack(spacing: 0) {
-            idleWing(isLeading: true) {
-                ArtworkView(
-                    artworkURL: state.artworkURL,
-                    artworkData: state.artworkData,
-                    trackKey: state.trackKey,
-                    size: min(wingWidth - 12, 22)
-                )
+            if leftWingWidth > 0 {
+                idleWing(isLeading: true) {
+                    ArtworkView(
+                        artworkURL: state.artworkURL,
+                        artworkData: state.artworkData,
+                        trackKey: state.trackKey,
+                        size: min(leftWingWidth - 12, 22)
+                    )
+                }
+                .frame(width: leftWingWidth + innerOverlap)
             }
-            .frame(width: wingWidth + innerOverlap)
 
             Color.clear
-                .frame(width: max(0, notchCutoutWidth - innerOverlap * 2))
+                .frame(width: centerClearWidth)
                 .allowsHitTesting(false)
 
-            idleWing(isLeading: false) {
-                EqualizerView(isAnimating: true, seed: state.title.hashValue, barColor: .white)
+            if rightWingWidth > 0 {
+                idleWing(isLeading: false) {
+                    EqualizerView(isAnimating: state.isPlaying, seed: state.title.hashValue, barColor: .white)
+                }
+                .frame(width: rightWingWidth + innerOverlap)
             }
-            .frame(width: wingWidth + innerOverlap)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var centerClearWidth: CGFloat {
+        let leftOverlap = leftWingWidth > 0 ? innerOverlap : 0
+        let rightOverlap = rightWingWidth > 0 ? innerOverlap : 0
+        return max(0, notchCutoutWidth - leftOverlap - rightOverlap)
     }
 
     @ViewBuilder

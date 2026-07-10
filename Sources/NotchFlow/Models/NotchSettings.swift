@@ -11,11 +11,11 @@ final class NotchSettings {
     }
 
     var customIslandWidth: CGFloat {
-        didSet { UserDefaults.standard.set(customIslandWidth, forKey: Keys.customIslandWidth) }
+        didSet { scheduleDimensionPersist() }
     }
 
     var customIslandHeight: CGFloat {
-        didSet { UserDefaults.standard.set(customIslandHeight, forKey: Keys.customIslandHeight) }
+        didSet { scheduleDimensionPersist() }
     }
 
     var selectedTheme: IslandTheme {
@@ -34,7 +34,25 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(localAPIEnabled, forKey: Keys.localAPIEnabled) }
     }
 
+    var avoidMenuOverlap: Bool {
+        didSet {
+            UserDefaults.standard.set(avoidMenuOverlap, forKey: Keys.avoidMenuOverlap)
+            onAvoidMenuOverlapChange?()
+        }
+    }
+
+    var urlSchemeAutomationEnabled: Bool {
+        didSet { UserDefaults.standard.set(urlSchemeAutomationEnabled, forKey: Keys.urlSchemeAutomationEnabled) }
+    }
+
+    var lyricsSharingEnabled: Bool {
+        didSet { UserDefaults.standard.set(lyricsSharingEnabled, forKey: Keys.lyricsSharingEnabled) }
+    }
+
     var isPremiumEnabled: Bool = false
+    var onAvoidMenuOverlapChange: (() -> Void)?
+
+    private var dimensionPersistTask: Task<Void, Never>?
 
     private enum Keys {
         static let launchAtLogin = "launchAtLogin"
@@ -44,18 +62,34 @@ final class NotchSettings {
         static let hiddenAppBundleIDs = "hiddenAppBundleIDs"
         static let clipboardMonitoringEnabled = "clipboardMonitoringEnabled"
         static let localAPIEnabled = "localAPIEnabled"
+        static let avoidMenuOverlap = "avoidMenuOverlap"
+        static let urlSchemeAutomationEnabled = "urlSchemeAutomationEnabled"
+        static let lyricsSharingEnabled = "lyricsSharingEnabled"
     }
 
     private init() {
         let defaults = UserDefaults.standard
         launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
-        customIslandWidth = defaults.object(forKey: Keys.customIslandWidth) as? CGFloat ?? 340
-        customIslandHeight = defaults.object(forKey: Keys.customIslandHeight) as? CGFloat ?? 148
+        customIslandWidth = defaults.object(forKey: Keys.customIslandWidth) as? CGFloat ?? NotchFlowConstants.defaultExpandedWidth
+        customIslandHeight = defaults.object(forKey: Keys.customIslandHeight) as? CGFloat ?? NotchFlowConstants.defaultExpandedHeight
         let themeRaw = defaults.string(forKey: Keys.selectedTheme) ?? IslandTheme.system.rawValue
         selectedTheme = IslandTheme(rawValue: themeRaw) ?? .system
         hiddenAppBundleIDs = defaults.stringArray(forKey: Keys.hiddenAppBundleIDs) ?? []
         clipboardMonitoringEnabled = defaults.bool(forKey: Keys.clipboardMonitoringEnabled)
-        localAPIEnabled = defaults.object(forKey: Keys.localAPIEnabled) as? Bool ?? true
+        localAPIEnabled = defaults.object(forKey: Keys.localAPIEnabled) as? Bool ?? false
+        avoidMenuOverlap = defaults.object(forKey: Keys.avoidMenuOverlap) as? Bool ?? true
+        urlSchemeAutomationEnabled = defaults.bool(forKey: Keys.urlSchemeAutomationEnabled)
+        lyricsSharingEnabled = defaults.bool(forKey: Keys.lyricsSharingEnabled)
+    }
+
+    private func scheduleDimensionPersist() {
+        dimensionPersistTask?.cancel()
+        dimensionPersistTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            UserDefaults.standard.set(customIslandWidth, forKey: Keys.customIslandWidth)
+            UserDefaults.standard.set(customIslandHeight, forKey: Keys.customIslandHeight)
+        }
     }
 }
 
