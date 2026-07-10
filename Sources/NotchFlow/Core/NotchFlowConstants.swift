@@ -36,4 +36,6 @@ enum NotchFlowConstants {
     static let freeNotesLimit = 5
     static let freeClipboardLimit = 5
     static let premiumClipboardLimit = 50
+    /// Default loopback port for the local Raycast API (stable across restarts).
+    static let localAPIPort: UInt16 = 47_821
 }

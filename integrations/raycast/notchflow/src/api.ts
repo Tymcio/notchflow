@@ -1,14 +1,44 @@
+import { existsSync, readFileSync } from "fs";
+import { homedir } from "os";
 import { getPreferenceValues } from "@raycast/api";
 
 type Preferences = {
-  baseURL: string;
+  baseURL?: string;
   apiToken: string;
 };
 
-export function getConfig(): Preferences {
+type ApiConfig = {
+  baseURL: string;
+};
+
+function readApiConfig(): ApiConfig | null {
+  const configPath = `${homedir()}/Library/Application Support/NotchFlow/api.json`;
+  if (!existsSync(configPath)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(readFileSync(configPath, "utf8")) as ApiConfig;
+  } catch {
+    return null;
+  }
+}
+
+export function getConfig(): Required<Preferences> {
   const prefs = getPreferenceValues<Preferences>();
+  const fromFile = readApiConfig();
+  const baseURL = (prefs.baseURL || fromFile?.baseURL || "").replace(/\/$/, "");
+
+  if (!baseURL) {
+    throw new Error("Brak adresu API. Uruchom NotchFlow z włączonym Local API lub ustaw Base URL w preferencjach.");
+  }
+
+  if (!prefs.apiToken) {
+    throw new Error("Brak tokenu API. Skopiuj go z NotchFlow → Ustawienia → Integracje.");
+  }
+
   return {
-    baseURL: prefs.baseURL.replace(/\/$/, ""),
+    baseURL,
     apiToken: prefs.apiToken,
   };
 }

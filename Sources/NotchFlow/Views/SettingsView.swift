@@ -14,21 +14,42 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        NavigationSplitView {
+            List(SettingsTab.allCases, selection: $selectedTab) { tab in
+                Label(tab.title, systemImage: tab.systemImage)
+                    .tag(tab)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 220)
+        } detail: {
+            ScrollView {
+                tabContent(for: selectedTab)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .background(Color(nsColor: .windowBackgroundColor))
+            .navigationTitle(selectedTab.title)
+        }
+        .frame(minWidth: 640, minHeight: 480)
+        .onAppear {
+            selectedTab = initialTab
+            if licenseKey.isEmpty, let stored = appState.licenseManager.storedLicenseKey {
+                licenseKey = stored
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tabContent(for tab: SettingsTab) -> some View {
+        switch tab {
+        case .general:
             GeneralSettingsTab(
                 settings: appState.settings,
                 menuBarLayoutManager: appState.menuBarLayoutManager,
-                onOpenLicense: {
-                    selectedTab = .license
-                }
+                onOpenLicense: { selectedTab = .license }
             )
-                .tabItem { Label("Ogólne", systemImage: "gearshape") }
-                .tag(SettingsTab.general)
-
+        case .appearance:
             AppearanceSettingsTab(settings: appState.settings, isPremium: appState.isPremium)
-                .tabItem { Label("Wygląd", systemImage: "paintbrush") }
-                .tag(SettingsTab.appearance)
-
+        case .license:
             LicenseSettingsTab(
                 status: appState.licenseStatus,
                 licenseKey: $licenseKey,
@@ -36,24 +57,10 @@ struct SettingsView: View {
                 onActivate: activateLicense,
                 onDeactivate: deactivateLicense
             )
-            .tabItem { Label("Licencja", systemImage: "key") }
-            .tag(SettingsTab.license)
-
+        case .privacy:
             PrivacySettingsTab(settings: appState.settings)
-                .tabItem { Label("Prywatność", systemImage: "hand.raised") }
-                .tag(SettingsTab.privacy)
-
+        case .integrations:
             IntegrationsSettingsTab(appState: appState)
-                .tabItem { Label("Integracje", systemImage: "link") }
-                .tag(SettingsTab.integrations)
-        }
-        .frame(width: 520, height: 500)
-        .background(Color(nsColor: .windowBackgroundColor))
-        .onAppear {
-            selectedTab = initialTab
-            if licenseKey.isEmpty, let stored = appState.licenseManager.storedLicenseKey {
-                licenseKey = stored
-            }
         }
     }
 

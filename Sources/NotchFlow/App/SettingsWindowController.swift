@@ -14,13 +14,14 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             let hosting = NSHostingController(rootView: SettingsView(appState: appState, initialTab: tab))
 
             let newWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 520, height: 500),
+                contentRect: NSRect(x: 0, y: 0, width: 680, height: 520),
                 styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered,
                 defer: false
             )
             newWindow.title = "Ustawienia NotchFlow"
             newWindow.contentViewController = hosting
+            newWindow.minSize = NSSize(width: 640, height: 480)
             newWindow.isReleasedWhenClosed = false
             newWindow.delegate = self
             newWindow.center()

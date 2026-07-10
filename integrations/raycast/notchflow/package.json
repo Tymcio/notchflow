@@ -43,10 +43,10 @@
     {
       "name": "baseURL",
       "type": "textfield",
-      "required": true,
+      "required": false,
       "title": "Base URL",
-      "description": "From ~/Library/Application Support/NotchFlow/api.json",
-      "placeholder": "http://127.0.0.1:54321"
+      "description": "Opcjonalne — domyślnie odczytywane z ~/Library/Application Support/NotchFlow/api.json",
+      "placeholder": "http://127.0.0.1:47821"
     },
     {
       "name": "apiToken",

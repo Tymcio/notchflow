@@ -43,7 +43,7 @@ final class LocalAPIServer {
         params.requiredInterfaceType = .loopback
         params.allowLocalEndpointReuse = true
 
-        listener = try NWListener(using: params, on: .any)
+        listener = try makeListener(using: params)
         listener?.newConnectionHandler = { [weak self] connection in
             Task { @MainActor in
                 await self?.handle(connection: connection)
@@ -67,7 +67,55 @@ final class LocalAPIServer {
         listener = nil
     }
 
+    private func makeListener(using params: NWParameters) throws -> NWListener {
+        for port in preferredPorts() {
+            guard let endpoint = NWEndpoint.Port(rawValue: port) else { continue }
+            do {
+                let listener = try NWListener(using: params, on: endpoint)
+                NotchFlowLog.api.info("Local API listening on port \(port, privacy: .public)")
+                return listener
+            } catch {
+                NotchFlowLog.api.debug("Port \(port, privacy: .public) unavailable: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+
+        NotchFlowLog.api.warning("Using ephemeral local API port")
+        return try NWListener(using: params, on: .any)
+    }
+
+    private func preferredPorts() -> [UInt16] {
+        var ports: [UInt16] = []
+
+        if let saved = Self.loadSavedPort() {
+            ports.append(saved)
+        }
+
+        let defaultsPort = UserDefaults.standard.integer(forKey: Self.portDefaultsKey)
+        if defaultsPort > 0, defaultsPort <= Int(UInt16.max) {
+            ports.append(UInt16(defaultsPort))
+        }
+
+        ports.append(NotchFlowConstants.localAPIPort)
+
+        var seen = Set<UInt16>()
+        return ports.filter { seen.insert($0).inserted }
+    }
+
+    private static let portDefaultsKey = "localAPIPort"
+
+    private static func loadSavedPort() -> UInt16? {
+        let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("NotchFlow/api.json")
+        guard let data = try? Data(contentsOf: url),
+              let config = try? JSONDecoder().decode(LocalAPIConfig.self, from: data),
+              config.port > 0 else {
+            return nil
+        }
+        return config.port
+    }
+
     private func persistConfig(port: UInt16) {
+        UserDefaults.standard.set(Int(port), forKey: Self.portDefaultsKey)
         let config = LocalAPIConfig(port: port, baseURL: "http://127.0.0.1:\(port)")
         let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appendingPathComponent("NotchFlow/api.json")

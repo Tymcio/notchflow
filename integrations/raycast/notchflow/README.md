@@ -17,4 +17,4 @@ npm install
 npm run dev
 ```
 
-Configure **Base URL** and **API Token** in Raycast extension preferences. See [docs/raycast-integration.md](../../../docs/raycast-integration.md).
+Configure **API Token** in Raycast extension preferences. **Base URL** is optional — the extension reads `~/Library/Application Support/NotchFlow/api.json` automatically. Default port: `47821`.

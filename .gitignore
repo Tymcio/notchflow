@@ -14,3 +14,4 @@ secrets/
 *.p12
 *.mobileprovision
 notary-log.json
+integrations/raycast/notchflow/node_modules/

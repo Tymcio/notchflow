@@ -66,7 +66,7 @@ struct IntegrationsSettingsTab: View {
                     }
                 }
 
-                Text("W rozszerzeniu Raycast ustaw Base URL i Token API. Plik konfiguracyjny: ~/Library/Application Support/NotchFlow/api.json")
+                Text("W rozszerzeniu Raycast wystarczy Token API — adres jest odczytywany automatycznie z api.json. Stały port: \(NotchFlowConstants.localAPIPort).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

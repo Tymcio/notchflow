@@ -6,8 +6,7 @@ NotchFlow exposes a **local-only HTTP API** on `127.0.0.1` for Raycast and other
 
 1. Launch NotchFlow and open **Settings → Integrations**.
 2. Enable **Local API (Raycast)**.
-3. Copy the **API token**.
-4. Open `~/Library/Application Support/NotchFlow/api.json` and note the `baseURL` (port changes per launch).
+3. Copy the **API token** (Base URL is read automatically from `api.json` by the Raycast extension).
 
 ### Raycast extension
 
@@ -23,8 +22,10 @@ In Raycast extension preferences set:
 
 | Preference | Value |
 |------------|-------|
-| Base URL | From `api.json`, e.g. `http://127.0.0.1:54321` |
+| Base URL | Optional — auto-read from `api.json` |
 | API Token | Token from NotchFlow Settings |
+
+NotchFlow uses a **stable default port `47821`** on loopback. The port is persisted in `api.json` and reused across restarts.
 
 ## Endpoints
 
