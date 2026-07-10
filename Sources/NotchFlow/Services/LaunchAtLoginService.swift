@@ -1,0 +1,23 @@
+import ServiceManagement
+import Foundation
+
+enum LaunchAtLoginService {
+    static func enable() {
+        if #available(macOS 13.0, *) {
+            try? SMAppService.mainApp.register()
+        }
+    }
+
+    static func disable() {
+        if #available(macOS 13.0, *) {
+            try? SMAppService.mainApp.unregister()
+        }
+    }
+
+    static var isEnabled: Bool {
+        if #available(macOS 13.0, *) {
+            return SMAppService.mainApp.status == .enabled
+        }
+        return false
+    }
+}

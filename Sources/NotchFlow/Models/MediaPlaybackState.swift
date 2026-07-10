@@ -1,0 +1,87 @@
+import Foundation
+
+struct MediaPlaybackState: Equatable, Sendable {
+    let title: String
+    let artist: String
+    let album: String
+    let artworkURL: URL?
+    let artworkData: Data?
+    let isPlaying: Bool
+    let elapsed: Double
+    let duration: Double
+    let bundleIdentifier: String?
+    let lyricsSnippet: String?
+    let positionSampledAt: Date
+
+    init(
+        title: String,
+        artist: String,
+        album: String,
+        artworkURL: URL?,
+        artworkData: Data?,
+        isPlaying: Bool,
+        elapsed: Double,
+        duration: Double,
+        bundleIdentifier: String?,
+        lyricsSnippet: String?,
+        positionSampledAt: Date = Date()
+    ) {
+        self.title = title
+        self.artist = artist
+        self.album = album
+        self.artworkURL = artworkURL
+        self.artworkData = artworkData
+        self.isPlaying = isPlaying
+        self.elapsed = elapsed
+        self.duration = duration
+        self.bundleIdentifier = bundleIdentifier
+        self.lyricsSnippet = lyricsSnippet
+        self.positionSampledAt = positionSampledAt
+    }
+
+    static let empty = MediaPlaybackState(
+        title: "Not Playing",
+        artist: "",
+        album: "",
+        artworkURL: nil,
+        artworkData: nil,
+        isPlaying: false,
+        elapsed: 0,
+        duration: 0,
+        bundleIdentifier: nil,
+        lyricsSnippet: nil,
+        positionSampledAt: .distantPast
+    )
+
+    var trackKey: String {
+        "\(title)|\(artist)|\(album)"
+    }
+
+    func isSameTrack(as other: MediaPlaybackState) -> Bool {
+        trackKey == other.trackKey && title != "Not Playing" && !title.isEmpty
+    }
+
+    func interpolatedPosition(at date: Date = Date()) -> Double {
+        guard isPlaying else { return elapsed }
+        let delta = date.timeIntervalSince(positionSampledAt)
+        guard duration > 0 else { return elapsed + delta }
+        return min(elapsed + delta, duration)
+    }
+
+    var hasUsableDuration: Bool {
+        Self.isUsableTiming(duration)
+    }
+
+    static func isUsableTiming(_ value: Double) -> Bool {
+        value.isFinite && value >= 1
+    }
+}
+
+protocol MediaSourceProviding: Sendable {
+    func startMonitoring(handler: @escaping @Sendable (MediaPlaybackState) -> Void) async
+    func stopMonitoring() async
+    func togglePlayPause() async
+    func nextTrack() async
+    func previousTrack() async
+    func seek(to position: Double) async
+}

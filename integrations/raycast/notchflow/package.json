@@ -1,0 +1,76 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "notchflow",
+  "title": "NotchFlow",
+  "description": "Control NotchFlow media, notes, clipboard, and island from Raycast.",
+  "icon": "extension-icon.png",
+  "author": "notchflow",
+  "categories": ["Productivity", "Media"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "control-media",
+      "title": "Control Media",
+      "description": "Play/pause, next, or previous track in NotchFlow",
+      "mode": "view"
+    },
+    {
+      "name": "whats-playing",
+      "title": "What's Playing",
+      "description": "Show current track from NotchFlow",
+      "mode": "view"
+    },
+    {
+      "name": "add-quick-note",
+      "title": "Add Quick Note",
+      "description": "Save a note to NotchFlow",
+      "mode": "view"
+    },
+    {
+      "name": "clipboard-history",
+      "title": "Clipboard History",
+      "description": "Browse NotchFlow clipboard history",
+      "mode": "view"
+    },
+    {
+      "name": "show-island",
+      "title": "Show Island",
+      "description": "Expand the NotchFlow island",
+      "mode": "no-view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "baseURL",
+      "type": "textfield",
+      "required": true,
+      "title": "Base URL",
+      "description": "From ~/Library/Application Support/NotchFlow/api.json",
+      "placeholder": "http://127.0.0.1:54321"
+    },
+    {
+      "name": "apiToken",
+      "type": "password",
+      "required": true,
+      "title": "API Token",
+      "description": "Copy from NotchFlow Settings → Integrations"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.83.0",
+    "@raycast/utils": "^1.16.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.5.0"
+  },
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "lint": "ray lint"
+  }
+}

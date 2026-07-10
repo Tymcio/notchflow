@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security — NotchFlow</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main>
+    <h1>Security</h1>
+    <h2>Official distribution</h2>
+    <p>Download NotchFlow only from notchflow.eu or GitHub Releases published by the notchflow organization.</p>
+    <p>We never ask you to run Terminal commands, disable Gatekeeper, or remove quarantine attributes.</p>
+    <h2>Verify the app</h2>
+    <pre><code>spctl -a -vv /Applications/NotchFlow.app
+codesign -dv --verbose=4 /Applications/NotchFlow.app</code></pre>
+    <h2>Build transparency</h2>
+    <p>Source code is public. You can audit permissions, networking, and licensing logic before building locally.</p>
+    <p><a href="index.html">Back to home</a></p>
+  </main>
+</body>
+</html>

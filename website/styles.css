@@ -1,0 +1,61 @@
+:root {
+  color-scheme: dark light;
+  --bg: #0b0d12;
+  --card: #151a24;
+  --text: #f4f7fb;
+  --muted: #9aa7bd;
+  --accent: #5b8cff;
+  --border: #243044;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #172033, var(--bg) 45%);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.hero, main, footer {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+}
+
+.hero { padding-top: 4rem; }
+.eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.8rem; }
+.lead { color: var(--muted); max-width: 60ch; }
+
+.cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+.button {
+  display: inline-block;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+}
+.button.primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: white;
+}
+
+section { margin: 3rem 0; }
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+article {
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+}
+.pricing .featured { border-color: var(--accent); }
+.price { font-size: 1.8rem; font-weight: 700; }
+.fineprint, footer { color: var(--muted); font-size: 0.9rem; }
+code { background: #111722; padding: 0.15rem 0.35rem; border-radius: 6px; }
