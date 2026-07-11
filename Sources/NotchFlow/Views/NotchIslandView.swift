@@ -72,7 +72,9 @@ struct NotchIslandView: View {
                 .padding(.bottom, 12)
                 .padding(.top, geometry.hasPhysicalNotch ? expandedContentTopInset(geometry) : 0)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .clipped()
                 .animation(nil, value: appState.activeModule)
+                .animation(nil, value: appState.shelfItems.count)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background { shape.fill(islandFill) }

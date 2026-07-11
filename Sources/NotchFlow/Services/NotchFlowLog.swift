@@ -8,4 +8,5 @@ enum NotchFlowLog {
     static let media = Logger(subsystem: subsystem, category: "Media")
     static let license = Logger(subsystem: subsystem, category: "License")
     static let storage = Logger(subsystem: subsystem, category: "Storage")
+    static let hover = Logger(subsystem: subsystem, category: "Hover")
 }

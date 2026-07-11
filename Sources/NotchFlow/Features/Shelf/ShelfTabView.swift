@@ -4,6 +4,9 @@ import SwiftUI
 struct ShelfTabView: View {
     @Bindable var appState: AppState
 
+    private let trackHeight: CGFloat = 72
+    private let tileWidth: CGFloat = 68
+
     private var accent: Color {
         appState.settings.selectedTheme.accent
     }
@@ -24,188 +27,246 @@ struct ShelfTabView: View {
         appState.isPremium ? NotchFlowConstants.premiumDroppedShelfLimit : NotchFlowConstants.freeDroppedShelfLimit
     }
 
+    private var isDropActive: Bool {
+        appState.displayManager.isDragNearNotch
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            pinnedLane
-            temporaryLane
+        VStack(alignment: .leading, spacing: 0) {
+            shelfToolbar
+                .padding(.bottom, 10)
 
-            if !appState.isPremium {
-                Text("\(pinned.count)/\(NotchFlowConstants.freePinnedShelfLimit) przypiętych · \(dropped.count)/\(NotchFlowConstants.freeDroppedShelfLimit) tymczasowych")
-                    .font(.caption2)
-                    .foregroundStyle(IslandStyle.tertiaryText)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
+            shelfTrack
+
+            shelfFooter
+                .padding(.top, 12)
         }
-        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: appState.shelfItems.map(\.id))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    // MARK: - Lanes
-
-    private var pinnedLane: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            laneHeader(
-                icon: "pin.fill",
-                title: "Przypięte",
-                count: pinned.count,
-                limit: pinnedLimit,
-                tint: accent
-            ) {
-                pickPinnedFile()
+    private var shelfToolbar: some View {
+        HStack(spacing: 10) {
+            Label {
+                Text("Półka")
+                    .font(.caption.weight(.semibold))
+            } icon: {
+                Image(systemName: "tray.full.fill")
+                    .font(.caption.weight(.semibold))
             }
+            .foregroundStyle(IslandStyle.primaryText)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(pinned) { item in
-                        ShelfItemCard(
-                            item: item,
-                            accent: accent,
-                            style: .pinned,
-                            resolveURL: { appState.shelfManager.resolvePinnedURL(for: item) ?? item.resolvedURL },
-                            onOpen: { appState.shelfManager.open(item) },
-                            onReveal: { appState.shelfManager.revealInFinder(item) },
-                            onRemove: { appState.shelfManager.remove(item) }
-                        )
-                        .transition(.scale(scale: 0.88).combined(with: .opacity))
-                    }
+            Spacer(minLength: 0)
 
-                    addPinnedSlot
-                }
-                .padding(.horizontal, 2)
-                .padding(.vertical, 2)
-            }
-            .frame(height: 86)
-        }
-    }
-
-    private var temporaryLane: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            laneHeader(
-                icon: "tray.and.arrow.down.fill",
-                title: "Tymczasowe",
-                count: dropped.count,
-                limit: droppedLimit,
-                tint: .white.opacity(0.7),
-                onAdd: nil
-            )
-
-            if dropped.isEmpty {
-                dropHintStrip
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(dropped) { item in
-                            ShelfItemCard(
-                                item: item,
-                                accent: accent,
-                                style: .temporary,
-                                resolveURL: { appState.shelfManager.resolvePinnedURL(for: item) ?? item.resolvedURL },
-                                onOpen: { appState.shelfManager.open(item) },
-                                onReveal: { appState.shelfManager.revealInFinder(item) },
-                                onPin: {
-                                    appState.shelfManager.pinDroppedItem(item, isPremium: appState.isPremium)
-                                },
-                                onRemove: { appState.shelfManager.remove(item) }
-                            )
-                            .transition(.scale(scale: 0.88).combined(with: .opacity))
-                        }
-                    }
-                    .padding(.horizontal, 2)
-                    .padding(.vertical, 2)
-                }
-                .frame(height: 86)
+            HStack(spacing: 8) {
+                quotaCapsule(
+                    icon: "pin.fill",
+                    label: "Przypięte",
+                    count: pinned.count,
+                    limit: pinnedLimit,
+                    tint: accent
+                )
+                quotaCapsule(
+                    icon: "clock.arrow.circlepath",
+                    label: "Tymczasowe",
+                    count: dropped.count,
+                    limit: droppedLimit,
+                    tint: IslandStyle.secondaryText
+                )
             }
         }
     }
-
-    // MARK: - Components
 
     @ViewBuilder
-    private func laneHeader(
-        icon: String,
-        title: String,
-        count: Int,
-        limit: Int,
-        tint: Color,
-        onAdd: (() -> Void)?
-    ) -> some View {
-        HStack(spacing: 8) {
+    private func quotaCapsule(icon: String, label: String, count: Int, limit: Int, tint: Color) -> some View {
+        HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 8, weight: .bold))
                 .foregroundStyle(tint)
 
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(IslandStyle.accentText)
+            Text(label)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(IslandStyle.secondaryText)
 
             Text("\(count)/\(limit)")
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(IslandStyle.tertiaryText)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Capsule().fill(Color.white.opacity(0.06)))
-
-            Spacer()
-
-            if let onAdd {
-                Button(action: onAdd) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(accent.opacity(0.9))
+                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .foregroundStyle(count >= limit ? Color.orange.opacity(0.9) : IslandStyle.tertiaryText)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background {
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(0.05))
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
                 }
-                .buttonStyle(.plain)
-                .help("Dodaj przypięty skrót")
-            }
         }
     }
 
-    private var addPinnedSlot: some View {
+    private var shelfTrack: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(pinned) { item in
+                    shelfCard(item, style: .pinned, allowsPin: false)
+                }
+
+                if pinned.count < pinnedLimit {
+                    addPinnedTile
+                }
+
+                if !pinned.isEmpty || !dropped.isEmpty {
+                    sectionDivider
+                }
+
+                if dropped.isEmpty {
+                    dropPlaceholder
+                } else {
+                    ForEach(dropped) { item in
+                        shelfCard(item, style: .temporary, allowsPin: true)
+                    }
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+        }
+        .frame(height: trackHeight)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.045),
+                            Color.white.opacity(0.02)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(
+                            isDropActive ? accent.opacity(0.55) : Color.white.opacity(0.08),
+                            lineWidth: isDropActive ? 1 : 0.5
+                        )
+                }
+        }
+        .animation(.easeOut(duration: 0.2), value: isDropActive)
+    }
+
+    private var sectionDivider: some View {
+        RoundedRectangle(cornerRadius: 1, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [Color.white.opacity(0), Color.white.opacity(0.14), Color.white.opacity(0)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .frame(width: 1, height: 48)
+            .padding(.horizontal, 4)
+    }
+
+    private var addPinnedTile: some View {
         Button(action: pickPinnedFile) {
-            VStack(spacing: 6) {
-                Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(accent.opacity(0.85))
+            VStack(spacing: 5) {
+                ZStack {
+                    Circle()
+                        .fill(accent.opacity(0.12))
+                        .frame(width: 34, height: 34)
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(accent)
+                }
                 Text("Dodaj")
-                    .font(.caption2.weight(.medium))
+                    .font(.system(size: 8, weight: .medium))
                     .foregroundStyle(IslandStyle.secondaryText)
             }
-            .frame(width: 72, height: 72)
+            .frame(width: tileWidth, height: trackHeight - 12)
             .background {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(accent.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
-                    .background {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(accent.opacity(0.06))
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white.opacity(0.03))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(accent.opacity(0.22), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
                     }
             }
         }
         .buttonStyle(.plain)
+        .help("Dodaj przypięty skrót do pliku")
     }
 
-    private var dropHintStrip: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "arrow.down.doc.fill")
-                .font(.title3)
-                .foregroundStyle(accent.opacity(0.55))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Upuść pliki na wyspę")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(IslandStyle.primaryText)
-                Text("Pojawią się tutaj — przeciągnij stąd gdzie chcesz")
-                    .font(.caption2)
-                    .foregroundStyle(IslandStyle.secondaryText)
+    private var dropPlaceholder: some View {
+        HStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(isDropActive ? accent.opacity(0.18) : Color.white.opacity(0.06))
+                    .frame(width: 32, height: 32)
+                Image(systemName: isDropActive ? "arrow.down.circle.fill" : "arrow.down.doc")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(isDropActive ? accent : IslandStyle.tertiaryText)
             }
-            Spacer()
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isDropActive ? "Upuść tutaj" : "Tymczasowe pliki")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(isDropActive ? accent : IslandStyle.secondaryText)
+                Text("Przeciągnij na wyspę")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundStyle(IslandStyle.tertiaryText)
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 12)
+        .frame(minWidth: 148)
+        .frame(height: trackHeight - 12)
         .background {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.12), style: StrokeStyle(lineWidth: 1, dash: [6, 5]))
-                .background {
+                .fill(isDropActive ? accent.opacity(0.08) : Color.white.opacity(0.02))
+                .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.white.opacity(0.03))
+                        .strokeBorder(
+                            isDropActive ? accent.opacity(0.45) : Color.white.opacity(0.08),
+                            style: StrokeStyle(lineWidth: 1, dash: [6, 5])
+                        )
                 }
         }
+        .animation(.easeOut(duration: 0.2), value: isDropActive)
+    }
+
+    @ViewBuilder
+    private var shelfFooter: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: "hand.point.up.left.fill")
+                    .font(.system(size: 8))
+                Text("Kliknij, aby otworzyć · prawy klik, aby przypiąć lub usunąć")
+                    .font(.system(size: 9, weight: .medium))
+            }
+            .foregroundStyle(IslandStyle.tertiaryText)
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            if !appState.isPremium {
+                Text("Free: \(NotchFlowConstants.freePinnedShelfLimit) przypięte, \(NotchFlowConstants.freeDroppedShelfLimit) tymczasowe")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundStyle(IslandStyle.tertiaryText.opacity(0.85))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func shelfCard(_ item: ShelfItem, style: ShelfCardStyle, allowsPin: Bool) -> some View {
+        ShelfItemCard(
+            item: item,
+            accent: accent,
+            style: style,
+            tileWidth: tileWidth,
+            resolveURL: { appState.shelfManager.resolvePinnedURL(for: item) ?? item.resolvedURL },
+            onOpen: { appState.shelfManager.open(item) },
+            onReveal: { appState.shelfManager.revealInFinder(item) },
+            onPin: allowsPin ? {
+                appState.shelfManager.pinDroppedItem(item, isPremium: appState.isPremium)
+            } : nil,
+            onRemove: { appState.shelfManager.remove(item) }
+        )
     }
 
     private func pickPinnedFile() {
@@ -221,8 +282,6 @@ struct ShelfTabView: View {
     }
 }
 
-// MARK: - Item card
-
 private enum ShelfCardStyle {
     case pinned
     case temporary
@@ -232,6 +291,7 @@ private struct ShelfItemCard: View {
     let item: ShelfItem
     let accent: Color
     let style: ShelfCardStyle
+    let tileWidth: CGFloat
     let resolveURL: () -> URL
     var onOpen: () -> Void
     var onReveal: () -> Void
@@ -242,59 +302,42 @@ private struct ShelfItemCard: View {
 
     var body: some View {
         let url = resolveURL()
-        let parentName = url.deletingLastPathComponent().lastPathComponent
 
-        VStack(spacing: 5) {
-            ZStack(alignment: .topTrailing) {
+        Button(action: onOpen) {
+            VStack(spacing: 5) {
                 Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
                     .resizable()
-                    .frame(width: 36, height: 36)
-                    .shadow(color: .black.opacity(0.25), radius: 3, y: 2)
+                    .frame(width: 34, height: 34)
+                    .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
 
+                Text(item.displayName)
+                    .font(.system(size: 9, weight: .medium))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.75)
+                    .foregroundStyle(isHovered ? IslandStyle.primaryText : IslandStyle.secondaryText)
+                    .frame(maxWidth: tileWidth - 8)
+            }
+            .frame(width: tileWidth, height: 60)
+            .background { tileBackground }
+            .overlay(alignment: .top) {
                 if style == .pinned {
-                    Circle()
-                        .fill(accent)
-                        .frame(width: 7, height: 7)
-                        .overlay(Circle().stroke(Color.black.opacity(0.4), lineWidth: 0.5))
-                        .offset(x: 3, y: -3)
+                    Capsule(style: .continuous)
+                        .fill(accent.opacity(isHovered ? 0.9 : 0.55))
+                        .frame(width: 18, height: 2)
+                        .padding(.top, 4)
                 }
             }
-
-            Text(item.displayName)
-                .font(.caption2.weight(.medium))
-                .lineLimit(1)
-                .foregroundStyle(IslandStyle.primaryText)
-
-            Text(parentName)
-                .font(.system(size: 9))
-                .lineLimit(1)
-                .foregroundStyle(IslandStyle.tertiaryText)
+            .scaleEffect(isHovered ? 1.04 : 1)
         }
-        .frame(width: 76, height: 72)
-        .padding(.vertical, 4)
-        .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(
-                    isHovered
-                        ? Color.white.opacity(0.11)
-                        : Color.white.opacity(0.06)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(
-                            style == .pinned ? accent.opacity(isHovered ? 0.45 : 0.22) : Color.white.opacity(0.08),
-                            lineWidth: 0.5
-                        )
-                }
-        }
-        .scaleEffect(isHovered ? 1.04 : 1)
-        .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isHovered)
+        .buttonStyle(.plain)
+        .animation(.easeOut(duration: 0.15), value: isHovered)
         .onHover { isHovered = $0 }
         .contextMenu {
             Button("Otwórz", action: onOpen)
             Button("Pokaż w Finderze", action: onReveal)
             if let onPin {
-                Button("Przypnij", action: onPin)
+                Button("Przypnij na stałe", action: onPin)
             }
             Divider()
             Button("Usuń", role: .destructive, action: onRemove)
@@ -303,5 +346,24 @@ private struct ShelfItemCard: View {
             NSItemProvider(object: url as NSURL)
         }
         .help(item.displayName)
+    }
+
+    @ViewBuilder
+    private var tileBackground: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(
+                isHovered
+                    ? Color.white.opacity(0.1)
+                    : Color.white.opacity(style == .pinned ? 0.06 : 0.04)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(
+                        style == .pinned
+                            ? accent.opacity(isHovered ? 0.35 : 0.15)
+                            : Color.white.opacity(isHovered ? 0.16 : 0.07),
+                        lineWidth: 0.5
+                    )
+            }
     }
 }

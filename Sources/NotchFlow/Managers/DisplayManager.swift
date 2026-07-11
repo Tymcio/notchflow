@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Combine
 import Foundation
 import UniformTypeIdentifiers
@@ -30,6 +31,8 @@ final class DisplayManager: ObservableObject {
     private let menuBarLayoutManager: MenuBarLayoutManager
     private var cancellables = Set<AnyCancellable>()
     private var mouseMoveCoalesceTask: Task<Void, Never>?
+    private var proximityPollTask: Task<Void, Never>?
+    private var activationObserver: NSObjectProtocol?
 
     init(settings: NotchSettings, menuBarLayoutManager: MenuBarLayoutManager) {
         self.settings = settings
@@ -66,6 +69,10 @@ final class DisplayManager: ObservableObject {
         if let dragEndMonitor {
             NSEvent.removeMonitor(dragEndMonitor)
         }
+        if let activationObserver {
+            NotificationCenter.default.removeObserver(activationObserver)
+        }
+        proximityPollTask?.cancel()
     }
 
     func refreshActiveScreen() {
@@ -113,10 +120,10 @@ final class DisplayManager: ObservableObject {
 
         let triggerRect: CGRect
         if geometry.hasPhysicalNotch {
-            // Only widen horizontally — never extend below the menu bar / notch band.
+            // Widen horizontally; allow a few points vertically for menu-bar coordinate rounding.
             triggerRect = geometry.hoverTriggerRect.insetBy(
                 dx: -NotchFlowConstants.hoverNotchHorizontalExpand,
-                dy: 0
+                dy: -NotchFlowConstants.hoverNotchHorizontalExpand
             )
         } else {
             triggerRect = geometry.hoverTriggerRect.insetBy(
@@ -167,13 +174,16 @@ final class DisplayManager: ObservableObject {
             }
         }
 
-        localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
-            self?.scheduleMouseMove(NSEvent.mouseLocation)
-            return event
-        }
+        installMouseMonitors()
 
-        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] _ in
-            self?.scheduleMouseMove(NSEvent.mouseLocation)
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: NSApp,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshMouseMonitoringIfNeeded()
+            }
         }
 
         localDragMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged]) { [weak self] event in
@@ -268,6 +278,71 @@ final class DisplayManager: ObservableObject {
         }
 
         return dropZone.contains(location)
+    }
+
+    private func installMouseMonitors() {
+        localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
+            self?.scheduleMouseMove(NSEvent.mouseLocation)
+            return event
+        }
+
+        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] _ in
+            self?.scheduleMouseMove(NSEvent.mouseLocation)
+        }
+
+        if mouseMonitor == nil {
+            NotchFlowLog.hover.warning(
+                "Global mouse monitor unavailable — using menu-bar polling fallback (grant Accessibility for best results)"
+            )
+            startProximityPolling()
+        } else {
+            stopProximityPolling()
+        }
+    }
+
+    private func refreshMouseMonitoringIfNeeded() {
+        guard mouseMonitor == nil, AXIsProcessTrusted() else { return }
+        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] _ in
+            self?.scheduleMouseMove(NSEvent.mouseLocation)
+        }
+        if mouseMonitor != nil {
+            NotchFlowLog.hover.debug("Global mouse monitor restored after Accessibility grant")
+            stopProximityPolling()
+        }
+    }
+
+    private func startProximityPolling() {
+        guard proximityPollTask == nil else { return }
+        proximityPollTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                let location = NSEvent.mouseLocation
+                let interval: Duration = isNearAnyMenuBar(location)
+                    ? .milliseconds(33)
+                    : .milliseconds(250)
+                if isNearAnyMenuBar(location) {
+                    handleMouseMove(location)
+                }
+                try? await Task.sleep(for: interval)
+            }
+        }
+    }
+
+    private func stopProximityPolling() {
+        proximityPollTask?.cancel()
+        proximityPollTask = nil
+    }
+
+    private func isNearAnyMenuBar(_ location: NSPoint) -> Bool {
+        for screen in NSScreen.screens {
+            let top = screen.frame.maxY
+            let band = max(screen.safeAreaInsets.top, NotchFlowConstants.virtualCapsuleHeight)
+            if location.y >= top - band - NotchFlowConstants.hoverExpandThreshold,
+               location.y <= top + 4 {
+                return true
+            }
+        }
+        return false
     }
 
     private func scheduleMouseMove(_ location: NSPoint) {

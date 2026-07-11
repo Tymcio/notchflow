@@ -52,7 +52,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func configureStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        guard let button = statusItem?.button else { return }
+        guard let statusItem else { return }
+
+        // Stable identity + no removalAllowed: macOS otherwise treats the icon as optional
+        // and can hide it together with other menu bar items in System Settings.
+        statusItem.autosaveName = "eu.notchflow.app.status"
+        statusItem.behavior = []
+        statusItem.isVisible = true
+
+        guard let button = statusItem.button else { return }
 
         button.image = MenuBarIcon.makeTemplateImage()
         button.toolTip = "NotchFlow — najedź na notch, aby otworzyć"
@@ -68,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item.target = self
         }
 
-        statusItem?.menu = menu
+        statusItem.menu = menu
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

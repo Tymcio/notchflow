@@ -12,6 +12,27 @@ struct GeneralSettingsTab: View {
                     enabled ? LaunchAtLoginService.enable() : LaunchAtLoginService.disable()
                 }
 
+            Section("Najechanie na notch") {
+                if menuBarLayoutManager.isAccessibilityTrusted {
+                    Text("NotchFlow wykrywa kursor globalnie (wymaga Dostępności).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Bez Dostępności działa tryb zapasowy nad górną krawędzią ekranu. Dla najszybszej reakcji włącz NotchFlow w Ustawienia → Prywatność → Dostępność.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    HStack {
+                        Button("Nadaj uprawnienie") {
+                            menuBarLayoutManager.requestPermission()
+                        }
+                        Button("Otwórz ustawienia systemowe") {
+                            menuBarLayoutManager.openAccessibilitySettings()
+                        }
+                    }
+                }
+            }
+
             Section("Menu aplikacji") {
                 Toggle("Unikaj zasłaniania menu aplikacji", isOn: $settings.avoidMenuOverlap)
                     .onChange(of: settings.avoidMenuOverlap) { _, _ in
