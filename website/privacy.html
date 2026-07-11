@@ -4,12 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy — NotchFlow</title>
-  <meta name="description" content="NotchFlow privacy policy. GDPR-compliant, minimal data collection, clipboard opt-in, local API on loopback only." />
+  <meta name="description" content="NotchFlow privacy policy. GDPR-compliant data processing for notchflow.eu and the macOS app." />
   <link rel="canonical" href="https://notchflow.eu/privacy.html" />
   <link rel="alternate" hreflang="en" href="https://notchflow.eu/privacy.html" />
   <link rel="alternate" hreflang="pl" href="https://notchflow.eu/pl/privacy.html" />
   <link rel="icon" href="assets/favicon.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
+  <script src="consent-init.js"></script>
+  <script src="analytics-config.js"></script>
   <script src="theme-init.js"></script>
 </head>
 <body>
@@ -47,42 +49,121 @@
   <main id="main" class="legal-page">
     <div class="container">
       <h1>Privacy Policy (GDPR)</h1>
-      <p class="meta">Effective date: 2026-07-06</p>
-      <p>NotchFlow is developed in the EU (notchflow.eu). We minimize data collection by design.</p>
+      <p class="meta">Effective date: 11 July 2026</p>
+      <p>This policy describes how we process personal data in connection with <a href="https://notchflow.eu">notchflow.eu</a> and the NotchFlow macOS app. We minimize data collection by design — most app data stays on your Mac.</p>
 
-      <h2>What we collect</h2>
+      <h2>1. Data controller</h2>
+      <p>
+        <strong>MTBIZ Marcin Tymków</strong><br />
+        Michałowice 61<br />
+        49-314 Pisarzowice, Poland<br />
+        Tax ID (NIP): 7471912158<br />
+        Email: <a href="mailto:privacy@notchflow.eu">privacy@notchflow.eu</a>
+      </p>
+
+      <h2>2. Scope</h2>
+      <p>This policy covers the website, premium license purchases, email contact, and app behavior where data leaves your device. Third-party services (GitHub, Lemon Squeezy, etc.) have their own policies.</p>
+
+      <h2>3. What we process</h2>
+
+      <h3>3.1. Website</h3>
+      <p>The site is static — no accounts or login required.</p>
+      <p><strong>Google Analytics 4</strong> — with your consent via the cookie banner, we collect anonymous visit statistics (e.g. pages viewed, time on site, device/browser type, approximate geographic origin). Google Analytics loads only after you click “Accept analytics”. Rejecting tracking does not limit access to the site. You can withdraw consent anytime via “Cookie settings” in the footer.</p>
+      <p>We use Google Consent Mode v2 — analytics is denied by default and Google ad signals are not enabled.</p>
       <ul>
-        <li><strong>License validation:</strong> license key and device name sent to LemonSqueezy when you activate premium.</li>
-        <li><strong>Updates:</strong> Sparkle checks appcast metadata from notchflow.eu.</li>
+        <li><strong>Server logs</strong> — IP address, request time, URL, browser/OS (short-term hosting logs)</li>
+        <li><strong>Theme preference and cookie consent</strong> — stored in browser <code>localStorage</code>, not sent to our server</li>
+        <li><strong>Google Fonts</strong> — your browser loads fonts from Google; Google may receive your IP per its privacy policy</li>
+      </ul>
+      <p>We do not set our own cookies except those set by Google Analytics after consent.</p>
+
+      <h3>3.2. Email contact</h3>
+      <p>If you email us, we process your address, message content, and any details you include voluntarily.</p>
+
+      <h3>3.3. Premium purchases</h3>
+      <p><strong>Lemon Squeezy</strong> processes payments as Merchant of Record (email, billing data, payment info). We receive order details needed to fulfill the license but <strong>do not store payment card data</strong>.</p>
+
+      <h3>3.4. NotchFlow app (macOS)</h3>
+      <p>No user account required. Notes, clipboard, shelf files, and settings are stored locally in Application Support.</p>
+      <p>Data may leave your device only when:</p>
+      <ul>
+        <li><strong>License validation</strong> — license key and device name sent to Lemon Squeezy (premium only)</li>
+        <li><strong>Updates</strong> — official builds fetch appcast metadata from notchflow.eu (Sparkle)</li>
+        <li><strong>Lyrics (opt-in)</strong> — track title and artist sent to lrclib.net if enabled in Settings → Privacy</li>
+        <li><strong>Album artwork</strong> — fetched from Spotify CDN servers during playback</li>
+        <li><strong>Downloads</strong> — via GitHub Releases (GitHub’s policy applies)</li>
       </ul>
 
-      <h2>Clipboard monitoring (opt-in)</h2>
-      <p>Clipboard history is <strong>disabled by default</strong>. When you enable it in Settings → Privacy, NotchFlow stores copied text and URLs locally on your Mac in Application Support. Data never leaves your device unless you explicitly copy it elsewhere. You can disable monitoring at any time.</p>
-
-      <h2>Local API (opt-in)</h2>
-      <p>The Raycast integration uses a local HTTP server bound to 127.0.0.1 only. A bearer token is stored in your Keychain. No external service receives API traffic.</p>
-
-      <h2>What we do not collect</h2>
+      <h3>3.5. What we do not collect</h3>
       <ul>
-        <li>No analytics or telemetry in v1.0</li>
-        <li>No browsing history, file contents, or media library metadata uploaded to our servers</li>
-        <li>No clipboard data uploaded to our servers</li>
-        <li>No advertising identifiers</li>
+        <li>No telemetry in the macOS app</li>
+        <li>No ad profiling or remarketing</li>
+        <li>No upload of clipboard, notes, shelf files, or browsing history to our servers</li>
+        <li>No ad identifiers or cloud user accounts</li>
       </ul>
 
-      <h2>Your rights</h2>
-      <p>Under GDPR you may request access, correction, or deletion of purchase records via the email used at checkout. Contact: <a href="mailto:privacy@notchflow.eu">privacy@notchflow.eu</a></p>
+      <h2>4. Legal bases (GDPR)</h2>
+      <ul>
+        <li>Website analytics (Google Analytics) — consent (Art. 6(1)(a))</li>
+        <li>Website operation and security — legitimate interest (Art. 6(1)(f))</li>
+        <li>Email replies — legitimate interest or pre-contract steps</li>
+        <li>Premium sales and license validation — contract (Art. 6(1)(b))</li>
+        <li>Tax and accounting — legal obligation (Art. 6(1)(c))</li>
+      </ul>
 
-      <p><a href="/">← Back to home</a></p>
+      <h2>5. Recipients</h2>
+      <ul>
+        <li><strong>Google LLC (Google Analytics)</strong> — website visit statistics, only after consent (<a href="https://policies.google.com/privacy">Google privacy policy</a>)</li>
+        <li><strong>Lemon Squeezy</strong> — payments and license validation</li>
+        <li><strong>Website hosting provider</strong> — serving notchflow.eu and appcast</li>
+        <li><strong>Google LLC</strong> — Google Fonts</li>
+        <li><strong>GitHub (Microsoft)</strong> — release hosting</li>
+        <li><strong>lrclib.net</strong> — optional lyrics lookup</li>
+        <li><strong>Spotify CDN</strong> — album artwork</li>
+      </ul>
+      <p>We do not sell personal data.</p>
+
+      <h2>6. Transfers outside the EEA</h2>
+      <p>Some providers (Lemon Squeezy, Google, GitHub) may process data in the US or other countries. Transfers follow GDPR requirements including standard contractual clauses where applicable.</p>
+
+      <h2>7. Retention</h2>
+      <ul>
+        <li>Email correspondence — up to 3 years after the matter is closed</li>
+        <li>Order data — as required by tax law (generally 5 years)</li>
+        <li>Server logs — up to 90 days</li>
+        <li>Google Analytics data — per GA account settings (typically up to 14 months); consent can be withdrawn anytime</li>
+        <li>Local app data — until you delete it or uninstall the app</li>
+      </ul>
+
+      <h2>8. Your rights</h2>
+      <p>Under GDPR you may request access, rectification, erasure, restriction, portability, or object to processing based on legitimate interest. You may lodge a complaint with a supervisory authority in your EU country.</p>
+      <p>Privacy contact: <a href="mailto:privacy@notchflow.eu">privacy@notchflow.eu</a></p>
+
+      <h2>9. Cookies and local storage</h2>
+      <p><strong>Essential (localStorage):</strong> theme preference (<code>notchflow-theme</code>) and cookie consent choice (<code>notchflow-cookie-consent</code>) — not sent to our server.</p>
+      <p><strong>Analytics (Google Analytics):</strong> set only after clicking “Accept analytics” in the banner. Used to measure site traffic. You can reject, withdraw consent via “Cookie settings” in the footer, or clear data in browser settings.</p>
+      <p>Google may set cookies such as <code>_ga</code> and <code>_ga_*</code>. Details: <a href="https://policies.google.com/technologies/cookies">Google cookie policy</a>.</p>
+
+      <h2>10. Clipboard, local API, and permissions</h2>
+      <p>Clipboard monitoring is <strong>off by default</strong>. The Raycast integration uses a loopback HTTP server (127.0.0.1) with a Keychain token — API traffic never leaves your Mac. Calendar, camera, and Accessibility features process data locally.</p>
+
+      <h2>11. Security</h2>
+      <p>We use HTTPS, data minimization, and no central user database for the app. See our <a href="security.html">Security</a> page for distribution details.</p>
+
+      <h2>12. Changes</h2>
+      <p>We may update this policy when features or providers change. The current version is always published here with its effective date.</p>
+
+      <p><a href="/">← Back to home</a> · <a href="terms.html">Terms of service</a></p>
     </div>
   </main>
 
   <footer class="site-footer">
     <div class="container">
-      <p class="footer-bottom">© 2026 NotchFlow · <a href="privacy.html">Privacy</a> · <a href="security.html">Security</a></p>
+      <p class="footer-bottom">© 2026 NotchFlow · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="security.html">Security</a> · <a href="#" data-cookie-settings>Cookie settings</a></p>
     </div>
   </footer>
 
   <script src="site.js"></script>
+  <script src="analytics.js"></script>
 </body>
 </html>

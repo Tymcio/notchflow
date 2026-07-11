@@ -4,12 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Polityka prywatności — NotchFlow</title>
-  <meta name="description" content="Polityka prywatności NotchFlow. Zgodność z RODO, minimalne zbieranie danych, schowek opcjonalny, lokalne API tylko na loopback." />
+  <meta name="description" content="Polityka prywatności NotchFlow. Administrator danych, RODO, przetwarzanie danych na stronie notchflow.eu i w aplikacji macOS." />
   <link rel="canonical" href="https://notchflow.eu/pl/privacy.html" />
   <link rel="alternate" hreflang="en" href="https://notchflow.eu/privacy.html" />
   <link rel="alternate" hreflang="pl" href="https://notchflow.eu/pl/privacy.html" />
   <link rel="icon" href="../assets/favicon.png" type="image/png" />
   <link rel="stylesheet" href="../styles.css" />
+  <script src="../consent-init.js"></script>
+  <script src="../analytics-config.js"></script>
   <script src="../theme-init.js"></script>
 </head>
 <body>
@@ -46,43 +48,180 @@
 
   <main id="main" class="legal-page">
     <div class="container">
-      <h1>Polityka prywatności (RODO)</h1>
-      <p class="meta">Data wejścia w życie: 2026-07-06</p>
-      <p>NotchFlow jest tworzony w UE (notchflow.eu). Minimalizujemy zbieranie danych z założenia.</p>
+      <h1>Polityka prywatności</h1>
+      <p class="meta">Data wejścia w życie: 11 lipca 2026 r.</p>
+      <p>Niniejsza Polityka prywatności opisuje, jak przetwarzamy dane osobowe w związku ze stroną <a href="https://notchflow.eu">notchflow.eu</a> oraz aplikacją NotchFlow dla macOS. Dbamy o minimalizację danych — większość informacji w Aplikacji pozostaje wyłącznie na Twoim komputerze.</p>
 
-      <h2>Co zbieramy</h2>
+      <h2>1. Administrator danych</h2>
+      <p>Administratorem danych osobowych jest:</p>
+      <p>
+        <strong>MTBIZ Marcin Tymków</strong><br />
+        Michałowice 61<br />
+        49-314 Pisarzowice<br />
+        NIP: 7471912158<br />
+        e-mail: <a href="mailto:privacy@notchflow.eu">privacy@notchflow.eu</a>
+      </p>
+
+      <h2>2. Zakres</h2>
+      <p>Polityka obejmuje:</p>
       <ul>
-        <li><strong>Walidacja licencji:</strong> klucz licencji i nazwa urządzenia wysyłane do LemonSqueezy przy aktywacji premium.</li>
-        <li><strong>Aktualizacje:</strong> Sparkle sprawdza metadane appcast z notchflow.eu.</li>
+        <li>korzystanie ze Strony (notchflow.eu),</li>
+        <li>zakup licencji premium,</li>
+        <li>kontakt mailowy z nami,</li>
+        <li>korzystanie z Aplikacji NotchFlow — w zakresie, w jakim dane opuszczają urządzenie użytkownika.</li>
+      </ul>
+      <p>Polityka nie obejmuje serwisów zewnętrznych (np. GitHub, Lemon Squeezy), które mają własne regulaminy i polityki prywatności.</p>
+
+      <h2>3. Jakie dane przetwarzamy</h2>
+
+      <h3>3.1. Strona internetowa</h3>
+      <p>Strona jest statyczna — nie wymaga rejestracji ani logowania.</p>
+      <p><strong>Google Analytics 4</strong> — po wyrażeniu zgody w banerze cookies zbieramy anonimowe statystyki odwiedzin (np. odwiedzone podstrony, czas na stronie, typ urządzenia i przeglądarki, przybliżone pochodzenie geograficzne). Google Analytics uruchamia się dopiero po kliknięciu „Akceptuj analitykę”. Odrzucenie śledzenia nie ogranicza dostępu do Strony. Zgodę możesz wycofać w dowolnym momencie przez link „Ustawienia cookies” w stopce.</p>
+      <p>Stosujemy Google Consent Mode v2 — domyślnie analityka jest wyłączona, a reklamowe sygnały Google nie są włączane.</p>
+      <p>Przy odwiedzinie Strony mogą być przetwarzane również:</p>
+      <ul>
+        <li><strong>dane techniczne serwera</strong> — adres IP, data i godzina żądania, adres URL, typ przeglądarki, system operacyjny (logi hostingowe, krótkotrwałe),</li>
+        <li><strong>preferencja motywu i zgoda cookies</strong> — zapisane lokalnie w przeglądarce (<code>localStorage</code>), bez przesyłania na serwer,</li>
+        <li><strong>czcionki Google Fonts</strong> — przy ładowaniu stylów przeglądarka łączy się z serwerami Google; Google może otrzymać adres IP i dane techniczne urządzenia zgodnie z własną polityką prywatności.</li>
+      </ul>
+      <p>Strona nie ustawia własnych plików cookies poza cookies ustawianymi przez Google Analytics po wyrażeniu zgody.</p>
+
+      <h3>3.2. Kontakt mailowy</h3>
+      <p>Jeśli napiszesz do nas (np. na <a href="mailto:hello@notchflow.eu">hello@notchflow.eu</a> lub <a href="mailto:privacy@notchflow.eu">privacy@notchflow.eu</a>), przetwarzamy podany adres e-mail, treść wiadomości oraz ewentualne dane, które dobrowolnie dołączysz (np. wersja macOS, opis problemu).</p>
+
+      <h3>3.3. Zakup licencji premium</h3>
+      <p>Płatności obsługuje <strong>Lemon Squeezy</strong> (Merchant of Record). W procesie zakupu Lemon Squeezy zbiera m.in. adres e-mail, dane rozliczeniowe i informacje o płatności. My otrzymujemy informacje niezbędne do realizacji licencji (np. e-mail, status zamówienia, klucz licencyjny), ale <strong>nie przechowujemy danych kart płatniczych</strong>.</p>
+
+      <h3>3.4. Aplikacja NotchFlow (macOS)</h3>
+      <p>Aplikacja nie wymaga konta użytkownika. Większość danych (notatki, schowek, ustawienia, pliki półki) przechowywana jest lokalnie w katalogu Application Support na Twoim Macu i nie jest przesyłana na nasze serwery.</p>
+      <p>Dane mogą opuszczać urządzenie wyłącznie w następujących przypadkach:</p>
+      <ul>
+        <li><strong>walidacja licencji premium</strong> — klucz licencyjny i nazwa urządzenia wysyłane do Lemon Squeezy (tylko gdy aktywujesz premium),</li>
+        <li><strong>aktualizacje</strong> — oficjalne buildy pobierają metadane appcast z notchflow.eu (Sparkle),</li>
+        <li><strong>tekst piosenki (opcjonalnie)</strong> — tytuł i wykonawca utworu wysyłane do lrclib.net, jeśli włączysz tę funkcję w Ustawienia → Prywatność,</li>
+        <li><strong>okładki albumów</strong> — Aplikacja pobiera grafikę z serwerów Spotify CDN (np. i.scdn.co) na podstawie metadanych odtwarzanego utworu,</li>
+        <li><strong>pobieranie Aplikacji</strong> — odbywa się przez GitHub Releases; GitHub przetwarza dane zgodnie ze swoją polityką.</li>
       </ul>
 
-      <h2>Monitorowanie schowka (opcjonalne)</h2>
-      <p>Historia schowka jest <strong>wyłączona domyślnie</strong>. Po włączeniu w Ustawienia → Prywatność NotchFlow przechowuje skopiowany tekst i adresy URL lokalnie na Twoim Macu w Application Support. Dane nie opuszczają urządzenia, chyba że sam je skopiujesz gdzie indziej. Możesz wyłączyć monitorowanie w dowolnym momencie.</p>
-
-      <h2>Lokalne API (opcjonalne)</h2>
-      <p>Integracja Raycast używa lokalnego serwera HTTP powiązanego wyłącznie z 127.0.0.1. Token bearer jest przechowywany w Keychain. Żaden zewnętrzny serwis nie odbiera ruchu API.</p>
-
-      <h2>Czego nie zbieramy</h2>
+      <h3>3.5. Czego nie zbieramy</h3>
       <ul>
-        <li>Brak analityki i telemetrii w v1.0</li>
-        <li>Brak przesyłania historii przeglądania, zawartości plików ani metadanych biblioteki mediów na nasze serwery</li>
-        <li>Brak przesyłania danych schowka na nasze serwery</li>
-        <li>Brak identyfikatorów reklamowych</li>
+        <li>brak telemetrii w aplikacji macOS,</li>
+        <li>brak profilowania reklamowego i remarketingu,</li>
+        <li>brak przesyłania zawartości schowka, notatek, plików półki ani historii przeglądania na nasze serwery,</li>
+        <li>brak identyfikatorów reklamowych,</li>
+        <li>brak kont użytkowników i synchronizacji w chmurze.</li>
       </ul>
 
-      <h2>Twoje prawa</h2>
-      <p>Na mocy RODO możesz żądać dostępu, sprostowania lub usunięcia danych zakupu za pomocą adresu e-mail użytego przy checkout. Kontakt: <a href="mailto:privacy@notchflow.eu">privacy@notchflow.eu</a></p>
+      <h2>4. Cele i podstawy prawne (RODO)</h2>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Cel</th>
+            <th>Dane</th>
+            <th>Podstawa prawna</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Statystyki Strony (Google Analytics)</td>
+            <td>Dane o odwiedzinach, urządzeniu, źródle ruchu</td>
+            <td>Art. 6 ust. 1 lit. a RODO (zgoda)</td>
+          </tr>
+          <tr>
+            <td>Udostępnienie Strony, bezpieczeństwo, diagnostyka</td>
+            <td>Logi serwera, IP</td>
+            <td>Art. 6 ust. 1 lit. f RODO (prawnie uzasadniony interes)</td>
+          </tr>
+          <tr>
+            <td>Odpowiedź na wiadomość e-mail</td>
+            <td>E-mail, treść korespondencji</td>
+            <td>Art. 6 ust. 1 lit. f RODO lub lit. b (działania przed umową)</td>
+          </tr>
+          <tr>
+            <td>Sprzedaż i obsługa licencji premium</td>
+            <td>E-mail, dane zamówienia, klucz licencyjny</td>
+            <td>Art. 6 ust. 1 lit. b RODO (umowa)</td>
+          </tr>
+          <tr>
+            <td>Walidacja licencji w Aplikacji</td>
+            <td>Klucz licencyjny, nazwa urządzenia</td>
+            <td>Art. 6 ust. 1 lit. b RODO (umowa)</td>
+          </tr>
+          <tr>
+            <td>Realizacja praw podatkowych i rachunkowych</td>
+            <td>Dane transakcji</td>
+            <td>Art. 6 ust. 1 lit. c RODO (obowiązek prawny)</td>
+          </tr>
+        </tbody>
+      </table>
 
-      <p><a href="../">← Wróć na stronę główną</a></p>
+      <h2>5. Odbiorcy danych</h2>
+      <p>Dane mogą być przekazywane podmiotom przetwarzającym działającym na nasze zlecenie lub niezależnie (jako odrębni administratorzy):</p>
+      <ul>
+        <li><strong>Google LLC (Google Analytics)</strong> — statystyki odwiedzin Strony, wyłącznie po zgodzie (<a href="https://policies.google.com/privacy">polityka prywatności Google</a>),</li>
+        <li><strong>Lemon Squeezy</strong> — płatności, faktury, walidacja licencji (<a href="https://www.lemonsqueezy.com/privacy">polityka prywatności</a>),</li>
+        <li><strong>dostawca hostingu Strony</strong> — utrzymanie serwisu notchflow.eu i pliku appcast,</li>
+        <li><strong>Google LLC</strong> — dostarczanie czcionek Google Fonts,</li>
+        <li><strong>GitHub (Microsoft)</strong> — hosting wydań Aplikacji,</li>
+        <li><strong>lrclib.net</strong> — opcjonalne wyszukiwanie tekstów piosenek,</li>
+        <li><strong>Spotify CDN</strong> — pobieranie okładek albumów.</li>
+      </ul>
+      <p>Nie sprzedajemy danych osobowych podmiotom trzecim.</p>
+
+      <h2>6. Przekazywanie danych poza EOG</h2>
+      <p>Niektórzy dostawcy (np. Lemon Squeezy, Google, GitHub) mogą przetwarzać dane w Stanach Zjednoczonych lub innych państwach spoza Europejskiego Obszaru Gospodarczego. Przekazywanie odbywa się z zachowaniem wymogów RODO, w tym na podstawie standardowych klauzul umownych lub decyzji Komisji Europejskiej o adekwatności, zgodnie z politykami tych podmiotów.</p>
+
+      <h2>7. Okres przechowywania</h2>
+      <ul>
+        <li><strong>korespondencja e-mail</strong> — do 3 lat od zakończenia sprawy, chyba że dłuższy okres wynika z przepisów,</li>
+        <li><strong>dane zamówień</strong> — przez okres wymagany przepisami podatkowymi i rachunkowymi (co do zasady 5 lat),</li>
+        <li><strong>logi serwera</strong> — do 90 dni, o ile krótszy okres nie wynika z konfiguracji hostingu,</li>
+        <li><strong>dane Google Analytics</strong> — zgodnie z ustawieniami konta GA (domyślnie do 14 miesięcy); zgoda może być wycofana w dowolnym momencie,</li>
+        <li><strong>dane lokalne w Aplikacji</strong> — do momentu usunięcia przez użytkownika lub odinstalowania Aplikacji.</li>
+      </ul>
+
+      <h2>8. Twoje prawa</h2>
+      <p>Przysługuje Ci prawo do:</p>
+      <ul>
+        <li>dostępu do danych,</li>
+        <li>sprostowania,</li>
+        <li>usunięcia („prawo do bycia zapomnianym”),</li>
+        <li>ograniczenia przetwarzania,</li>
+        <li>przenoszenia danych,</li>
+        <li>sprzeciwu wobec przetwarzania opartego na art. 6 ust. 1 lit. f RODO,</li>
+        <li>cofnięcia zgody — jeśli przetwarzanie opiera się na zgodzie (nie dotyczy przetwarzania na podstawie umowy lub obowiązku prawnego).</li>
+      </ul>
+      <p>W sprawach zakupu premium możesz też zwrócić się do nas z adresem e-mail użytym przy checkout w celu weryfikacji lub usunięcia danych — w granicach obowiązujących przepisów (np. obowiązków podatkowych).</p>
+      <p>Masz prawo wniesienia skargi do Prezesa Urzędu Ochrony Danych Osobowych (PUODO), ul. Stawki 2, 00-193 Warszawa, <a href="https://uodo.gov.pl">uodo.gov.pl</a>.</p>
+      <p>Kontakt w sprawach prywatności: <a href="mailto:privacy@notchflow.eu">privacy@notchflow.eu</a></p>
+
+      <h2>9. Pliki cookies i pamięć lokalna</h2>
+      <p><strong>Niezbędne (localStorage):</strong> preferencja motywu (<code>notchflow-theme</code>) oraz zapis decyzji o cookies (<code>notchflow-cookie-consent</code>) — bez przesyłania na serwer.</p>
+      <p><strong>Analityczne (Google Analytics):</strong> ustawiane wyłącznie po kliknięciu „Akceptuj analitykę” w banerze. Służą do pomiaru ruchu na Stronie. Możesz je odrzucić, wycofać zgodę przez „Ustawienia cookies” w stopce lub wyczyścić dane w ustawieniach przeglądarki.</p>
+      <p>Google może ustawiać m.in. cookies takie jak <code>_ga</code> i <code>_ga_*</code>. Szczegóły: <a href="https://policies.google.com/technologies/cookies">polityka cookies Google</a>.</p>
+
+      <h2>10. Schowek, lokalne API i uprawnienia systemowe</h2>
+      <p>Monitorowanie schowka jest <strong>wyłączone domyślnie</strong>. Po włączeniu w Ustawienia → Prywatność dane schowka pozostają na Twoim Macu.</p>
+      <p>Integracja Raycast korzysta z lokalnego serwera HTTP (127.0.0.1). Token autoryzacji przechowywany jest w Keychain. Ruch API nie opuszcza komputera.</p>
+      <p>Funkcje takie jak kalendarz, kamera czy Accessibility wymagają uprawnień macOS i przetwarzają dane lokalnie.</p>
+
+      <h2>11. Bezpieczeństwo</h2>
+      <p>Stosujemy środki organizacyjne i techniczne adekwatne do skali przetwarzania (HTTPS, minimalizacja danych, brak centralnej bazy danych użytkowników Aplikacji). Szczegóły dystrybucji i weryfikacji podpisu opisuje <a href="security.html">strona Bezpieczeństwo</a>.</p>
+
+      <h2>12. Zmiany Polityki</h2>
+      <p>Możemy zaktualizować Politykę — np. po dodaniu nowej funkcji sieciowej lub zmianie dostawcy hostingu. Aktualna wersja zawsze dostępna jest pod tym adresem wraz z datą wejścia w życie.</p>
+
+      <p><a href="../">← Wróć na stronę główną</a> · <a href="terms.html">Regulamin</a></p>
     </div>
   </main>
 
   <footer class="site-footer">
     <div class="container">
-      <p class="footer-bottom">© 2026 NotchFlow · <a href="privacy.html">Prywatność</a> · <a href="security.html">Bezpieczeństwo</a></p>
+      <p class="footer-bottom">© 2026 NotchFlow · <a href="privacy.html">Prywatność</a> · <a href="terms.html">Regulamin</a> · <a href="security.html">Bezpieczeństwo</a> · <a href="#" data-cookie-settings>Ustawienia cookies</a></p>
     </div>
   </footer>
 
   <script src="../site.js"></script>
+  <script src="../analytics.js"></script>
 </body>
 </html>

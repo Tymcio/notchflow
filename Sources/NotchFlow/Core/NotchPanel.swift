@@ -5,13 +5,13 @@ import SwiftUI
 
 @MainActor
 final class NotchPanel: NSPanel {
-    private let hostingView: NSHostingView<NotchIslandView>
+    private let hostingView: NotchHostingView<NotchIslandView>
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
     init(rootView: NotchIslandView) {
-        hostingView = NSHostingView(rootView: rootView)
+        hostingView = NotchHostingView(rootView: rootView)
         super.init(
             contentRect: .zero,
             styleMask: [.nonactivatingPanel, .borderless],
@@ -58,6 +58,16 @@ final class NotchPanel: NSPanel {
         isMovable = false
         isMovableByWindowBackground = false
         acceptsMouseMovedEvents = true
+    }
+}
+
+/// Allows clicks on controls without an extra activation click in `.nonactivatingPanel`.
+private final class NotchHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.makeKey()
+        super.mouseDown(with: event)
     }
 }
 

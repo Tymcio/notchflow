@@ -276,6 +276,14 @@ struct ShelfTabView: View {
         panel.allowsMultipleSelection = false
         panel.prompt = "Przypnij"
         guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer {
+            if accessed {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
         if appState.shelfManager.pinURL(url, isPremium: appState.isPremium) != nil {
             appState.activeModule = .shelf
         }
@@ -329,6 +337,7 @@ private struct ShelfItemCard: View {
                 }
             }
             .scaleEffect(isHovered ? 1.04 : 1)
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
         .animation(.easeOut(duration: 0.15), value: isHovered)

@@ -109,6 +109,13 @@ final class ShelfManager {
         guard pinnedItems.count < limit else { return nil }
 
         let resolved = url.resolvingSymlinksInPath()
+        let accessed = resolved.startAccessingSecurityScopedResource()
+        defer {
+            if accessed {
+                resolved.stopAccessingSecurityScopedResource()
+            }
+        }
+
         guard FileManager.default.fileExists(atPath: resolved.path) else { return nil }
 
         var isDirectory: ObjCBool = false
@@ -154,8 +161,61 @@ final class ShelfManager {
     }
 
     func open(_ item: ShelfItem) {
-        let url = resolvePinnedURL(for: item) ?? item.resolvedURL
-        NSWorkspace.shared.open(url)
+        switch item.kind {
+        case .dropped:
+            openURL(item.resolvedURL)
+        case .pinned:
+            openPinnedItem(item)
+        }
+    }
+
+    private func openPinnedItem(_ item: ShelfItem) {
+        if let resolved = resolveBookmarkURL(for: item) {
+            let accessed = resolved.startAccessingSecurityScopedResource()
+            defer {
+                if accessed {
+                    resolved.stopAccessingSecurityScopedResource()
+                }
+            }
+            if openURL(resolved) {
+                return
+            }
+        }
+
+        if let originalPath = item.originalPath {
+            openURL(URL(fileURLWithPath: originalPath))
+        }
+    }
+
+    @discardableResult
+    private func openURL(_ url: URL) -> Bool {
+        let resolved = url.resolvingSymlinksInPath()
+        guard FileManager.default.fileExists(atPath: resolved.path) else {
+            NotchFlowLog.storage.error("Shelf item missing on disk: \(resolved.path, privacy: .public)")
+            return false
+        }
+
+        let opened = NSWorkspace.shared.open(resolved)
+        if !opened {
+            NotchFlowLog.storage.error("NSWorkspace failed to open shelf item: \(resolved.path, privacy: .public)")
+        }
+        return opened
+    }
+
+    private func resolveBookmarkURL(for item: ShelfItem) -> URL? {
+        guard item.kind == .pinned,
+              item.url.pathExtension == "bookmark",
+              let bookmark = try? Data(contentsOf: item.url) else {
+            return nil
+        }
+
+        var isStale = false
+        return try? URL(
+            resolvingBookmarkData: bookmark,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
     }
 
     func revealInFinder(_ item: ShelfItem) {
@@ -166,6 +226,10 @@ final class ShelfManager {
     func resolvePinnedURL(for item: ShelfItem) -> URL? {
         guard item.kind == .pinned else { return item.resolvedURL }
 
+        if let resolved = resolveBookmarkURL(for: item) {
+            return resolved
+        }
+
         if let originalPath = item.originalPath {
             let url = URL(fileURLWithPath: originalPath)
             if FileManager.default.fileExists(atPath: url.path) {
@@ -173,19 +237,7 @@ final class ShelfManager {
             }
         }
 
-        guard let bookmark = try? Data(contentsOf: item.url) else { return nil }
-        var isStale = false
-        guard let resolved = try? URL(
-            resolvingBookmarkData: bookmark,
-            options: .withSecurityScope,
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
-        ) else {
-            return nil
-        }
-
-        _ = resolved.startAccessingSecurityScopedResource()
-        return resolved
+        return nil
     }
 
     private func loadFileURL(from provider: NSItemProvider) async -> URL? {
