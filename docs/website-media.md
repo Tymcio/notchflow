@@ -39,12 +39,26 @@ Krótka checklista przed wrzuceniem nowych assetów do `website/assets/`.
 
 ### Po wrzuceniu plików
 
-```bash
-# Skopiuj do folderu strony
-cp twoj-1.png website/assets/screenshots/01-music.png
-# … pozostałe 02–09
+Pliki w `screeny notchflow pl/` mogą być ponumerowane inną kolejnością niż na stronie. Mapowanie:
 
-# Przetwórz tła (miękki gradient zamiast surowej tapety)
+| Plik źródłowy | Plik na stronie |
+|---------------|-----------------|
+| `notchflow screeny pl 2.png` | `01-music.png` |
+| `notchflow screeny pl 3.png` | `02-calendar.png` |
+| `notchflow screeny pl 4.png` | `03-shelf.png` |
+| `notchflow screeny pl 5.png` | `04-timer.png` |
+| `notchflow screeny pl 6.png` | `05-stopwatch.png` |
+| `notchflow screeny pl 7.png` | `06-pomodoro.png` |
+| `notchflow screeny pl 8.png` | `07-notes.png` |
+| `notchflow screeny pl 9.png` | `08-clipboard.png` |
+| `notchflow screeny pl 1.png` | `09-camera.png` |
+
+```bash
+SRC="screeny notchflow pl"
+DST="website/assets/screenshots"
+cp "$SRC/notchflow screeny pl 2.png" "$DST/01-music.png"
+# … pozostałe według tabeli
+
 python3 website/scripts/prepare-screenshots.py
 ```
 
