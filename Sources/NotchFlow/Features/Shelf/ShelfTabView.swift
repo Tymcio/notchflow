@@ -351,9 +351,6 @@ private struct ShelfItemCard: View {
             Divider()
             Button("Usuń", role: .destructive, action: onRemove)
         }
-        .onDrag {
-            NSItemProvider(object: url as NSURL)
-        }
         .help(item.displayName)
     }
 

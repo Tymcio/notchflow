@@ -121,16 +121,10 @@ final class ShelfManager {
         var isDirectory: ObjCBool = false
         FileManager.default.fileExists(atPath: resolved.path, isDirectory: &isDirectory)
 
-        guard let bookmark = try? resolved.bookmarkData(
-            options: .withSecurityScope,
-            includingResourceValuesForKeys: nil,
-            relativeTo: nil
-        ) else {
+        guard let bookmark = makeBookmarkData(for: resolved),
+              let bookmarkURL = writeBookmarkFile(bookmark) else {
             return nil
         }
-
-        let bookmarkURL = shelfDirectory.appendingPathComponent("pin-\(UUID().uuidString).bookmark")
-        try? bookmark.write(to: bookmarkURL)
 
         let item = ShelfItem(
             url: bookmarkURL,
@@ -147,9 +141,20 @@ final class ShelfManager {
 
     func pinDroppedItem(_ item: ShelfItem, isPremium: Bool) {
         guard item.kind == .dropped else { return }
-        guard let pinned = pinURL(item.resolvedURL, isPremium: isPremium) else { return }
-        remove(item)
-        _ = pinned
+        let limit = isPremium ? NotchFlowConstants.premiumPinnedShelfLimit : NotchFlowConstants.freePinnedShelfLimit
+        guard pinnedItems.count < limit else { return }
+
+        if let originalPath = item.originalPath {
+            let originalURL = URL(fileURLWithPath: originalPath)
+            if FileManager.default.fileExists(atPath: originalURL.path) {
+                if pinURL(originalURL, isPremium: isPremium) != nil {
+                    remove(item)
+                }
+                return
+            }
+        }
+
+        promoteShelfCopyToPinned(item)
     }
 
     func remove(_ item: ShelfItem) {
@@ -161,15 +166,20 @@ final class ShelfManager {
     }
 
     func open(_ item: ShelfItem) {
+        let opened: Bool
         switch item.kind {
         case .dropped:
-            openURL(item.resolvedURL)
+            opened = openURL(item.resolvedURL)
         case .pinned:
-            openPinnedItem(item)
+            opened = openPinnedItem(item)
+        }
+
+        if !opened {
+            presentOpenFailure(for: item)
         }
     }
 
-    private func openPinnedItem(_ item: ShelfItem) {
+    private func openPinnedItem(_ item: ShelfItem) -> Bool {
         if let resolved = resolveBookmarkURL(for: item) {
             let accessed = resolved.startAccessingSecurityScopedResource()
             defer {
@@ -178,13 +188,15 @@ final class ShelfManager {
                 }
             }
             if openURL(resolved) {
-                return
+                return true
             }
         }
 
         if let originalPath = item.originalPath {
-            openURL(URL(fileURLWithPath: originalPath))
+            return openURL(URL(fileURLWithPath: originalPath))
         }
+
+        return false
     }
 
     @discardableResult
@@ -195,6 +207,7 @@ final class ShelfManager {
             return false
         }
 
+        NSApp.activate(ignoringOtherApps: true)
         let opened = NSWorkspace.shared.open(resolved)
         if !opened {
             NotchFlowLog.storage.error("NSWorkspace failed to open shelf item: \(resolved.path, privacy: .public)")
@@ -210,12 +223,94 @@ final class ShelfManager {
         }
 
         var isStale = false
-        return try? URL(
-            resolvingBookmarkData: bookmark,
-            options: .withSecurityScope,
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
+        let optionSets: [URL.BookmarkResolutionOptions] = [[], [.withSecurityScope]]
+        for options in optionSets {
+            if let url = try? URL(
+                resolvingBookmarkData: bookmark,
+                options: options,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            ) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    private func promoteShelfCopyToPinned(_ item: ShelfItem) {
+        guard FileManager.default.fileExists(atPath: item.url.path) else { return }
+
+        let permanentURL = permanentPinnedFileURL(for: item)
+        let fileURL: URL
+        if item.url != permanentURL {
+            do {
+                if FileManager.default.fileExists(atPath: permanentURL.path) {
+                    try FileManager.default.removeItem(at: permanentURL)
+                }
+                try FileManager.default.moveItem(at: item.url, to: permanentURL)
+                fileURL = permanentURL
+            } catch {
+                NotchFlowLog.storage.error("Failed to promote shelf item: \(error.localizedDescription, privacy: .public)")
+                fileURL = item.url
+            }
+        } else {
+            fileURL = item.url
+        }
+
+        guard let bookmark = makeBookmarkData(for: fileURL),
+              let bookmarkURL = writeBookmarkFile(bookmark) else {
+            return
+        }
+
+        let pinned = ShelfItem(
+            id: item.id,
+            url: bookmarkURL,
+            displayName: item.displayName,
+            isDirectory: item.isDirectory,
+            createdAt: item.createdAt,
+            kind: .pinned,
+            originalPath: fileURL.path
         )
+
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+        items[index] = pinned
+        persistIndex()
+    }
+
+    private func permanentPinnedFileURL(for item: ShelfItem) -> URL {
+        shelfDirectory.appendingPathComponent("pinned-\(item.id.uuidString)-\(item.displayName)")
+    }
+
+    private func makeBookmarkData(for url: URL) -> Data? {
+        let resolved = url.resolvingSymlinksInPath()
+        let options: URL.BookmarkCreationOptions = resolved.path.hasPrefix(shelfDirectory.path)
+            ? [.minimalBookmark]
+            : [.withSecurityScope]
+        return try? resolved.bookmarkData(
+            options: options,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
+    }
+
+    private func writeBookmarkFile(_ bookmark: Data) -> URL? {
+        let bookmarkURL = shelfDirectory.appendingPathComponent("pin-\(UUID().uuidString).bookmark")
+        do {
+            try bookmark.write(to: bookmarkURL)
+            return bookmarkURL
+        } catch {
+            NotchFlowLog.storage.error("Failed to write shelf bookmark: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
+    private func presentOpenFailure(for item: ShelfItem) {
+        let alert = NSAlert()
+        alert.messageText = "Nie można otworzyć pliku"
+        alert.informativeText = "„\(item.displayName)” jest niedostępny. Usuń skrót z półki i dodaj go ponownie."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 
     func revealInFinder(_ item: ShelfItem) {
@@ -283,7 +378,12 @@ final class ShelfManager {
         var isDirectory: ObjCBool = false
         fileManager.fileExists(atPath: destination.path, isDirectory: &isDirectory)
 
-        return ShelfItem(url: destination, isDirectory: isDirectory.boolValue, kind: .dropped)
+        return ShelfItem(
+            url: destination,
+            isDirectory: isDirectory.boolValue,
+            kind: .dropped,
+            originalPath: url.resolvingSymlinksInPath().path
+        )
     }
 
     private func persistIndex() {
