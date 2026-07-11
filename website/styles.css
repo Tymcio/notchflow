@@ -638,16 +638,17 @@ a:hover { color: var(--accent-hover); }
   font-weight: 500;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.04);
+  background-color: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-pill);
   cursor: pointer;
+  overflow: hidden;
   transition: color 0.2s, background 0.2s, border-color 0.2s, transform 0.15s;
 }
 
 .screenshot-tab:hover {
   color: rgba(255, 255, 255, 0.88);
-  background: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .screenshot-tab:focus-visible {
@@ -657,8 +658,10 @@ a:hover { color: var(--accent-hover); }
 
 .screenshot-tab.is-active {
   color: #fff;
+  padding: calc(0.45rem + 1px) calc(0.95rem + 1px);
+  border: none;
   background: var(--gradient);
-  border-color: transparent;
+  background-clip: padding-box;
 }
 
 .screenshot-stage {
