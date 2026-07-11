@@ -9,6 +9,7 @@ struct IslandModuleTabButton: View {
     let module: IslandModule
     let isActive: Bool
     let isLocked: Bool
+    var badgeCount: Int = 0
     let style: IslandTabButtonStyle
     let onSelect: () -> Void
 
@@ -32,6 +33,13 @@ struct IslandModuleTabButton: View {
                             .font(.system(size: 6, weight: .bold))
                             .foregroundStyle(.white.opacity(0.35))
                             .offset(x: 3, y: -2)
+                    } else if badgeCount > 0 {
+                        Text("\(min(badgeCount, 9))")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(.black.opacity(0.9))
+                            .frame(width: 12, height: 12)
+                            .background(Circle().fill(Color.white))
+                            .offset(x: 4, y: -4)
                     }
                 }
                 .padding(.horizontal, horizontalPadding)

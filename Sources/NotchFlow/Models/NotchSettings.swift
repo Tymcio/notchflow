@@ -49,6 +49,22 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(lyricsSharingEnabled, forKey: Keys.lyricsSharingEnabled) }
     }
 
+    var callsInNotchEnabled: Bool {
+        didSet { UserDefaults.standard.set(callsInNotchEnabled, forKey: Keys.callsInNotchEnabled) }
+    }
+
+    var appNotificationsEnabled: Bool {
+        didSet { UserDefaults.standard.set(appNotificationsEnabled, forKey: Keys.appNotificationsEnabled) }
+    }
+
+    var allowedNotificationBundleIDs: [String] {
+        didSet { UserDefaults.standard.set(allowedNotificationBundleIDs, forKey: Keys.allowedNotificationBundleIDs) }
+    }
+
+    var hideNotificationBody: Bool {
+        didSet { UserDefaults.standard.set(hideNotificationBody, forKey: Keys.hideNotificationBody) }
+    }
+
     var isPremiumEnabled: Bool = false
     var onAvoidMenuOverlapChange: (() -> Void)?
 
@@ -65,6 +81,10 @@ final class NotchSettings {
         static let avoidMenuOverlap = "avoidMenuOverlap"
         static let urlSchemeAutomationEnabled = "urlSchemeAutomationEnabled"
         static let lyricsSharingEnabled = "lyricsSharingEnabled"
+        static let callsInNotchEnabled = "callsInNotchEnabled"
+        static let appNotificationsEnabled = "appNotificationsEnabled"
+        static let allowedNotificationBundleIDs = "allowedNotificationBundleIDs"
+        static let hideNotificationBody = "hideNotificationBody"
     }
 
     private init() {
@@ -73,13 +93,21 @@ final class NotchSettings {
         customIslandWidth = defaults.object(forKey: Keys.customIslandWidth) as? CGFloat ?? NotchFlowConstants.defaultExpandedWidth
         customIslandHeight = defaults.object(forKey: Keys.customIslandHeight) as? CGFloat ?? NotchFlowConstants.defaultExpandedHeight
         let themeRaw = defaults.string(forKey: Keys.selectedTheme) ?? IslandTheme.system.rawValue
-        selectedTheme = IslandTheme(rawValue: themeRaw) ?? .system
+        if themeRaw == "ember" {
+            selectedTheme = .violet
+        } else {
+            selectedTheme = IslandTheme(rawValue: themeRaw) ?? .system
+        }
         hiddenAppBundleIDs = defaults.stringArray(forKey: Keys.hiddenAppBundleIDs) ?? []
         clipboardMonitoringEnabled = defaults.bool(forKey: Keys.clipboardMonitoringEnabled)
         localAPIEnabled = defaults.object(forKey: Keys.localAPIEnabled) as? Bool ?? false
         avoidMenuOverlap = defaults.object(forKey: Keys.avoidMenuOverlap) as? Bool ?? true
         urlSchemeAutomationEnabled = defaults.bool(forKey: Keys.urlSchemeAutomationEnabled)
         lyricsSharingEnabled = defaults.bool(forKey: Keys.lyricsSharingEnabled)
+        callsInNotchEnabled = defaults.bool(forKey: Keys.callsInNotchEnabled)
+        appNotificationsEnabled = defaults.bool(forKey: Keys.appNotificationsEnabled)
+        allowedNotificationBundleIDs = defaults.stringArray(forKey: Keys.allowedNotificationBundleIDs) ?? []
+        hideNotificationBody = defaults.bool(forKey: Keys.hideNotificationBody)
     }
 
     private func scheduleDimensionPersist() {
@@ -97,25 +125,25 @@ enum IslandTheme: String, CaseIterable, Identifiable, Sendable {
     case system
     case midnight
     case aurora
-    case ember
+    case violet
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .system: "Systemowy"
-        case .midnight: "Północ"
-        case .aurora: "Zorza"
-        case .ember: "Żar"
+        case .system: "NotchFlow"
+        case .midnight: "Graphite"
+        case .aurora: "Aurora"
+        case .violet: "Fiolet"
         }
     }
 
     var accent: Color {
         switch self {
-        case .system: .accentColor
-        case .midnight: Color(red: 0.35, green: 0.45, blue: 0.95)
-        case .aurora: Color(red: 0.2, green: 0.85, blue: 0.7)
-        case .ember: Color(red: 0.95, green: 0.45, blue: 0.25)
+        case .system: NotchFlowBrand.electricBlue
+        case .midnight: Color.white.opacity(0.72)
+        case .aurora: NotchFlowBrand.aurora
+        case .violet: NotchFlowBrand.auroraPurple.opacity(0.85)
         }
     }
 }

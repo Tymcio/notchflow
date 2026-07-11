@@ -91,9 +91,6 @@ extension NotchGeometry {
         let hasNotch = safeInsets.top > 0
         let notchTopInset = hasNotch ? safeInsets.top : 0
 
-        let hoverTriggerWidth = NotchFlowConstants.hoverTriggerWidth
-        let hoverTriggerHeight = max(notchTopInset, NotchFlowConstants.virtualCapsuleHeight)
-
         let notchBounds = notchBounds(for: screen)
         let cutoutWidth = notchBounds.width
         let notchLeftX = notchBounds.leftX
@@ -125,12 +122,25 @@ extension NotchGeometry {
             tabBarMinimumWidth
         ).rounded()
 
-        let hoverTriggerRect = CGRect(
-            x: frame.midX - hoverTriggerWidth / 2,
-            y: frame.maxY - hoverTriggerHeight,
-            width: hoverTriggerWidth,
-            height: hoverTriggerHeight
-        )
+        // Match the physical notch cutout in the menu bar — no reach into page content.
+        let hoverTriggerRect: CGRect
+        if hasNotch, let notchLeftX {
+            hoverTriggerRect = CGRect(
+                x: notchLeftX,
+                y: frame.maxY - notchTopInset,
+                width: cutoutWidth,
+                height: notchTopInset
+            )
+        } else {
+            let hoverTriggerWidth = NotchFlowConstants.hoverTriggerWidth
+            let hoverTriggerHeight = max(notchTopInset, NotchFlowConstants.virtualCapsuleHeight)
+            hoverTriggerRect = CGRect(
+                x: frame.midX - hoverTriggerWidth / 2,
+                y: frame.maxY - hoverTriggerHeight,
+                width: hoverTriggerWidth,
+                height: hoverTriggerHeight
+            )
+        }
 
         return NotchGeometry(
             screenIdentifier: screen.localizedName,

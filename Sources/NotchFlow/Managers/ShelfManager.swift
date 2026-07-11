@@ -1,5 +1,11 @@
+import AppKit
 import Foundation
 import UniformTypeIdentifiers
+
+enum ShelfItemKind: String, Codable, Sendable {
+    case pinned
+    case dropped
+}
 
 struct ShelfItem: Identifiable, Equatable, Sendable {
     let id: UUID
@@ -7,13 +13,32 @@ struct ShelfItem: Identifiable, Equatable, Sendable {
     let displayName: String
     let isDirectory: Bool
     let createdAt: Date
+    let kind: ShelfItemKind
+    let originalPath: String?
 
-    init(id: UUID = UUID(), url: URL, displayName: String? = nil, isDirectory: Bool, createdAt: Date = .now) {
+    init(
+        id: UUID = UUID(),
+        url: URL,
+        displayName: String? = nil,
+        isDirectory: Bool,
+        createdAt: Date = .now,
+        kind: ShelfItemKind = .dropped,
+        originalPath: String? = nil
+    ) {
         self.id = id
         self.url = url
         self.displayName = displayName ?? url.lastPathComponent
         self.isDirectory = isDirectory
         self.createdAt = createdAt
+        self.kind = kind
+        self.originalPath = originalPath
+    }
+
+    var resolvedURL: URL {
+        if kind == .pinned, let originalPath {
+            return URL(fileURLWithPath: originalPath)
+        }
+        return url
     }
 }
 
@@ -26,20 +51,34 @@ final class ShelfManager {
     }
 
     private let shelfDirectory: URL
+    private let pinnedIndexURL: URL
+
+    var pinnedItems: [ShelfItem] {
+        items.filter { $0.kind == .pinned }
+    }
+
+    var droppedItems: [ShelfItem] {
+        items.filter { $0.kind == .dropped }
+    }
 
     init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         shelfDirectory = appSupport.appendingPathComponent("NotchFlow/Shelf", isDirectory: true)
+        pinnedIndexURL = shelfDirectory.appendingPathComponent("pinned.plist")
         try? FileManager.default.createDirectory(at: shelfDirectory, withIntermediateDirectories: true)
         loadPersistedItems()
     }
 
-    func handleDrop(providers: [NSItemProvider], isPremium: Bool) async {
+    func handleDrop(providers: [NSItemProvider], isPremium: Bool, pinOnDrop: Bool = false) async {
         var newItems: [ShelfItem] = []
 
         for provider in providers {
             if let url = await loadFileURL(from: provider) {
-                if let item = try? linkOrCopy(url: url) {
+                if pinOnDrop {
+                    if let item = pinURL(url, isPremium: isPremium) {
+                        newItems.append(item)
+                    }
+                } else if let item = try? linkOrCopy(url: url) {
                     newItems.append(item)
                 }
             }
@@ -47,28 +86,106 @@ final class ShelfManager {
 
         guard !newItems.isEmpty else { return }
 
-        if isPremium, newItems.count > 1 {
-            if let zipItem = try? createZipArchive(from: newItems) {
-                newItems = [zipItem]
+        if !pinOnDrop {
+            if isPremium, newItems.count > 1 {
+                if let zipItem = try? createZipArchive(from: newItems) {
+                    newItems = [zipItem]
+                }
             }
-        }
 
-        if isPremium {
-            items.insert(contentsOf: newItems, at: 0)
-            if items.count > 12 {
-                items = Array(items.prefix(12))
+            if isPremium {
+                let dropped = droppedItems
+                items = pinnedItems + Array((newItems + dropped).prefix(NotchFlowConstants.premiumDroppedShelfLimit))
+            } else {
+                items = pinnedItems + Array(newItems.prefix(NotchFlowConstants.freeDroppedShelfLimit))
             }
-        } else {
-            items = Array(newItems.prefix(1))
         }
 
         persistIndex()
     }
 
+    func pinURL(_ url: URL, isPremium: Bool) -> ShelfItem? {
+        let limit = isPremium ? NotchFlowConstants.premiumPinnedShelfLimit : NotchFlowConstants.freePinnedShelfLimit
+        guard pinnedItems.count < limit else { return nil }
+
+        let resolved = url.resolvingSymlinksInPath()
+        guard FileManager.default.fileExists(atPath: resolved.path) else { return nil }
+
+        var isDirectory: ObjCBool = false
+        FileManager.default.fileExists(atPath: resolved.path, isDirectory: &isDirectory)
+
+        guard let bookmark = try? resolved.bookmarkData(
+            options: .withSecurityScope,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        ) else {
+            return nil
+        }
+
+        let bookmarkURL = shelfDirectory.appendingPathComponent("pin-\(UUID().uuidString).bookmark")
+        try? bookmark.write(to: bookmarkURL)
+
+        let item = ShelfItem(
+            url: bookmarkURL,
+            displayName: resolved.lastPathComponent,
+            isDirectory: isDirectory.boolValue,
+            kind: .pinned,
+            originalPath: resolved.path
+        )
+
+        items.insert(item, at: 0)
+        persistIndex()
+        return item
+    }
+
+    func pinDroppedItem(_ item: ShelfItem, isPremium: Bool) {
+        guard item.kind == .dropped else { return }
+        guard let pinned = pinURL(item.resolvedURL, isPremium: isPremium) else { return }
+        remove(item)
+        _ = pinned
+    }
+
     func remove(_ item: ShelfItem) {
         items.removeAll { $0.id == item.id }
-        try? FileManager.default.removeItem(at: item.url)
+        if item.kind == .dropped || item.url.pathExtension == "bookmark" {
+            try? FileManager.default.removeItem(at: item.url)
+        }
         persistIndex()
+    }
+
+    func open(_ item: ShelfItem) {
+        let url = resolvePinnedURL(for: item) ?? item.resolvedURL
+        NSWorkspace.shared.open(url)
+    }
+
+    func revealInFinder(_ item: ShelfItem) {
+        let url = resolvePinnedURL(for: item) ?? item.resolvedURL
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    func resolvePinnedURL(for item: ShelfItem) -> URL? {
+        guard item.kind == .pinned else { return item.resolvedURL }
+
+        if let originalPath = item.originalPath {
+            let url = URL(fileURLWithPath: originalPath)
+            if FileManager.default.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+
+        guard let bookmark = try? Data(contentsOf: item.url) else { return nil }
+        var isStale = false
+        guard let resolved = try? URL(
+            resolvingBookmarkData: bookmark,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ) else {
+            return nil
+        }
+
+        _ = resolved.startAccessingSecurityScopedResource()
+        return resolved
     }
 
     private func loadFileURL(from provider: NSItemProvider) async -> URL? {
@@ -114,11 +231,23 @@ final class ShelfManager {
         var isDirectory: ObjCBool = false
         fileManager.fileExists(atPath: destination.path, isDirectory: &isDirectory)
 
-        return ShelfItem(url: destination, isDirectory: isDirectory.boolValue)
+        return ShelfItem(url: destination, isDirectory: isDirectory.boolValue, kind: .dropped)
     }
 
     private func persistIndex() {
-        let payload = items.map { ["id": $0.id.uuidString, "path": $0.url.path] }
+        let payload = items.map { item -> [String: String] in
+            var entry: [String: String] = [
+                "id": item.id.uuidString,
+                "path": item.url.path,
+                "kind": item.kind.rawValue,
+                "displayName": item.displayName,
+                "isDirectory": item.isDirectory ? "1" : "0"
+            ]
+            if let originalPath = item.originalPath {
+                entry["originalPath"] = originalPath
+            }
+            return entry
+        }
         let indexURL = shelfDirectory.appendingPathComponent("index.plist")
         (payload as NSArray).write(to: indexURL, atomically: true)
     }
@@ -133,7 +262,7 @@ final class ShelfManager {
         guard process.terminationStatus == 0 else {
             throw NSError(domain: "NotchFlow.Shelf", code: 1)
         }
-        return ShelfItem(url: archiveURL, displayName: archiveURL.lastPathComponent, isDirectory: false)
+        return ShelfItem(url: archiveURL, displayName: archiveURL.lastPathComponent, isDirectory: false, kind: .dropped)
     }
 
     private func loadPersistedItems() {
@@ -141,16 +270,35 @@ final class ShelfManager {
         guard let payload = NSArray(contentsOf: indexURL) as? [[String: String]] else { return }
 
         items = payload.compactMap { entry in
-            guard let path = entry["path"], let idString = entry["id"], let id = UUID(uuidString: idString) else {
+            guard let path = entry["path"],
+                  let idString = entry["id"],
+                  let id = UUID(uuidString: idString) else {
                 return nil
             }
+
+            let kind = ShelfItemKind(rawValue: entry["kind"] ?? ShelfItemKind.dropped.rawValue) ?? .dropped
             let url = URL(fileURLWithPath: path)
-            guard FileManager.default.fileExists(atPath: path) else { return nil }
-            var isDirectory: ObjCBool = false
-            FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory)
-            return ShelfItem(id: id, url: url, isDirectory: isDirectory.boolValue)
+
+            if kind == .dropped, !FileManager.default.fileExists(atPath: path) {
+                return nil
+            }
+
+            if kind == .pinned, !FileManager.default.fileExists(atPath: path) {
+                return nil
+            }
+
+            let isDirectory = entry["isDirectory"] == "1"
+            let displayName = entry["displayName"]
+            let originalPath = entry["originalPath"]
+
+            return ShelfItem(
+                id: id,
+                url: url,
+                displayName: displayName,
+                isDirectory: isDirectory,
+                kind: kind,
+                originalPath: originalPath
+            )
         }
     }
 }
-
-import AppKit

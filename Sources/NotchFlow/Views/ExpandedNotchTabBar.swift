@@ -5,6 +5,7 @@ struct ExpandedNotchTabBar: View {
     @Binding var activeModule: IslandModule
     let isPremium: Bool
     var notchCutoutWidth: CGFloat = 0
+    var badgeCounts: [IslandModule: Int] = [:]
 
     var body: some View {
         HStack(spacing: 0) {
@@ -27,6 +28,7 @@ struct ExpandedNotchTabBar: View {
             module: module,
             isActive: activeModule == module,
             isLocked: module.requiresPremium && !isPremium,
+            badgeCount: badgeCounts[module] ?? 0,
             style: .expanded
         ) {
             activeModule = module

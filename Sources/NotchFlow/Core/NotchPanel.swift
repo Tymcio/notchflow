@@ -78,8 +78,11 @@ final class NotchPanelController: ObservableObject {
         self.displayManager = displayManager
         self.appState = appState
         AppController.panelController = self
-        appState.onMediaStateChange = { [weak self] in
-            self?.handleMediaStateChange()
+        appState.onLiveActivityChange = { [weak self] in
+            self?.handleLiveActivityChange()
+        }
+        appState.onShelfChange = { [weak self] in
+            self?.refreshViewIfVisible()
         }
         bind()
     }
@@ -104,12 +107,16 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func bind() {
-        displayManager.$isPointerNearNotch
-            .removeDuplicates()
-            .sink { [weak self] isNear in
-                self?.updateVisibility(hovering: isNear)
-            }
-            .store(in: &cancellables)
+        Publishers.CombineLatest(
+            displayManager.$isPointerNearNotch,
+            displayManager.$isDragNearNotch
+        )
+        .map { $0 || $1 }
+        .removeDuplicates()
+        .sink { [weak self] isNear in
+            self?.updateVisibility(hovering: isNear)
+        }
+        .store(in: &cancellables)
 
         displayManager.$geometry
             .removeDuplicates()
@@ -121,7 +128,9 @@ final class NotchPanelController: ObservableObject {
 
         displayManager.$shouldHideIsland
             .sink { [weak self] hidden in
-                hidden ? self?.dismissImmediately() : self?.updateVisibility(hovering: self?.displayManager.isPointerNearNotch ?? false)
+                hidden
+                    ? self?.dismissImmediately()
+                    : self?.updateVisibility(hovering: self?.displayManager.isNotchInteractionActive ?? false)
             }
             .store(in: &cancellables)
     }
@@ -135,6 +144,9 @@ final class NotchPanelController: ObservableObject {
         if hovering {
             suppressAutoShow = false
             hideTask?.cancel()
+            if displayManager.isDragNearNotch {
+                appState.activeModule = .shelf
+            }
             presentExpanded()
             return
         }
@@ -156,13 +168,14 @@ final class NotchPanelController: ObservableObject {
         displayManager.geometry?.shouldHideIdleForMenuOverlap == true
     }
 
-    private func handleMediaStateChange() {
+    private func handleLiveActivityChange() {
         guard !displayManager.shouldHideIsland else {
             dismissImmediately()
             return
         }
 
-        if isExpanded || displayManager.isPointerNearNotch {
+        if isExpanded || displayManager.isNotchInteractionActive {
+            refreshViewIfVisible()
             return
         }
 
@@ -176,6 +189,8 @@ final class NotchPanelController: ObservableObject {
         if appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap {
             if !isVisible || isExpanded {
                 presentIdle()
+            } else {
+                refreshViewIfVisible()
             }
         } else if isVisible {
             dismissImmediately()
@@ -183,7 +198,7 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func shouldKeepVisible() -> Bool {
-        if displayManager.isPointerNearNotch { return true }
+        if displayManager.isNotchInteractionActive { return true }
         if appState.isIslandInputFocused { return true }
         if let panel, panel.isVisible, panel.frame.insetBy(dx: -8, dy: -8).contains(NSEvent.mouseLocation) {
             return true
@@ -223,9 +238,16 @@ final class NotchPanelController: ObservableObject {
             refreshView()
         }
         repositionIfVisible(animated: needsRefresh)
-        panel?.setIgnoresMouseEvents(true)
+        panel?.setIgnoresMouseEvents(!idleAcceptsMouseEvents)
         panel?.orderFrontRegardless()
         installEscapeMonitorIfNeeded()
+    }
+
+    private var idleAcceptsMouseEvents: Bool {
+        if case .incomingCall = appState.activeLiveActivity {
+            return true
+        }
+        return false
     }
 
     private func installEscapeMonitorIfNeeded() {

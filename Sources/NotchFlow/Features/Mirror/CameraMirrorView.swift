@@ -1,4 +1,3 @@
-import AVFoundation
 import SwiftUI
 
 struct CameraMirrorView: View {
@@ -7,16 +6,8 @@ struct CameraMirrorView: View {
     var body: some View {
         VStack(spacing: 10) {
             if appState.isPremium {
-                if appState.cameraMirrorManager.isActive, let session = appState.cameraMirrorManager.captureSessionForPreview() {
-                    CameraPreviewRepresentable(session: session)
-                        .frame(height: 100)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(alignment: .topTrailing) {
-                            Label("Na żywo", systemImage: "circle.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.red)
-                                .padding(6)
-                        }
+                if appState.cameraMirrorManager.isActive {
+                    cameraPreview
                 } else {
                     Button {
                         AppController.panelController?.prepareForTyping()
@@ -100,31 +91,34 @@ struct CameraMirrorView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .top)
         .onDisappear {
             appState.cameraMirrorManager.stopPreview()
         }
     }
-}
 
-private struct CameraPreviewRepresentable: NSViewRepresentable {
-    let session: AVCaptureSession
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        let layer = AVCaptureVideoPreviewLayer(session: session)
-        layer.videoGravity = .resizeAspectFill
-        if let connection = layer.connection {
-            connection.automaticallyAdjustsVideoMirroring = false
-            connection.isVideoMirrored = true
+    @ViewBuilder
+    private var cameraPreview: some View {
+        ZStack {
+            if let frame = appState.cameraMirrorManager.previewFrame {
+                Image(decorative: frame, scale: 1, orientation: .up)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+                ProgressView()
+                    .controlSize(.small)
+            }
         }
-        view.layer = layer
-        view.wantsLayer = true
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        guard let layer = nsView.layer as? AVCaptureVideoPreviewLayer else { return }
-        layer.session = session
-        layer.frame = nsView.bounds
+        .frame(maxWidth: .infinity)
+        .aspectRatio(4 / 3, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            Label("Na żywo", systemImage: "circle.fill")
+                .font(.caption2)
+                .foregroundStyle(.red)
+                .padding(6)
+        }
     }
 }

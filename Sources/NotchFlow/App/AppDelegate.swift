@@ -54,8 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         guard let button = statusItem?.button else { return }
 
-        button.image = NSImage(systemSymbolName: "capsule.fill", accessibilityDescription: "NotchFlow")
-        button.image?.isTemplate = true
+        button.image = MenuBarIcon.makeTemplateImage()
         button.toolTip = "NotchFlow — najedź na notch, aby otworzyć"
 
         let menu = NSMenu()

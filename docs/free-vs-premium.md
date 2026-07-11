@@ -42,8 +42,26 @@ Purchase: [notchflow.eu](https://notchflow.eu)
 | Feature | Free | Premium |
 |---------|------|---------|
 | Drag-and-drop on island | ✓ | ✓ |
-| Max items | 1 | 12 |
+| Pinned shortcuts | 3 max | 20 max |
+| Temporary dropped items | 1 | 12 |
 | Multi-file ZIP staging | — | ✓ |
+
+### Focus timer
+
+| Feature | Free | Premium |
+|---------|------|---------|
+| Countdown timer (presets) | ✓ | ✓ |
+| Stopwatch | ✓ | ✓ |
+| Idle notch countdown | ✓ | ✓ |
+| Pomodoro with auto-chaining | — | ✓ |
+
+### Calls & notifications
+
+| Feature | Free | Premium |
+|---------|------|---------|
+| Incoming calls in notch | — | ✓ |
+| App notifications in notch | — | ✓ |
+| Hide message body (privacy) | — | ✓ |
 
 ### System & integrations
 
@@ -73,11 +91,10 @@ Premium status is determined by `LicenseStatus.isPremium` (annual or lifetime ti
 
 These exist in code but are not fully exposed in the island UI yet:
 
-- **Pomodoro timer** — `PomodoroManager` runs; UI not connected
 - **Calendar preview** — upcoming events fetched; preview view not shown
 - **App blacklist settings** — hide logic works; no settings panel yet
 
-When these ship, they will be **premium** features. This document will be updated accordingly.
+When these ship, they will be documented here and in the pricing tables above.
 
 ## Self-build vs official build
 

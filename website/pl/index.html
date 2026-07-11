@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NotchFlow — Natywna aplikacja macOS dla notcha</title>
-  <meta name="description" content="Zamień notch MacBooka w przydatną wyspę. Sterowanie muzyką, notatki, schowek, kalendarz i więcej. Open source, prywatność, podpisane buildy dla Apple Silicon." />
+  <title>notchflow — Natywna aplikacja macOS dla notcha</title>
+  <meta name="description" content="Zamień notch MacBooka w centrum kontroli. Muzyka, pliki, kalendarz i więcej — dokładnie tam, gdzie potrzebujesz. Open source, prywatność, podpisane buildy." />
   <link rel="canonical" href="https://notchflow.eu/pl/" />
   <link rel="alternate" hreflang="en" href="https://notchflow.eu/" />
   <link rel="alternate" hreflang="pl" href="https://notchflow.eu/pl/" />
   <link rel="alternate" hreflang="x-default" href="https://notchflow.eu/" />
-  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../assets/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../assets/favicon-180.png" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://notchflow.eu/pl/" />
-  <meta property="og:title" content="NotchFlow — Twój notch w końcu przydatny" />
+  <meta property="og:title" content="notchflow — Twój Mac w idealnym flow" />
   <meta property="og:description" content="Natywna aplikacja macOS dla MacBooków Apple Silicon. Lekka, przezroczysta, dbająca o prywatność." />
-  <meta property="og:image" content="https://notchflow.eu/assets/og-image.svg" />
+  <meta property="og:image" content="https://notchflow.eu/assets/og-image.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="stylesheet" href="../styles.css" />
   <script src="../theme-init.js"></script>
@@ -25,8 +26,8 @@
   <header class="site-header">
     <div class="container">
       <a class="logo" href="../">
-        <img class="logo-mark" src="../assets/logo-mark.svg" alt="" width="24" height="24" />
-        NotchFlow
+        <img class="logo-mark" src="../assets/logo-mark.png" alt="" height="28" width="56" />
+        notch<span class="gradient-text">flow</span>
       </a>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Otwórz menu">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 5h14v1.5H3V5zm0 5h14v1.5H3V10zm0 5h14v1.5H3V15z"/></svg>
@@ -34,9 +35,9 @@
       <nav>
         <ul class="nav-links" id="nav">
           <li><a href="#features">Funkcje</a></li>
-          <li><a href="pricing/">Cennik</a></li>
-          <li><a href="#download">Pobierz</a></li>
-          <li><a href="https://github.com/Tymcio/notchflow">GitHub</a></li>
+          <li><a href="#screenshots">Zrzuty ekranu</a></li>
+          <li><a href="#why">Dlaczego NotchFlow?</a></li>
+          <li><a href="#faq">FAQ</a></li>
         </ul>
       </nav>
       <div class="header-actions">
@@ -48,7 +49,7 @@
           <svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a1 1 0 011 1v1a1 1 0 11-2 0V4a1 1 0 011-1zm0 11a3 3 0 100-6 3 3 0 000 6zm7-4a1 1 0 110 2h-1a1 1 0 110-2h1zM4 10a1 1 0 110 2H3a1 1 0 110-2h1zm11.95 5.36a1 1 0 10-1.41 1.41l.7.71a1 1 0 101.42-1.42l-.71-.7zM5.76 5.76a1 1 0 00-1.41 0l-.71.71a1 1 0 101.42 1.42l.7-.71zM16.24 5.05a1 1 0 10-1.42-1.42l-.7.71a1 1 0 101.41 1.41l.71-.7zM5.05 16.24a1 1 0 00-1.41 1.41l.71.7a1 1 0 101.42-1.42l-.72-.69z"/></svg>
           <svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.38 2.5a7.5 7.5 0 107.12 12.12A6.5 6.5 0 0111.38 2.5z"/></svg>
         </button>
-        <a class="btn btn-primary btn-sm" href="#download">Pobierz</a>
+        <a class="btn btn-primary btn-sm" href="#download">Pobierz za darmo</a>
       </div>
     </div>
   </header>
@@ -57,21 +58,20 @@
     <section class="hero">
       <div class="container hero-grid">
         <div>
-          <p class="eyebrow">macOS · Apple Silicon</p>
-          <h1>Twój notch w końcu przydatny.</h1>
-          <p class="hero-lead">Natywna wyspa nad aplikacjami — muzyka, notatki, schowek, kalendarz i więcej. Bez kradnięcia fokusu, bez telemetrii, open source.</p>
+          <h1>Twój Mac. W idealnym <span class="gradient-text">flow</span>.</h1>
+          <p class="hero-lead">NotchFlow zamienia niewykorzystaną przestrzeń notcha w centrum kontroli — muzyka, pliki, kalendarz i więcej, dokładnie tam, gdzie ich potrzebujesz.</p>
           <div class="hero-cta">
-            <a class="btn btn-primary" href="#download">Pobierz na Maca</a>
-            <a class="btn" href="https://github.com/Tymcio/notchflow">Zobacz na GitHubie</a>
+            <a class="btn btn-primary btn-lg" href="#download">Pobierz za darmo</a>
+            <a class="btn btn-ghost btn-lg" href="#features">Zobacz funkcje</a>
           </div>
-          <div class="hero-meta">
-            <span>macOS 14+</span>
-            <span>Podpisane i notaryzowane</span>
-            <span>GPL-3.0</span>
+          <div class="hero-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-2.66 3.5H6.95c-.95-1.05-1.83-2.26-2.66-3.5C2.45 17.25 1 14.28 1 11c0-5.52 4.48-10 10-10s10 4.48 10 10c0 3.28-1.45 6.25-2.29 8.5zM12 3C7.03 3 3 7.03 3 12c0 2.52 1.01 4.8 2.64 6.46L12 6l6.36 12.46C19.99 16.8 21 14.52 21 12c0-4.97-4.03-9-9-9z"/></svg>
+            Stworzony dla macOS z miłości do szczegółów
           </div>
         </div>
         <div class="mockup-macbook" aria-hidden="true">
           <div class="mockup-screen">
+            <div class="mockup-wallpaper"></div>
             <div class="mockup-notch"></div>
             <div class="mockup-island">
               <div class="mockup-tabs">
@@ -92,6 +92,9 @@
                   <div class="mockup-control play"></div>
                   <div class="mockup-control"></div>
                 </div>
+                <div class="mockup-eq">
+                  <span></span><span></span><span></span><span></span>
+                </div>
               </div>
             </div>
           </div>
@@ -100,96 +103,183 @@
       </div>
     </section>
 
+    <div class="container">
+      <div class="pill-row">
+        <div class="pill-item">
+          <span class="pill-icon" aria-hidden="true">◆</span>
+          Natywny wygląd
+        </div>
+        <div class="pill-item">
+          <span class="pill-icon" aria-hidden="true">⚡</span>
+          Lekki i szybki
+        </div>
+        <div class="pill-item">
+          <span class="pill-icon" aria-hidden="true">🔒</span>
+          Prywatność
+        </div>
+        <div class="pill-item">
+          <span class="pill-icon" aria-hidden="true">⚙</span>
+          W pełni konfigurowalny
+        </div>
+        <div class="pill-item">
+          <span class="pill-icon" aria-hidden="true">✦</span>
+          Piękno w detalach
+        </div>
+      </div>
+    </div>
+
     <section class="section" id="features">
       <div class="container">
         <div class="section-header">
-          <h2>Zaprojektowane do pracy</h2>
-          <p>Piec modułów w jednej wyspie. Najedź na środek górnej krawędzi ekranu, aby rozwinąć — działa na wbudowanym i zewnętrznym monitorze.</p>
+          <h2>Wszystko, czego potrzebujesz. Dokładnie tam, gdzie potrzebujesz.</h2>
+          <p>Piec modułów w jednej wyspie. Najedź na środek górnej krawędzi ekranu, aby rozwinąć.</p>
         </div>
-        <div class="bento">
-          <article class="bento-card span-6">
-            <span class="tier">Darmowe</span>
-            <h3>Sterowanie muzyką</h3>
-            <p>Spotify i Apple Music — odtwarzanie, pauza, przewijanie, okładka. Event-driven, bez pollingu.</p>
-            <div class="mini-ui media">
+        <div class="showcase-grid">
+          <article class="showcase-card">
+            <h3>Steruj muzyką.</h3>
+            <div class="showcase-ui media">
               <div class="art"></div>
-              <div class="lines">
+              <div class="track-info">
+                <div class="track-title"></div>
+                <div class="track-artist"></div>
+                <div class="playback">
+                  <div class="play-btn"></div>
+                </div>
+              </div>
+              <div class="app-icons">
+                <div class="app-icon spotify"></div>
+                <div class="app-icon music"></div>
+                <div class="app-icon"></div>
+              </div>
+            </div>
+          </article>
+          <article class="showcase-card">
+            <h3>Kalendarz.</h3>
+            <div class="showcase-ui calendar">
+              <span class="day-header">P</span><span class="day-header">W</span><span class="day-header">Ś</span><span class="day-header">C</span><span class="day-header">P</span><span class="day-header">S</span><span class="day-header">N</span>
+              <span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day">1</span><span class="day">2</span>
+              <span class="day">3</span><span class="day">4</span><span class="day">5</span><span class="day">6</span><span class="day">7</span><span class="day">8</span><span class="day">9</span>
+              <span class="day">10</span><span class="day today">11</span><span class="day">12</span><span class="day">13</span><span class="day">14</span><span class="day">15</span><span class="day">16</span>
+            </div>
+          </article>
+          <article class="showcase-card">
+            <h3>Półka na pliki.</h3>
+            <div class="showcase-ui shelf">
+              <div class="file-row">
+                <span class="file-ext zip">.zip</span>
+                <span class="file-name"></span>
+                <span class="file-size"></span>
+              </div>
+              <div class="file-row">
+                <span class="file-ext pdf">.pdf</span>
+                <span class="file-name"></span>
+                <span class="file-size"></span>
+              </div>
+              <div class="file-row">
+                <span class="file-ext key">.key</span>
+                <span class="file-name"></span>
+                <span class="file-size"></span>
+              </div>
+              <div class="file-row">
+                <span class="file-ext docx">.docx</span>
+                <span class="file-name"></span>
+                <span class="file-size"></span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="screenshots-section" id="screenshots">
+      <div class="container">
+        <div class="section-header">
+          <h2>Zobacz w akcji</h2>
+          <p>Najedź na notch. Rozwiń wyspę. Wszystko zaczyna się na górze ekranu.</p>
+        </div>
+
+        <div class="screenshot-showcase" data-screenshot-showcase>
+          <div class="screenshot-tabs" role="tablist" aria-label="Moduły NotchFlow">
+            <button type="button" class="screenshot-tab is-active" role="tab" aria-selected="true" aria-controls="shot-music" id="tab-music" data-shot="shot-music">Muzyka</button>
+            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-calendar" id="tab-calendar" data-shot="shot-calendar">Kalendarz</button>
+            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-shelf" id="tab-shelf" data-shot="shot-shelf">Półka</button>
+            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-timer" id="tab-timer" data-shot="shot-timer">Minutnik</button>
+            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-stopwatch" id="tab-stopwatch" data-shot="shot-stopwatch">Stoper</button>
+            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-pomodoro" id="tab-pomodoro" data-shot="shot-pomodoro">Pomodoro</button>
+            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-notes" id="tab-notes" data-shot="shot-notes">Notatki</button>
+            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-clipboard" id="tab-clipboard" data-shot="shot-clipboard">Schowek</button>
+            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-camera" id="tab-camera" data-shot="shot-camera">Kamera</button>
+          </div>
+
+          <div class="screenshot-stage">
+            <figure class="screenshot-panel is-active" id="shot-music" role="tabpanel" aria-labelledby="tab-music">
+              <div class="screenshot-frame"><img src="../assets/screenshots/01-music.png" alt="NotchFlow — odtwarzacz muzyki" width="992" height="524" /></div>
+              <figcaption>Muzyka — odtwarzanie, okładka i przewijanie</figcaption>
+            </figure>
+            <figure class="screenshot-panel" id="shot-calendar" role="tabpanel" aria-labelledby="tab-calendar" hidden>
+              <div class="screenshot-frame"><img src="../assets/screenshots/02-calendar.png" alt="NotchFlow — kalendarz" loading="lazy" width="992" height="524" /></div>
+              <figcaption>Kalendarz — siatka miesiąca na pierwszy rzut oka</figcaption>
+            </figure>
+            <figure class="screenshot-panel" id="shot-shelf" role="tabpanel" aria-labelledby="tab-shelf" hidden>
+              <div class="screenshot-frame"><img src="../assets/screenshots/03-shelf.png" alt="NotchFlow — półka na pliki" loading="lazy" width="992" height="608" /></div>
+              <figcaption>Półka — przypięte i tymczasowe pliki</figcaption>
+            </figure>
+            <figure class="screenshot-panel" id="shot-timer" role="tabpanel" aria-labelledby="tab-timer" hidden>
+              <div class="screenshot-frame"><img src="../assets/screenshots/04-timer.png" alt="NotchFlow — minutnik" loading="lazy" width="992" height="608" /></div>
+              <figcaption>Minutnik — regulowany czas odliczania</figcaption>
+            </figure>
+            <figure class="screenshot-panel" id="shot-stopwatch" role="tabpanel" aria-labelledby="tab-stopwatch" hidden>
+              <div class="screenshot-frame"><img src="../assets/screenshots/05-stopwatch.png" alt="NotchFlow — stoper" loading="lazy" width="992" height="608" /></div>
+              <figcaption>Stoper — mierzenie czasu</figcaption>
+            </figure>
+            <figure class="screenshot-panel" id="shot-pomodoro" role="tabpanel" aria-labelledby="tab-pomodoro" hidden>
+              <div class="screenshot-frame"><img src="../assets/screenshots/06-pomodoro.png" alt="NotchFlow — Pomodoro" loading="lazy" width="992" height="608" /></div>
+              <figcaption>Pomodoro — cykle pracy i przerwy</figcaption>
+            </figure>
+            <figure class="screenshot-panel" id="shot-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+              <div class="screenshot-frame"><img src="../assets/screenshots/07-notes.png" alt="NotchFlow — szybkie notatki" loading="lazy" width="992" height="608" /></div>
+              <figcaption>Szybkie notatki — zapisuj pomysły od razu</figcaption>
+            </figure>
+            <figure class="screenshot-panel" id="shot-clipboard" role="tabpanel" aria-labelledby="tab-clipboard" hidden>
+              <div class="screenshot-frame"><img src="../assets/screenshots/08-clipboard.png" alt="NotchFlow — schowek" loading="lazy" width="992" height="528" /></div>
+              <figcaption>Schowek — historia z wyszukiwaniem, opcjonalnie</figcaption>
+            </figure>
+            <figure class="screenshot-panel" id="shot-camera" role="tabpanel" aria-labelledby="tab-camera" hidden>
+              <div class="screenshot-frame"><img src="../assets/screenshots/09-camera.png" alt="NotchFlow — lustro kamery" loading="lazy" width="992" height="528" /></div>
+              <figcaption>Lustro kamery — szybki podgląd przed rozmową</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="why">
+      <div class="container split-grid">
+        <div class="split-content">
+          <h2>Działa w tle. Wspiera Twoją pracę.</h2>
+          <ul class="check-list">
+            <li>Działa na wszystkich Spaces i zewnętrznych monitorach</li>
+            <li>Zawsze pod ręką — wystarczy najechać kursorem</li>
+            <li>Bez kradnięcia fokusu z aktywnej aplikacji</li>
+            <li>Płynne animacje i natywne przejścia</li>
+            <li>Bez telemetrii — Twoje dane zostają na Macu</li>
+          </ul>
+        </div>
+        <div class="split-visual">
+          <div class="split-island-stack">
+            <div class="split-island media-row">
+              <div class="mini-art"></div>
+              <div class="mini-lines">
                 <div class="line"></div>
                 <div class="line short"></div>
               </div>
             </div>
-          </article>
-          <article class="bento-card span-6">
-            <span class="tier premium">Premium</span>
-            <h3>Fragment tekstu piosenki</h3>
-            <p>Bieżąca linia podczas odtwarzania. Pobierane z lrclib.net, gdy dostępne.</p>
-            <div class="mini-ui media">
-              <div class="lines flex-1">
-                <div class="line wide"></div>
-                <div class="line short faded"></div>
-              </div>
+            <div class="split-island calendar-mini">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span class="active"></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
             </div>
-          </article>
-          <article class="bento-card span-4">
-            <span class="tier">Darmowe · 5 notatek</span>
-            <h3>Szybkie notatki</h3>
-            <p>Zapisuj pomysły, zanim znikną. Premium: bez limitu z przypinaniem.</p>
-            <div class="mini-ui notes">
-              <div class="note pinned"></div>
-              <div class="note"></div>
-              <div class="note narrow"></div>
-            </div>
-          </article>
-          <article class="bento-card span-4">
-            <span class="tier">Opcjonalne</span>
-            <h3>Historia schowka</h3>
-            <p>Wyłączone domyślnie. 5 wpisów za darmo, 50 z wyszukiwaniem w premium. Zostaje na Twoim Macu.</p>
-            <div class="mini-ui clipboard">
-              <div class="entry"><span class="dot"></span><span class="text w-80"></span></div>
-              <div class="entry"><span class="dot"></span><span class="text w-60"></span></div>
-              <div class="entry"><span class="dot"></span><span class="text w-90"></span></div>
-            </div>
-          </article>
-          <article class="bento-card span-4">
-            <span class="tier">Darmowe</span>
-            <h3>Kalendarz</h3>
-            <p>Siatka miesiąca na pierwszy rzut oka. Bez konta.</p>
-            <div class="mini-ui calendar">
-              <span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span>
-              <span class="day"></span><span class="day"></span><span class="day today">10</span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span>
-              <span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span><span class="day"></span>
-            </div>
-          </article>
-          <article class="bento-card span-6">
-            <span class="tier premium">Premium</span>
-            <h3>Lustro kamery</h3>
-            <p>Szybki podgląd przed rozmową. Na żywo w wyspie.</p>
-            <div class="mini-ui mirror"><div class="circle"></div></div>
-          </article>
-          <article class="bento-card span-6">
-            <span class="tier">Darmowe</span>
-            <h3>Własny HUD</h3>
-            <p>Zastąp domyślne overlaye głośności i jasności czystszym HUD-em wyspy.</p>
-            <div class="mini-ui hud">
-              <span class="label">VOL</span>
-              <div class="bar"><div class="bar-fill"></div></div>
-            </div>
-          </article>
-          <article class="bento-card span-8">
-            <span class="tier">Darmowe + Premium</span>
-            <h3>Shelf i integracje</h3>
-            <p>Upuść pliki na wyspę — twarde linki APFS, bez duplikacji. Darmowe: 1 plik. Premium: do 12 z ZIP-em. URL scheme, lokalne API i rozszerzenie Raycast.</p>
-            <div class="mini-ui integrations">
-              <span class="tag">notchflow://</span>
-              <span class="tag">127.0.0.1</span>
-              <span class="tag">Raycast</span>
-            </div>
-          </article>
-          <article class="bento-card span-4">
-            <span class="tier">Rdzeń</span>
-            <h3>Wyspa bez fokusu</h3>
-            <p>Panel NSPanel non-activating — nad aplikacjami, bez kradnięcia fokusu.</p>
-          </article>
+          </div>
         </div>
       </div>
     </section>
@@ -267,39 +357,41 @@
       </div>
     </section>
 
-    <section class="section" id="download">
+    <section class="section" id="faq">
       <div class="container">
-        <div class="download-section">
-          <h2>Pobierz NotchFlow</h2>
-          <p>Przeciągnij do Aplikacji. Bez skryptów w Terminalu, bez obchodzenia kwarantanny.</p>
-          <div class="download-actions">
-            <a class="btn btn-primary" href="https://github.com/Tymcio/notchflow/releases/latest">Pobierz DMG (arm64)</a>
-            <div class="app-store-badge" aria-label="Mac App Store — wkrótce">
-              <img src="../assets/app-store-badge-pl.svg" alt="" width="156" height="40" />
-              <span class="badge-label">Wkrótce</span>
-            </div>
+        <div class="section-header">
+          <h2>FAQ</h2>
+        </div>
+        <div class="faq-list">
+          <div class="faq-item">
+            <h3>Na jakich Macach działa NotchFlow?</h3>
+            <p>NotchFlow wymaga macOS 14 lub nowszego i działa na MacBookach z notchem oraz na zewnętrznych monitorach. Optymalizowany pod Apple Silicon.</p>
           </div>
-          <p class="download-fineprint">Weryfikacja: <code>spctl -a -vv /Applications/NotchFlow.app</code></p>
+          <div class="faq-item">
+            <h3>Czy NotchFlow zbiera moje dane?</h3>
+            <p>Nie. Wersja 1.0 nie wysyła żadnej telemetrii. Sieć jest używana wyłącznie do sprawdzania aktualizacji i walidacji licencji premium.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Czy mogę zbudować aplikację samodzielnie?</h3>
+            <p>Tak. Kod źródłowy jest dostępny na GitHubie na licencji GPL-3.0. Self-build uruchamia wszystkie darmowe funkcje bez ograniczeń.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Co daje wersja premium?</h3>
+            <p>Personalizacja wyspy, tekst piosenki, lustro kamery, rozszerzony shelf, nieograniczone notatki i więcej. <a href="pricing/">Zobacz pełne porównanie</a>.</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="section" id="changelog">
+    <section class="cta-section" id="download">
       <div class="container">
-        <div class="section-header">
-          <h2>Historia zmian</h2>
+        <h2>Gotowy, aby wejść w <span class="gradient-text">flow</span>?</h2>
+        <p>Przeciągnij do Aplikacji. Bez skryptów w Terminalu, bez obchodzenia kwarantanny.</p>
+        <div class="cta-actions">
+          <a class="btn btn-primary btn-lg" href="https://github.com/Tymcio/notchflow/releases/latest">Pobierz NotchFlow za darmo</a>
+          <a class="btn btn-ghost btn-lg" href="#features">Zobacz funkcje</a>
         </div>
-        <article class="changelog-item">
-          <h3><a href="https://github.com/Tymcio/notchflow/releases/tag/v1.0.0">1.0.0</a> — 2026-07-06</h3>
-          <ul>
-            <li>Wyspa notcha z rozwijaniem po najechaniu na wbudowanym i zewnętrznym ekranie</li>
-            <li>Sterowanie Spotify i Apple Music</li>
-            <li>Shelf, szybkie notatki, historia schowka</li>
-            <li>Własny HUD głośności i jasności</li>
-            <li>Siatka kalendarza, lustro kamery (premium)</li>
-            <li>Licencjonowanie premium, Sparkle, lokalne API, rozszerzenie Raycast</li>
-          </ul>
-        </article>
+        <p class="cta-fineprint">Wymaga macOS 14.0 lub nowszego · Podpisane i notaryzowane · <code>spctl -a -vv /Applications/NotchFlow.app</code></p>
       </div>
     </section>
   </main>
@@ -309,20 +401,37 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <a class="logo" href="../">
-            <img class="logo-mark" src="../assets/logo-mark.svg" alt="" width="24" height="24" />
-            NotchFlow
+            <img class="logo-mark" src="../assets/logo-mark.png" alt="" height="28" width="56" />
+            notch<span class="gradient-text">flow</span>
           </a>
-          <p>Natywna aplikacja macOS dla notcha. Tworzona w UE.</p>
+          <p>Natywna aplikacja macOS, która zamienia notch w centrum kontroli. Tworzona w UE.</p>
+          <div class="footer-social">
+            <a href="https://github.com/Tymcio/notchflow" aria-label="GitHub">GH</a>
+            <a href="mailto:hello@notchflow.eu" aria-label="E-mail">@</a>
+          </div>
         </div>
-        <nav class="footer-links" aria-label="Stopka">
+        <div class="footer-col">
+          <h4>Produkt</h4>
+          <a href="#features">Funkcje</a>
+          <a href="#screenshots">Zrzuty ekranu</a>
           <a href="pricing/">Cennik</a>
-          <a href="privacy.html">Prywatność</a>
+          <a href="https://github.com/Tymcio/notchflow/releases">Aktualizacje</a>
+        </div>
+        <div class="footer-col">
+          <h4>Wsparcie</h4>
+          <a href="#faq">FAQ</a>
+          <a href="https://github.com/Tymcio/notchflow">Dokumentacja</a>
+          <a href="mailto:hello@notchflow.eu">Kontakt</a>
+          <a href="https://github.com/Tymcio/notchflow/issues">Zgłoś błąd</a>
+        </div>
+        <div class="footer-col">
+          <h4>Firma</h4>
+          <a href="privacy.html">Polityka prywatności</a>
           <a href="security.html">Bezpieczeństwo</a>
-          <a href="https://github.com/Tymcio/notchflow">GitHub</a>
           <a href="../">English</a>
-        </nav>
+        </div>
       </div>
-      <p class="footer-bottom">© 2026 NotchFlow · <a href="privacy.html">Prywatność</a> · <a href="security.html">Bezpieczeństwo</a></p>
+      <p class="footer-bottom">© 2026 notchflow · Stworzony z ❤️ dla macOS</p>
     </div>
   </footer>
 

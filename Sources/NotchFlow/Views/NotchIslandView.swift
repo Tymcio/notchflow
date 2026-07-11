@@ -7,7 +7,7 @@ struct NotchIslandView: View {
 
     @State private var isDropTargeted = false
 
-    private let islandFill = Color(red: 0.08, green: 0.08, blue: 0.09)
+    private let islandFill = NotchFlowBrand.spaceBlack
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -25,20 +25,24 @@ struct NotchIslandView: View {
         if let geometry {
             if isExpanded {
                 expandedIsland(geometry: geometry)
-            } else if appState.shouldShowIdleNotch {
-                idleIsland(geometry: geometry)
+            } else if let activity = appState.activeLiveActivity {
+                idleIsland(geometry: geometry, activity: activity)
             }
         }
     }
 
     @ViewBuilder
-    private func idleIsland(geometry: NotchGeometry) -> some View {
-        IdleMediaView(
-            state: appState.mediaState,
+    private func idleIsland(geometry: NotchGeometry, activity: LiveActivityKind) -> some View {
+        IdleLiveActivityView(
+            activity: activity,
+            mediaState: appState.mediaState,
+            accent: appState.settings.selectedTheme.accent,
             leftWingWidth: geometry.idleLeftWingWidth,
             rightWingWidth: geometry.idleRightWingWidth,
             notchCutoutWidth: geometry.physicalNotchCutoutWidth,
-            innerOverlap: NotchFlowConstants.idleWingInnerOverlap
+            innerOverlap: NotchFlowConstants.idleWingInnerOverlap,
+            onAnswerCall: { appState.answerIncomingCall() },
+            onDeclineCall: { appState.declineIncomingCall() }
         )
         .frame(width: geometry.idleSize.width, height: geometry.idleSize.height)
     }
@@ -52,12 +56,14 @@ struct NotchIslandView: View {
                 ExpandedNotchTabBar(
                     activeModule: $appState.activeModule,
                     isPremium: appState.isPremium,
-                    notchCutoutWidth: geometry.physicalNotchCutoutWidth
+                    notchCutoutWidth: geometry.physicalNotchCutoutWidth,
+                    badgeCounts: tabBadgeCounts
                 )
             } else {
                 IslandTabBar(
                     activeModule: $appState.activeModule,
-                    isPremium: appState.isPremium
+                    isPremium: appState.isPremium,
+                    badgeCounts: tabBadgeCounts
                 )
             }
 
@@ -73,16 +79,35 @@ struct NotchIslandView: View {
         .clipShape(shape)
         .overlay { shape.stroke(.white.opacity(0.08), lineWidth: 0.5) }
         .overlay {
-            if isDropTargeted {
+            if isDropTargeted || appState.displayManager.isDragNearNotch {
                 shape.stroke(appState.settings.selectedTheme.accent, lineWidth: 1.5)
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if appState.displayManager.isDragNearNotch && !isDropTargeted {
+                Text("Upuść na półkę")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(appState.settings.selectedTheme.accent)
+                    .padding(.bottom, 10)
             }
         }
         .onDrop(of: [.fileURL, .url], isTargeted: $isDropTargeted) { providers in
             Task {
                 await appState.shelfManager.handleDrop(providers: providers, isPremium: appState.isPremium)
+                await MainActor.run {
+                    appState.activeModule = .shelf
+                }
             }
             return true
         }
+    }
+
+    private var tabBadgeCounts: [IslandModule: Int] {
+        var counts: [IslandModule: Int] = [:]
+        if appState.shelfBadgeCount > 0 {
+            counts[.shelf] = appState.shelfBadgeCount
+        }
+        return counts
     }
 
     private func expandedContentTopInset(_ geometry: NotchGeometry) -> CGFloat {
@@ -102,6 +127,10 @@ struct NotchIslandView: View {
             )
         case .calendar:
             CalendarTabView()
+        case .shelf:
+            ShelfTabView(appState: appState)
+        case .focus:
+            FocusTabView(appState: appState)
         case .notes:
             QuickNotesView(appState: appState)
         case .clipboard:

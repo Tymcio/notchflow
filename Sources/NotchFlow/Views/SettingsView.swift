@@ -15,11 +15,14 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsTab.allCases, selection: $selectedTab) { tab in
-                Label(tab.title, systemImage: tab.systemImage)
-                    .tag(tab)
+            VStack(spacing: 0) {
+                SettingsBrandingHeader()
+                List(SettingsTab.allCases, selection: $selectedTab) { tab in
+                    Label(tab.title, systemImage: tab.systemImage)
+                        .tag(tab)
+                }
+                .listStyle(.sidebar)
             }
-            .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 220)
         } detail: {
             ScrollView {
@@ -49,6 +52,12 @@ struct SettingsView: View {
             )
         case .appearance:
             AppearanceSettingsTab(settings: appState.settings, isPremium: appState.isPremium)
+        case .notifications:
+            NotificationsSettingsTab(
+                settings: appState.settings,
+                isPremium: appState.isPremium,
+                menuBarLayoutManager: appState.menuBarLayoutManager
+            )
         case .license:
             LicenseSettingsTab(
                 status: appState.licenseStatus,

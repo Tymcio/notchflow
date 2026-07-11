@@ -10,14 +10,19 @@ enum NotchFlowConstants {
     static let defaultCollapsedHeight: CGFloat = 40
     static let defaultExpandedWidth: CGFloat = 400
     static let maxExpandedWidth: CGFloat = 440
-    static let defaultExpandedContentHeight: CGFloat = 148
+    static let defaultExpandedContentHeight: CGFloat = 178
     static let expandedVerticalPadding: CGFloat = 12
-    static let defaultExpandedHeight: CGFloat = 188
+    static let defaultExpandedHeight: CGFloat = 218
     static let virtualCapsuleWidth: CGFloat = 200
     static let virtualCapsuleHeight: CGFloat = 36
     static let hoverTriggerWidth: CGFloat = 200
     static let hoverExpandThreshold: CGFloat = 32
-    static let idleBarHeight: CGFloat = 32
+    /// Slight horizontal forgiveness when aiming at the physical notch cutout.
+    static let hoverNotchHorizontalExpand: CGFloat = 8
+    /// Extra width beyond expanded island when detecting file drags.
+    static let dragDropZoneHorizontalPadding: CGFloat = 40
+    /// Extra height below expanded island for file drop targeting.
+    static let dragDropZoneVerticalPadding: CGFloat = 24
     /// Approximate width of one expanded tab button incl. padding.
     static let expandedTabSlotWidth: CGFloat = 36
     static let idleWingProtrusion: CGFloat = 54
@@ -36,6 +41,10 @@ enum NotchFlowConstants {
     static let freeNotesLimit = 5
     static let freeClipboardLimit = 5
     static let premiumClipboardLimit = 50
+    static let freePinnedShelfLimit = 3
+    static let premiumPinnedShelfLimit = 20
+    static let freeDroppedShelfLimit = 1
+    static let premiumDroppedShelfLimit = 12
     /// Default loopback port for the local Raycast API (stable across restarts).
     static let localAPIPort: UInt16 = 47_821
 }

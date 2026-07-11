@@ -134,18 +134,30 @@ struct ClipboardHistoryView: View {
                 .font(.caption2)
                 .foregroundStyle(IslandStyle.secondaryText)
 
-            TextField("Szukaj w historii…", text: $query)
-                .textFieldStyle(.plain)
-                .font(.caption)
-                .foregroundStyle(IslandStyle.primaryText)
-                .focused($isSearchFocused)
-                .onChange(of: isSearchFocused) { _, focused in
-                    appState.isIslandInputFocused = focused
+            ZStack(alignment: .leading) {
+                if query.isEmpty {
+                    Text("Szukaj w historii…")
+                        .font(.caption)
+                        .foregroundStyle(Color.white.opacity(0.48))
+                        .allowsHitTesting(false)
                 }
-                .onTapGesture {
-                    AppController.panelController?.prepareForTyping()
-                    isSearchFocused = true
-                }
+
+                TextField("", text: $query)
+                    .textFieldStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(IslandStyle.primaryText)
+                    .tint(.white)
+                    .focused($isSearchFocused)
+                    .onChange(of: isSearchFocused) { _, focused in
+                        appState.isIslandInputFocused = focused
+                    }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                AppController.panelController?.prepareForTyping()
+                isSearchFocused = true
+            }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
