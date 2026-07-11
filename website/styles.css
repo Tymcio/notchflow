@@ -444,155 +444,70 @@ a:hover { color: var(--accent-hover); }
   font-size: 0.9rem;
 }
 
-/* MacBook mockup */
+/* Hero MacBook */
 
-.mockup-macbook {
+.hero-macbook {
   position: relative;
-  max-width: 560px;
+  width: min(100%, 620px);
   margin-inline: auto;
+  filter: drop-shadow(0 28px 56px rgba(15, 20, 25, 0.16));
 }
 
-.mockup-screen {
-  aspect-ratio: 16 / 10;
-  background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
+@media (min-width: 960px) {
+  .hero-macbook {
+    margin-left: auto;
+    transform: perspective(1400px) rotateY(-7deg);
+  }
+}
+
+.hero-macbook::before {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 18%;
+  height: 55%;
+  background: radial-gradient(ellipse at center, rgba(91, 127, 255, 0.22), transparent 72%);
+  filter: blur(36px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-macbook-frame {
   position: relative;
+  z-index: 1;
+  padding: 11px 11px 0;
+  border-radius: 20px 20px 0 0;
+  background: linear-gradient(180deg, #48484a 0%, #1d1d1f 55%, #141416 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.mockup-wallpaper {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #1e3a5f 0%, #2d1b4e 40%, #1a2744 100%);
-  opacity: 0.6;
+.hero-macbook-screen {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 10px 10px 0 0;
+  background: linear-gradient(180deg, #9ec3de 0%, #7aaed0 100%);
+  line-height: 0;
 }
 
-.mockup-notch {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 26%;
-  height: 5.5%;
-  background: #000;
+.hero-macbook-screen img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.hero-macbook-chin {
+  position: relative;
+  z-index: 1;
+  height: 16px;
+  margin: 0 14%;
+  background: linear-gradient(180deg, #313133 0%, #1a1a1c 100%);
   border-radius: 0 0 10px 10px;
-  z-index: 2;
-}
-
-.mockup-island {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 58%;
-  min-height: 42%;
-  background: var(--island);
-  border: 1px solid var(--glass-border);
-  border-radius: 0 0 22px 22px;
-  padding: 1.5rem 1.25rem 1rem;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-}
-
-.mockup-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.mockup-tab {
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.mockup-tab.active { background: var(--accent); }
-
-.mockup-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.5rem;
-}
-
-.mockup-artwork {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #5AC8FA 0%, #7C5CFF 100%);
-  flex-shrink: 0;
-}
-
-.mockup-track {
-  flex: 1;
-  min-width: 0;
-}
-
-.mockup-track-title {
-  height: 0.55rem;
-  width: 75%;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 2px;
-  margin-bottom: 0.4rem;
-}
-
-.mockup-track-artist {
-  height: 0.4rem;
-  width: 50%;
-  background: rgba(255, 255, 255, 0.35);
-  border-radius: 2px;
-}
-
-.mockup-controls {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.mockup-control {
-  width: 1.3rem;
-  height: 1.3rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.mockup-control.play {
-  background: rgba(255, 255, 255, 0.3);
-  width: 1.6rem;
-  height: 1.6rem;
-}
-
-.mockup-eq {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 1rem;
-  margin-left: auto;
-}
-
-.mockup-eq span {
-  width: 3px;
-  background: var(--accent);
-  border-radius: 1px;
-}
-
-.mockup-eq span:nth-child(1) { height: 40%; }
-.mockup-eq span:nth-child(2) { height: 80%; }
-.mockup-eq span:nth-child(3) { height: 55%; }
-.mockup-eq span:nth-child(4) { height: 90%; }
-
-.mockup-base {
-  height: 0.85rem;
-  background: var(--elevated);
-  border-radius: 0 0 6px 6px;
-  margin: 0 6%;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: none;
 }
 
 /* Screenshots showcase */
