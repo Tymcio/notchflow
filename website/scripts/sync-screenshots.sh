@@ -19,5 +19,4 @@ copy 8 07-notes.png
 copy 9 08-clipboard.png
 copy 1 09-camera.png
 
-python3 "$ROOT/website/scripts/prepare-screenshots.py"
-echo "Screenshots synced to $DST"
+echo "Screenshots synced to $DST (raw, bez przetwarzania)"

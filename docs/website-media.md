@@ -59,8 +59,10 @@ DST="website/assets/screenshots"
 cp "$SRC/notchflow screeny pl 2.png" "$DST/01-music.png"
 # … pozostałe według tabeli
 
-python3 website/scripts/prepare-screenshots.py
+python3 website/scripts/prepare-screenshots.py   # tylko dla starych zrzutów z jaskrawym tłem
 ```
+
+Skrypt `prepare-screenshots.py` jest **opcjonalny** — nie uruchamiaj go dla nowych screenów z dobrą tapetą (dodaje dolną ramkę i gradient, które psują wygląd na stronie). Wystarczy `./website/scripts/sync-screenshots.sh`.
 
 ---
 
