@@ -1,4 +1,5 @@
 import EventKit
+import AppKit
 import Foundation
 
 struct CalendarEventPreview: Equatable, Sendable, Identifiable {
@@ -33,6 +34,7 @@ struct CalendarEventPreview: Equatable, Sendable, Identifiable {
 final class CalendarManager {
     var onEventChange: ((CalendarEventPreview?) -> Void)?
     var onDayEventsChange: (([CalendarEventPreview]) -> Void)?
+    var onAccessChange: ((Bool) -> Void)?
 
     private(set) var upcomingEvent: CalendarEventPreview? {
         didSet { onEventChange?(upcomingEvent) }
@@ -42,13 +44,45 @@ final class CalendarManager {
         didSet { onDayEventsChange?(dayEvents) }
     }
 
-    private(set) var hasAccess = false
+    private(set) var hasAccess = false {
+        didSet {
+            guard oldValue != hasAccess else { return }
+            onAccessChange?(hasAccess)
+        }
+    }
 
     private let store = EKEventStore()
     private var refreshTask: Task<Void, Never>?
 
     func ensureAccess() async {
         hasAccess = await requestAccess()
+        if hasAccess {
+            await refreshUpcomingEvent()
+            await refreshDayEvents()
+        }
+    }
+
+    func events(on date: Date) async -> [CalendarEventPreview] {
+        guard hasAccess else { return [] }
+
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return []
+        }
+
+        let predicate = store.predicateForEvents(withStart: startOfDay, end: endOfDay, calendars: nil)
+        return store.events(matching: predicate)
+            .sorted { $0.startDate < $1.startDate }
+            .prefix(8)
+            .map { makePreview(from: $0) }
+    }
+
+    func openDayInCalendarApp(_ date: Date) {
+        let interval = Int(date.timeIntervalSinceReferenceDate)
+        guard let url = URL(string: "calshow:\(interval)") else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        NSWorkspace.shared.open(url)
     }
 
     func refreshUpcomingEvent() async {

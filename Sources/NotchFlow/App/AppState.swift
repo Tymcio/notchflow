@@ -11,6 +11,7 @@ final class AppState {
     var focusTimerState = FocusTimerState()
     var upcomingEvent: CalendarEventPreview?
     var dayEvents: [CalendarEventPreview] = []
+    var calendarAccessGranted = false
     var notes: [NoteItem] = []
     var clipboardEntries: [ClipboardEntry] = []
     var licenseStatus: LicenseStatus = .free
@@ -96,6 +97,7 @@ final class AppState {
         hudManager.start()
         focusTimerManager.startMonitoring()
         await calendarManager.ensureAccess()
+        calendarAccessGranted = calendarManager.hasAccess
         if calendarManager.hasAccess {
             calendarManager.startAutoRefresh()
         }
@@ -196,6 +198,10 @@ final class AppState {
 
         calendarManager.onDayEventsChange = { [weak self] events in
             self?.dayEvents = events
+        }
+
+        calendarManager.onAccessChange = { [weak self] granted in
+            self?.calendarAccessGranted = granted
         }
 
         notesManager.onNotesChange = { [weak self] notes in
