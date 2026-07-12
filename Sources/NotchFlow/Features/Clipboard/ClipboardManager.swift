@@ -109,6 +109,10 @@ final class ClipboardManager {
         return Array(entries.prefix(limit))
     }
 
+    func setEntriesForTesting(_ entries: [ClipboardEntry]) {
+        self.entries = entries
+    }
+
     private func isConcealedPasteboard(_ pasteboard: NSPasteboard) -> Bool {
         guard let types = pasteboard.types else { return false }
         return Self.concealedTypes.contains { types.contains($0) }

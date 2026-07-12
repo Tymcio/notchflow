@@ -61,9 +61,13 @@ final class ShelfManager {
         items.filter { $0.kind == .dropped }
     }
 
-    init() {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        shelfDirectory = appSupport.appendingPathComponent("NotchFlow/Shelf", isDirectory: true)
+    init(directory: URL? = nil) {
+        if let directory {
+            shelfDirectory = directory
+        } else {
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            shelfDirectory = appSupport.appendingPathComponent("NotchFlow/Shelf", isDirectory: true)
+        }
         pinnedIndexURL = shelfDirectory.appendingPathComponent("pinned.plist")
         try? FileManager.default.createDirectory(at: shelfDirectory, withIntermediateDirectories: true)
         loadPersistedItems()
