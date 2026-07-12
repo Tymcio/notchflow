@@ -48,6 +48,8 @@ struct SettingsView: View {
             GeneralSettingsTab(
                 settings: appState.settings,
                 menuBarLayoutManager: appState.menuBarLayoutManager,
+                displayManager: appState.displayManager,
+                isPremium: appState.isPremium,
                 onOpenLicense: { selectedTab = .license }
             )
         case .appearance:

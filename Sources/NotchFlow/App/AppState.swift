@@ -95,6 +95,10 @@ final class AppState {
         mediaMonitor.start()
         hudManager.start()
         focusTimerManager.startMonitoring()
+        await calendarManager.ensureAccess()
+        if calendarManager.hasAccess {
+            calendarManager.startAutoRefresh()
+        }
         clipboardManager.setMonitoringEnabled(settings.clipboardMonitoringEnabled)
         notes = notesManager.notes
         shelfItems = shelfManager.items

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MediaPlayerView: View {
     let state: MediaPlaybackState
+    let showsLyrics: Bool
     let onPlayPause: () -> Void
     let onNext: () -> Void
     let onPrevious: () -> Void
@@ -22,9 +23,17 @@ struct MediaPlayerView: View {
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.55))
                         .lineLimit(1)
+                    if showsLyrics, let snippet = state.lyricsSnippet, !snippet.isEmpty {
+                        Text(snippet)
+                            .font(.caption2.italic())
+                            .foregroundStyle(.white.opacity(0.42))
+                            .lineLimit(1)
+                            .transition(.opacity)
+                    }
                 }
                 Spacer(minLength: 0)
             }
+            .animation(.easeOut(duration: 0.2), value: state.lyricsSnippet)
 
             if state.hasUsableDuration {
                 TimelineView(.periodic(from: .now, by: 0.25)) { _ in

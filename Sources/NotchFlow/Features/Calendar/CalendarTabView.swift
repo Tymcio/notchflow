@@ -1,6 +1,8 @@
+import AppKit
 import SwiftUI
 
 struct CalendarTabView: View {
+    @Bindable var appState: AppState
     @State private var visibleMonth = Date()
 
     private var weeks: [CalendarWeek] {
@@ -8,12 +10,102 @@ struct CalendarTabView: View {
     }
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
+            upcomingSection
             header
             weekdayHeader
             monthGrid
         }
         .foregroundStyle(IslandStyle.primaryText)
+    }
+
+    @ViewBuilder
+    private var upcomingSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Nadchodzące")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(IslandStyle.secondaryText)
+
+            if !appState.calendarManager.hasAccess {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar.badge.exclamationmark")
+                        .font(.caption)
+                        .foregroundStyle(IslandStyle.tertiaryText)
+                    Text("Brak dostępu do kalendarza.")
+                        .font(.caption2)
+                        .foregroundStyle(IslandStyle.tertiaryText)
+                    Spacer(minLength: 0)
+                    Button("Udziel dostępu") {
+                        Task {
+                            await appState.calendarManager.ensureAccess()
+                            if appState.calendarManager.hasAccess {
+                                appState.calendarManager.startAutoRefresh()
+                            }
+                        }
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(IslandStyle.accentText)
+                }
+            } else if let upcoming = appState.upcomingEvent {
+                upcomingRow(upcoming, emphasized: true)
+            } else if appState.dayEvents.isEmpty {
+                Text("Brak wydarzeń dzisiaj")
+                    .font(.caption2)
+                    .foregroundStyle(IslandStyle.tertiaryText)
+            } else {
+                ForEach(appState.dayEvents) { event in
+                    if event.id != appState.upcomingEvent?.id {
+                        upcomingRow(event, emphasized: false)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 4)
+        .padding(.bottom, 2)
+    }
+
+    @ViewBuilder
+    private func upcomingRow(_ event: CalendarEventPreview, emphasized: Bool) -> some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(event.title)
+                    .font(emphasized ? .caption.weight(.semibold) : .caption)
+                    .foregroundStyle(IslandStyle.primaryText)
+                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(event.formattedStartTime)
+                        .font(.caption2.monospacedDigit())
+                    Text(event.formattedCountdown)
+                        .font(.caption2)
+                }
+                .foregroundStyle(IslandStyle.tertiaryText)
+            }
+
+            Spacer(minLength: 0)
+
+            if let meetingURL = event.meetingURL {
+                Button {
+                    NSWorkspace.shared.open(meetingURL)
+                } label: {
+                    Image(systemName: "video.fill")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(IslandStyle.accentText)
+                        .frame(width: 24, height: 24)
+                        .background {
+                            Circle().fill(Color.white.opacity(0.08))
+                        }
+                }
+                .buttonStyle(.plain)
+                .help("Otwórz spotkanie")
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.white.opacity(emphasized ? 0.08 : 0.05))
+        }
     }
 
     private var header: some View {

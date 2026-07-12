@@ -15,10 +15,17 @@ struct CalendarEventPreview: Equatable, Sendable, Identifiable {
         let interval = max(timeUntilStart, 0)
         let minutes = Int(interval) / 60
         if minutes < 60 {
-            return "in \(minutes)m"
+            return "za \(minutes) min"
         }
         let hours = minutes / 60
-        return "in \(hours)h \(minutes % 60)m"
+        return "za \(hours) h \(minutes % 60) min"
+    }
+
+    var formattedStartTime: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pl_PL")
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: startDate)
     }
 }
 

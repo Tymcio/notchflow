@@ -122,13 +122,14 @@ struct NotchIslandView: View {
         case .media:
             MediaPlayerView(
                 state: appState.mediaState,
+                showsLyrics: appState.isPremium,
                 onPlayPause: { appState.mediaMonitor.togglePlayPause() },
                 onNext: { appState.mediaMonitor.nextTrack() },
                 onPrevious: { appState.mediaMonitor.previousTrack() },
                 onSeek: { appState.mediaMonitor.seek(to: $0) }
             )
         case .calendar:
-            CalendarTabView()
+            CalendarTabView(appState: appState)
         case .shelf:
             ShelfTabView(appState: appState)
         case .focus:

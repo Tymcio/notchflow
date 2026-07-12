@@ -317,6 +317,9 @@ private struct ShelfItemCard: View {
                     .resizable()
                     .frame(width: 34, height: 34)
                     .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+                    .onDrag {
+                        NSItemProvider(object: url as NSURL)
+                    }
 
                 Text(item.displayName)
                     .font(.system(size: 9, weight: .medium))

@@ -86,7 +86,11 @@ struct ClipboardHistoryView: View {
                 .foregroundStyle(IslandStyle.accentText)
             }
 
-            searchField
+            if appState.isPremium {
+                searchField
+            } else {
+                lockedSearchField
+            }
 
             let items = filteredEntries
             if items.isEmpty {
@@ -124,6 +128,32 @@ struct ClipboardHistoryView: View {
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .tint(.white)
+        }
+    }
+
+    @ViewBuilder
+    private var lockedSearchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "lock.fill")
+                .font(.caption2)
+                .foregroundStyle(IslandStyle.tertiaryText)
+
+            Text("Wyszukiwanie w Premium")
+                .font(.caption)
+                .foregroundStyle(IslandStyle.tertiaryText)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                        .foregroundStyle(IslandStyle.tertiaryText.opacity(0.5))
+                }
         }
     }
 
