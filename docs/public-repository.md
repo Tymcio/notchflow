@@ -41,8 +41,8 @@ Use this every time you update the plugin:
 Edit `version.env`:
 
 ```bash
-MARKETING_VERSION=1.0.1
-BUILD_NUMBER=2
+MARKETING_VERSION=1.0
+BUILD_NUMBER=1
 ```
 
 ### 2. Changelog
@@ -75,8 +75,8 @@ This script:
 Official DMG builds are created by the release workflow:
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.0
+git push origin v1.0
 ```
 
 Requires GitHub secrets: `DEVELOPER_ID_APPLICATION`, `DEVELOPER_ID_CERTIFICATE`, `DEVELOPER_ID_CERTIFICATE_PASSWORD`, `NOTARY_PROFILE`.
@@ -98,7 +98,7 @@ Scripts/publish-to-github.sh --check
 Scripts/publish-to-github.sh
 
 # With custom commit message
-Scripts/publish-to-github.sh -m "docs: update free/premium table for v1.0.1"
+Scripts/publish-to-github.sh -m "docs: update free/premium table for v1.0"
 ```
 
 ## Repository settings (one-time)

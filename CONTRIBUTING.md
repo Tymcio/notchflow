@@ -84,7 +84,7 @@ When releasing a new version, follow [docs/public-repository.md](docs/public-rep
 Scripts/publish-to-github.sh
 
 # 4. Tag release (triggers signed build workflow)
-git tag v1.0.1 && git push origin v1.0.1
+git tag v1.0 && git push origin v1.0
 ```
 
 ## Language

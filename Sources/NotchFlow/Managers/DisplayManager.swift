@@ -10,6 +10,7 @@ final class DisplayManager: ObservableObject {
     @Published private(set) var geometry: NotchGeometry?
     @Published private(set) var isPointerNearNotch = false
     @Published private(set) var isDragNearNotch = false
+    @Published private(set) var isFileDragInProgress = false
     @Published private(set) var shouldHideIsland = false
 
     /// Set by NotchPanelController while the island is visible, so hover keeps it open.
@@ -27,12 +28,16 @@ final class DisplayManager: ObservableObject {
     private var localDragMonitor: Any?
     private var dragEndMonitor: Any?
     private var localDragEndMonitor: Any?
+    private var localMouseDownMonitor: Any?
     private let settings: NotchSettings
     private let menuBarLayoutManager: MenuBarLayoutManager
     private var cancellables = Set<AnyCancellable>()
     private var mouseMoveCoalesceTask: Task<Void, Never>?
     private var proximityPollTask: Task<Void, Never>?
     private var activationObserver: NSObjectProtocol?
+    private var measuredExpandedHeight: CGFloat?
+    private var measuredHeightsByModule: [IslandModule: CGFloat] = [:]
+    private var baselineDragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
 
     init(settings: NotchSettings, menuBarLayoutManager: MenuBarLayoutManager) {
         self.settings = settings
@@ -41,6 +46,11 @@ final class DisplayManager: ObservableObject {
         startObservers()
         startWorkspaceObserver()
         bindMenuBarLayout()
+        bindSettingsChanges()
+    }
+
+    func refreshGeometryNow() {
+        refreshActiveScreen()
     }
 
     deinit {
@@ -69,6 +79,9 @@ final class DisplayManager: ObservableObject {
         if let dragEndMonitor {
             NSEvent.removeMonitor(dragEndMonitor)
         }
+        if let localMouseDownMonitor {
+            NSEvent.removeMonitor(localMouseDownMonitor)
+        }
         if let activationObserver {
             NotificationCenter.default.removeObserver(activationObserver)
         }
@@ -87,14 +100,130 @@ final class DisplayManager: ObservableObject {
     private func recomputeGeometry(for screen: NSScreen?) {
         if let screen {
             let menuEdge = menuBarLayoutManager.menuRightEdgeX(for: screen)
-            geometry = NotchGeometry.make(
+            var nextGeometry = NotchGeometry.make(
                 for: screen,
                 settings: settings,
                 appMenuRightEdgeX: menuEdge
             )
+            if let measuredExpandedHeight {
+                nextGeometry = nextGeometry.withExpandedHeight(measuredExpandedHeight)
+            }
+            geometry = nextGeometry
         } else {
             geometry = nil
         }
+    }
+
+    func setMeasuredExpandedHeight(_ height: CGFloat, for module: IslandModule) {
+        guard height > 0 else { return }
+        let clamped = clampExpandedHeight(height.rounded(.up), for: module)
+        measuredHeightsByModule[module] = clamped
+        applyMeasuredExpandedHeight(clamped)
+    }
+
+    func applyIntrinsicExpandedHeight(_ height: CGFloat, for module: IslandModule) {
+        guard height > 0 else { return }
+        let clamped = clampExpandedHeight(height.rounded(.up), for: module)
+        measuredHeightsByModule[module] = clamped
+        applyMeasuredExpandedHeight(clamped)
+    }
+
+    func setCalendarExpandedHeight(contentHeight: CGFloat) {
+        let total = NotchFlowConstants.expandedTotalHeight(forContentHeight: contentHeight)
+        guard total > 0 else { return }
+        let clamped = clampExpandedHeight(total.rounded(.up), for: .calendar)
+        measuredHeightsByModule[.calendar] = max(clamped, measuredHeightsByModule[.calendar] ?? 0)
+        let nextHeight = max(clamped, measuredExpandedHeight ?? 0)
+        applyMeasuredExpandedHeight(nextHeight)
+    }
+
+    func clearDragDropState() {
+        isFileDragInProgress = false
+        isDragNearNotch = false
+        baselineDragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
+    }
+
+    private func applyMeasuredExpandedHeight(_ height: CGFloat) {
+        guard measuredExpandedHeight != height else { return }
+        measuredExpandedHeight = height
+        recomputeGeometry(for: activeScreen)
+    }
+
+    func clearMeasuredExpandedHeight() {
+        guard measuredExpandedHeight != nil else { return }
+        measuredExpandedHeight = nil
+        recomputeGeometry(for: activeScreen)
+    }
+
+    func applyPreferredExpandedHeight() {
+        let preferred = maximumConfiguredExpandedHeight()
+        measuredHeightsByModule[.clipboard] = preferred
+        applyMeasuredExpandedHeight(preferred)
+    }
+
+    func updateExpandedHeight(for module: IslandModule) {
+        if module == .calendar {
+            let estimated = clampExpandedHeight(module.estimatedTotalExpandedHeight, for: .calendar)
+            let cached = measuredHeightsByModule[.calendar] ?? 0
+            applyMeasuredExpandedHeight(max(estimated, cached))
+            return
+        }
+
+        if let cached = measuredHeightsByModule[module] {
+            applyMeasuredExpandedHeight(cached)
+            return
+        }
+
+        if module.prefersIntrinsicExpandedHeight {
+            applyMeasuredExpandedHeight(
+                clampExpandedHeight(module.estimatedTotalExpandedHeight, for: module)
+            )
+            return
+        }
+
+        applyPreferredExpandedHeight()
+    }
+
+    func refreshExpandedHeight(for module: IslandModule) {
+        measuredHeightsByModule.removeValue(forKey: module)
+        updateExpandedHeight(for: module)
+    }
+
+    private func clampExpandedHeight(_ height: CGFloat, for module: IslandModule) -> CGFloat {
+        if module.prefersIntrinsicExpandedHeight {
+            return clampIntrinsicExpandedHeight(height)
+        }
+        return clampFixedModuleExpandedHeight(height)
+    }
+
+    private func clampIntrinsicExpandedHeight(_ height: CGFloat) -> CGFloat {
+        let rounded = height.rounded(.up)
+        let minimum = NotchFlowConstants.expandedTotalHeight(
+            forContentHeight: NotchFlowConstants.minimumExpandedContentHeight
+        )
+        let screenMaximum = screenExpandedHeightMaximum()
+        return min(max(rounded, minimum), screenMaximum)
+    }
+
+    private func clampFixedModuleExpandedHeight(_ height: CGFloat) -> CGFloat {
+        let rounded = height.rounded(.up)
+        let minimum = NotchFlowConstants.expandedTotalHeight(
+            forContentHeight: NotchFlowConstants.minimumExpandedContentHeight
+        )
+        let configuredMaximum = maximumConfiguredExpandedHeight()
+        let screenMaximum = screenExpandedHeightMaximum()
+        return min(min(max(rounded, minimum), configuredMaximum), screenMaximum)
+    }
+
+    private func screenExpandedHeightMaximum() -> CGFloat {
+        ((activeScreen?.visibleFrame.height ?? 800) * 0.7).rounded(.down)
+    }
+
+    private func maximumConfiguredExpandedHeight() -> CGFloat {
+        let contentCap = settings.isPremiumEnabled
+            ? settings.customIslandHeight
+            : NotchFlowConstants.maximumExpandedContentHeight
+        return NotchFlowConstants.expandedTotalHeight(forContentHeight: contentCap)
     }
 
     /// Synchronously re-reads the app menu edge and rebuilds geometry.
@@ -102,6 +231,12 @@ final class DisplayManager: ObservableObject {
     func refreshMenuLayoutNow() {
         menuBarLayoutManager.refresh(for: activeScreen)
         recomputeGeometry(for: activeScreen)
+    }
+
+    private func bindSettingsChanges() {
+        settings.onDimensionsChange = { [weak self] in
+            self?.recomputeGeometry(for: self?.activeScreen)
+        }
     }
 
     private func bindMenuBarLayout() {
@@ -203,15 +338,28 @@ final class DisplayManager: ObservableObject {
         dragEndMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseUp]) { [weak self] _ in
             self?.endDragSession()
         }
+
+        localMouseDownMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
+            guard let self else { return event }
+            if !self.isFileDragActive() {
+                self.endDragSession()
+            }
+            return event
+        }
     }
 
     private func handleDrag(at location: NSPoint) {
-        guard isFileDragActive() else {
-            if isDragNearNotch {
-                endDragSession()
-            }
+        guard NSEvent.pressedMouseButtons != 0 else {
+            endDragSession()
             return
         }
+
+        guard isFileDragActive() else {
+            endDragSession()
+            return
+        }
+
+        isFileDragInProgress = true
 
         if let screen = NSScreen.screens.first(where: { $0.frame.contains(location) }),
            screen != activeScreen {
@@ -231,27 +379,44 @@ final class DisplayManager: ObservableObject {
     }
 
     private func endDragSession() {
-        guard isDragNearNotch else { return }
+        guard isFileDragInProgress || isDragNearNotch else { return }
+        isFileDragInProgress = false
         isDragNearNotch = false
+        baselineDragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
         updatePointerProximity(at: NSEvent.mouseLocation)
     }
 
     private func isFileDragActive() -> Bool {
         let pasteboard = NSPasteboard(name: .drag)
+        guard pasteboard.changeCount != baselineDragPasteboardChangeCount else { return false }
         guard let types = pasteboard.types, !types.isEmpty else { return false }
 
         let fileTypeStrings: Set<String> = [
             NSPasteboard.PasteboardType.fileURL.rawValue,
-            NSPasteboard.PasteboardType.URL.rawValue,
             UTType.fileURL.identifier,
-            UTType.item.identifier,
-            UTType.content.identifier,
             "NSFilenamesPboardType",
             "public.file-url",
-            "public.url"
         ]
 
-        return types.contains { fileTypeStrings.contains($0.rawValue) }
+        guard types.contains(where: { fileTypeStrings.contains($0.rawValue) }) else { return false }
+        return hasReadableFilePasteboardContent(pasteboard)
+    }
+
+    private func hasReadableFilePasteboardContent(_ pasteboard: NSPasteboard) -> Bool {
+        if let urls = pasteboard.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL], urls.contains(where: \.isFileURL) {
+            return true
+        }
+
+        let filenamesType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
+        if let filenames = pasteboard.propertyList(forType: filenamesType) as? [String],
+           !filenames.isEmpty {
+            return true
+        }
+
+        return false
     }
 
     private func isLocationInDragDropZone(_ location: NSPoint) -> Bool {

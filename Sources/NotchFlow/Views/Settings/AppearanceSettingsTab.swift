@@ -19,9 +19,15 @@ struct AppearanceSettingsTab: View {
                     Slider(value: $settings.customIslandWidth, in: 280...420)
                 }
                 HStack {
-                    Text("Wysokość wyspy")
-                    Slider(value: $settings.customIslandHeight, in: 120...200)
+                    Text("Wysokość schowka")
+                    Slider(
+                        value: $settings.customIslandHeight,
+                        in: NotchFlowConstants.minimumExpandedContentHeight...NotchFlowConstants.maximumExpandedContentHeight
+                    )
                 }
+                Text("Kalendarz i pozostałe zakładki dopasowują wysokość do treści automatycznie.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             } else {
                 Text("Premium odblokowuje własny rozmiar wyspy i motywy.")
                     .font(.caption)

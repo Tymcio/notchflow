@@ -65,8 +65,14 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(hideNotificationBody, forKey: Keys.hideNotificationBody) }
     }
 
-    var isPremiumEnabled: Bool = false
+    var isPremiumEnabled: Bool = false {
+        didSet {
+            guard oldValue != isPremiumEnabled else { return }
+            onDimensionsChange?()
+        }
+    }
     var onAvoidMenuOverlapChange: (() -> Void)?
+    var onDimensionsChange: (() -> Void)?
 
     private var dimensionPersistTask: Task<Void, Never>?
 
@@ -91,7 +97,12 @@ final class NotchSettings {
         let defaults = UserDefaults.standard
         launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         customIslandWidth = defaults.object(forKey: Keys.customIslandWidth) as? CGFloat ?? NotchFlowConstants.defaultExpandedWidth
-        customIslandHeight = defaults.object(forKey: Keys.customIslandHeight) as? CGFloat ?? NotchFlowConstants.defaultExpandedHeight
+        let savedHeight = defaults.object(forKey: Keys.customIslandHeight) as? CGFloat
+            ?? NotchFlowConstants.defaultExpandedContentHeight
+        customIslandHeight = min(
+            max(savedHeight, NotchFlowConstants.minimumExpandedContentHeight),
+            NotchFlowConstants.maximumExpandedContentHeight
+        )
         let themeRaw = defaults.string(forKey: Keys.selectedTheme) ?? IslandTheme.system.rawValue
         if themeRaw == "ember" {
             selectedTheme = .violet
@@ -117,6 +128,7 @@ final class NotchSettings {
             guard !Task.isCancelled else { return }
             UserDefaults.standard.set(customIslandWidth, forKey: Keys.customIslandWidth)
             UserDefaults.standard.set(customIslandHeight, forKey: Keys.customIslandHeight)
+            onDimensionsChange?()
         }
     }
 }

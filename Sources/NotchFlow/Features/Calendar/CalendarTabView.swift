@@ -18,6 +18,29 @@ struct CalendarTabView: View {
             weekdayHeader
             monthGrid
         }
+        .frame(maxWidth: .infinity)
+        .onAppear {
+            refreshCalendarHeight()
+        }
+        .onChange(of: appState.activeModule) { _, module in
+            guard module == .calendar else { return }
+            refreshCalendarHeight()
+        }
+        .onChange(of: weeks.count) { _, _ in
+            refreshCalendarHeight()
+        }
+        .onChange(of: selectedDayEvents.count) { _, _ in
+            refreshCalendarHeight()
+        }
+        .onChange(of: selectedDay) { _, _ in
+            refreshCalendarHeight()
+        }
+        .onChange(of: visibleMonth) { _, _ in
+            refreshCalendarHeight()
+        }
+        .onChange(of: appState.calendarAccessGranted) { _, _ in
+            refreshCalendarHeight()
+        }
         .foregroundStyle(IslandStyle.primaryText)
         .task(id: selectedDay) {
             await reloadSelectedDayEvents()
@@ -83,11 +106,7 @@ struct CalendarTabView: View {
     private func upcomingRow(_ event: CalendarEventPreview, emphasized: Bool) -> some View {
         Button {
             activatePanel()
-            if let meetingURL = event.meetingURL {
-                NSWorkspace.shared.open(meetingURL)
-            } else {
-                appState.calendarManager.openDayInCalendarApp(event.startDate)
-            }
+            appState.calendarManager.openEventInCalendarApp(event)
         } label: {
             HStack(spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -244,13 +263,25 @@ struct CalendarTabView: View {
         if !day.isCurrentMonth {
             visibleMonth = day.date
         }
+        refreshCalendarHeight()
     }
 
     private func reloadSelectedDayEvents() async {
         guard appState.calendarAccessGranted else {
             selectedDayEvents = []
+            refreshCalendarHeight()
             return
         }
         selectedDayEvents = await appState.calendarManager.events(on: selectedDay)
+        refreshCalendarHeight()
+    }
+
+    private func refreshCalendarHeight() {
+        let contentHeight = CalendarLayoutMetrics.contentHeight(
+            weekCount: weeks.count,
+            eventCount: selectedDayEvents.count,
+            showsAccessPrompt: !appState.calendarAccessGranted
+        )
+        appState.displayManager.setCalendarExpandedHeight(contentHeight: contentHeight)
     }
 }

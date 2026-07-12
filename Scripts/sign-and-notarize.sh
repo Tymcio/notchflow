@@ -12,7 +12,7 @@ source version.env
 APP_PATH="$ROOT_DIR/build/${APP_NAME}.app"
 DMG_PATH="$ROOT_DIR/build/${APP_NAME}-${MARKETING_VERSION}.dmg"
 
-"$ROOT_DIR/Scripts/package_app.sh"
+ENFORCE_LICENSE=1 "$ROOT_DIR/Scripts/package_app.sh"
 
 echo "Signing app..."
 codesign --force --options runtime --timestamp \

@@ -36,4 +36,4 @@ sample $(pgrep NotchFlow) 5 -file /tmp/notchflow-sample.txt
 - Menu bar overlap layout is event-driven (`didActivateApplicationNotification` + delayed refresh)
 - Mouse tracking coalesced on `mouseMoved` (no Accessibility polling for menu layout)
 - Media monitor uses distributed notifications as the primary source; scripting bridge is a timing supplement only when needed
-- Hide-for-app check uses `NSWorkspace.didActivateApplicationNotification` instead of timers
+- Notification AX scan backs off to 1.5 s after eight empty scans (premium calls/notifications)

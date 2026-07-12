@@ -22,7 +22,8 @@ Purchase: [notchflow.eu](https://notchflow.eu)
 | Multi-display support | ✓ | ✓ |
 | Default size (400×188) | ✓ | ✓ |
 | Custom width (280–420) | — | ✓ |
-| Custom height (120–200) | — | ✓ |
+| Custom clipboard height (168–480) | — | ✓ |
+| Dynamic height (calendar, media, shelf, …) | ✓ | ✓ |
 | System theme | ✓ | ✓ |
 | Midnight / Aurora / Ember themes | — | ✓ |
 

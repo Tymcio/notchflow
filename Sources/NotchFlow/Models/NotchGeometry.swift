@@ -105,13 +105,9 @@ extension NotchGeometry {
         )
         let idleWidth = cutoutWidth + leftWingWidth + rightWingWidth
 
-        let contentHeight = settings.isPremiumEnabled
-            ? settings.customIslandHeight
-            : NotchFlowConstants.defaultExpandedContentHeight
+        let contentHeight = NotchFlowConstants.minimumExpandedContentHeight
 
-        let expandedHeight = (
-            notchTopInset + contentHeight + NotchFlowConstants.expandedVerticalPadding * 2
-        ).rounded()
+        let expandedHeight = NotchFlowConstants.expandedTotalHeight(forContentHeight: contentHeight)
         let configuredWidth = settings.isPremiumEnabled
             ? min(settings.customIslandWidth, NotchFlowConstants.maxExpandedWidth)
             : NotchFlowConstants.defaultExpandedWidth
@@ -158,6 +154,24 @@ extension NotchGeometry {
             idleLeftWingWidth: leftWingWidth,
             idleRightWingWidth: rightWingWidth,
             appMenuRightEdgeX: hasNotch ? appMenuRightEdgeX : nil,
+            notchLeftX: notchLeftX
+        )
+    }
+
+    func withExpandedHeight(_ height: CGFloat) -> NotchGeometry {
+        NotchGeometry(
+            screenIdentifier: screenIdentifier,
+            hasPhysicalNotch: hasPhysicalNotch,
+            hoverTriggerRect: hoverTriggerRect,
+            screenTopY: screenTopY,
+            screenMidX: screenMidX,
+            notchTopInset: notchTopInset,
+            expandedSize: CGSize(width: expandedSize.width, height: height.rounded(.toNearestOrAwayFromZero)),
+            idleSize: idleSize,
+            physicalNotchCutoutWidth: physicalNotchCutoutWidth,
+            idleLeftWingWidth: idleLeftWingWidth,
+            idleRightWingWidth: idleRightWingWidth,
+            appMenuRightEdgeX: appMenuRightEdgeX,
             notchLeftX: notchLeftX
         )
     }

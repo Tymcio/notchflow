@@ -32,6 +32,11 @@ final class NotificationCenterObserver {
     private var pollTask: Task<Void, Never>?
     private var isEnabled = false
     private var seenFingerprints: [String: Date] = [:]
+    private var consecutiveEmptyScans = 0
+
+    private var pollInterval: Duration {
+        consecutiveEmptyScans >= 8 ? .milliseconds(1_500) : .milliseconds(450)
+    }
 
     var isAccessibilityTrusted: Bool {
         AXIsProcessTrusted()
@@ -40,10 +45,12 @@ final class NotificationCenterObserver {
     func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
         if enabled {
+            consecutiveEmptyScans = 0
             startPolling()
         } else {
             pollTask?.cancel()
             pollTask = nil
+            consecutiveEmptyScans = 0
         }
     }
 
@@ -68,7 +75,7 @@ final class NotificationCenterObserver {
         pollTask = Task {
             while !Task.isCancelled {
                 await scanForBanners()
-                try? await Task.sleep(for: .milliseconds(450))
+                try? await Task.sleep(for: pollInterval)
             }
         }
     }
@@ -79,6 +86,12 @@ final class NotificationCenterObserver {
 
         let appElement = AXUIElementCreateApplication(pid)
         let banners = collectBanners(from: appElement, depth: 0)
+
+        if banners.isEmpty {
+            consecutiveEmptyScans += 1
+        } else {
+            consecutiveEmptyScans = 0
+        }
 
         let now = Date()
         seenFingerprints = seenFingerprints.filter { now.timeIntervalSince($0.value) < 30 }

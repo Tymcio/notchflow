@@ -79,3 +79,35 @@ enum MonthCalendarModel {
         polishCalendar.date(byAdding: .month, value: 1, to: month) ?? month
     }
 }
+
+enum CalendarLayoutMetrics {
+    private static let sectionSpacing: CGFloat = 8
+    private static let headerHeight: CGFloat = 32
+    private static let weekdayHeight: CGFloat = 20
+    private static let weekRowHeight: CGFloat = 30
+    private static let weekRowSpacing: CGFloat = 2
+    private static let dayTitleHeight: CGFloat = 20
+    private static let eventRowHeight: CGFloat = 52
+    private static let eventRowSpacing: CGFloat = 6
+    private static let sectionPadding: CGFloat = 10
+    private static let safetyMargin: CGFloat = 32
+
+    static func contentHeight(weekCount: Int, eventCount: Int, showsAccessPrompt: Bool) -> CGFloat {
+        let upcoming: CGFloat
+        if showsAccessPrompt {
+            upcoming = 58
+        } else if eventCount == 0 {
+            upcoming = 40
+        } else {
+            let visibleEvents = min(eventCount, 8)
+            let rows = CGFloat(visibleEvents) * eventRowHeight
+            let gaps = CGFloat(max(0, visibleEvents - 1)) * eventRowSpacing
+            upcoming = dayTitleHeight + rows + gaps + sectionPadding
+        }
+
+        let weeks = CGFloat(max(weekCount, 5))
+        let grid = weeks * weekRowHeight + max(0, weeks - 1) * weekRowSpacing
+        let stackSpacing = sectionSpacing * 3
+        return upcoming + stackSpacing + headerHeight + weekdayHeight + grid + safetyMargin
+    }
+}

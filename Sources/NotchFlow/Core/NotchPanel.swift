@@ -20,6 +20,7 @@ final class NotchPanel: NSPanel {
         )
         configurePanel()
         contentView = hostingView
+        hostingView.autoresizingMask = [.width, .height]
     }
 
     func updateRootView(_ rootView: NotchIslandView) {
@@ -63,6 +64,8 @@ final class NotchPanel: NSPanel {
 
 /// Allows clicks on controls without an extra activation click in `.nonactivatingPanel`.
 private final class NotchHostingView<Content: View>: NSHostingView<Content> {
+    override var safeAreaInsets: NSEdgeInsets { .init() }
+
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func mouseDown(with event: NSEvent) {
@@ -144,8 +147,8 @@ final class NotchPanelController: ObservableObject {
         displayManager.$geometry
             .removeDuplicates()
             .sink { [weak self] _ in
-                self?.repositionIfVisible(animated: true)
-                self?.refreshViewIfVisible()
+                guard let self else { return }
+                self.repositionIfVisible(animated: !self.isExpanded)
             }
             .store(in: &cancellables)
 
@@ -167,7 +170,7 @@ final class NotchPanelController: ObservableObject {
         if hovering {
             suppressAutoShow = false
             hideTask?.cancel()
-            if displayManager.isDragNearNotch {
+            if displayManager.isFileDragInProgress && displayManager.isDragNearNotch {
                 hoverDwellTask?.cancel()
                 appState.activeModule = .shelf
                 presentExpanded()
@@ -212,7 +215,11 @@ final class NotchPanelController: ObservableObject {
             return
         }
 
-        if isExpanded || displayManager.isNotchInteractionActive {
+        if isExpanded {
+            return
+        }
+
+        if displayManager.isNotchInteractionActive {
             refreshViewIfVisible()
             return
         }
@@ -246,6 +253,7 @@ final class NotchPanelController: ObservableObject {
 
     private func presentExpanded() {
         ensurePanel()
+        displayManager.updateExpandedHeight(for: appState.activeModule)
         let needsRefresh = !isVisible || !isExpanded
         isExpanded = true
         isVisible = true
@@ -253,7 +261,7 @@ final class NotchPanelController: ObservableObject {
         if needsRefresh {
             refreshView()
         }
-        repositionIfVisible(animated: needsRefresh)
+        repositionIfVisible(animated: false)
         panel?.setIgnoresMouseEvents(false)
         panel?.orderFrontRegardless()
         installEscapeMonitorIfNeeded()
@@ -275,7 +283,7 @@ final class NotchPanelController: ObservableObject {
         if needsRefresh {
             refreshView()
         }
-        repositionIfVisible(animated: needsRefresh)
+        repositionIfVisible(animated: false)
         panel?.setIgnoresMouseEvents(!idleAcceptsMouseEvents)
         panel?.orderFrontRegardless()
         installEscapeMonitorIfNeeded()
@@ -309,6 +317,10 @@ final class NotchPanelController: ObservableObject {
     private func ensurePanel() {
         if panel == nil {
             panel = NotchPanel(rootView: makeIslandView())
+            if let geometry = displayManager.geometry {
+                let frame = geometry.frame(isExpanded: isExpanded, isIdle: !isExpanded)
+                panel?.setFrame(frame, animated: false)
+            }
         }
     }
 
@@ -330,7 +342,7 @@ final class NotchPanelController: ObservableObject {
                 guard !Task.isCancelled else { return }
                 guard self.displayManager.isNotchInteractionActive else { return }
                 guard !self.suppressQuickExpandUntilHoverEnd else { return }
-                if self.displayManager.isDragNearNotch {
+                if self.displayManager.isFileDragInProgress && self.displayManager.isDragNearNotch {
                     self.appState.activeModule = .shelf
                 }
                 self.presentExpanded()
@@ -404,6 +416,7 @@ final class NotchPanelController: ObservableObject {
         appState.isIslandInputFocused = false
         isVisible = false
         isExpanded = false
+        displayManager.clearMeasuredExpandedHeight()
         syncMediaPolling()
         displayManager.activePanelFrame = nil
         panel?.makeFirstResponder(nil)
@@ -430,7 +443,7 @@ final class NotchPanelController: ObservableObject {
     private func makeIslandView() -> NotchIslandView {
         NotchIslandView(
             isExpanded: isExpanded,
-            geometry: displayManager.geometry,
+            displayManager: displayManager,
             appState: appState
         )
     }

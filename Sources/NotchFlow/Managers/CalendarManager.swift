@@ -79,10 +79,75 @@ final class CalendarManager {
     }
 
     func openDayInCalendarApp(_ date: Date) {
-        let interval = Int(date.timeIntervalSinceReferenceDate)
-        guard let url = URL(string: "calshow:\(interval)") else { return }
         NSApp.activate(ignoringOtherApps: true)
-        NSWorkspace.shared.open(url)
+
+        if openCalendarDayWithAppleScript(date) {
+            return
+        }
+
+        openCalendarApplicationOnly()
+    }
+
+    func openEventInCalendarApp(_ event: CalendarEventPreview) {
+        if let meetingURL = event.meetingURL {
+            NSApp.activate(ignoringOtherApps: true)
+            NSWorkspace.shared.open(meetingURL)
+            return
+        }
+        openDayInCalendarApp(event.startDate)
+    }
+
+    private func openCalendarDayWithAppleScript(_ date: Date) -> Bool {
+        let components = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute, .second],
+            from: date
+        )
+        guard let year = components.year,
+              let month = components.month,
+              let day = components.day else {
+            return false
+        }
+
+        let hour = components.hour ?? 0
+        let minute = components.minute ?? 0
+        let second = components.second ?? 0
+
+        let scriptSource = """
+        set targetDate to (current date)
+        set year of targetDate to \(year)
+        set month of targetDate to \(month)
+        set day of targetDate to \(day)
+        set hours of targetDate to \(hour)
+        set minutes of targetDate to \(minute)
+        set seconds of targetDate to \(second)
+        tell application "Calendar"
+            activate
+            view calendar at targetDate
+        end tell
+        """
+
+        guard let script = NSAppleScript(source: scriptSource) else { return false }
+        var error: NSDictionary?
+        script.executeAndReturnError(&error)
+        return error == nil
+    }
+
+    private func openCalendarApplicationOnly() {
+        guard let calendarApp = Self.calendarApplicationURL() else { return }
+        NSWorkspace.shared.open(calendarApp)
+    }
+
+    private static func calendarApplicationURL() -> URL? {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.iCal") {
+            return url
+        }
+
+        for path in ["/System/Applications/Calendar.app", "/Applications/Calendar.app"] {
+            if FileManager.default.fileExists(atPath: path) {
+                return URL(fileURLWithPath: path)
+            }
+        }
+        return nil
     }
 
     func refreshUpcomingEvent() async {

@@ -10,7 +10,21 @@ enum NotchFlowConstants {
     static let defaultCollapsedHeight: CGFloat = 40
     static let defaultExpandedWidth: CGFloat = 400
     static let maxExpandedWidth: CGFloat = 440
-    static let defaultExpandedContentHeight: CGFloat = 178
+    static let defaultExpandedContentHeight: CGFloat = 400
+    static let minimumExpandedContentHeight: CGFloat = 168
+    /// Upper bound for user-configured module content height (premium slider).
+    static let maximumExpandedContentHeight: CGFloat = 480
+    /// Tab row height in the expanded notch layout.
+    static let expandedTabBarHeight: CGFloat = 30
+    static let expandedTabToContentSpacing: CGFloat = 8
+    static let expandedContentBottomPadding: CGFloat = 12
+    /// Estimated chrome below the notch cutout (tab row + spacing + padding).
+    static let expandedChromeHeight: CGFloat = 52
+
+    static func expandedTotalHeight(forContentHeight contentHeight: CGFloat) -> CGFloat {
+        (expandedTabBarHeight + expandedTabToContentSpacing + contentHeight + expandedContentBottomPadding)
+            .rounded(.up)
+    }
     static let expandedVerticalPadding: CGFloat = 12
     static let defaultExpandedHeight: CGFloat = 218
     static let virtualCapsuleWidth: CGFloat = 200

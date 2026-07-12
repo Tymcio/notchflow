@@ -92,6 +92,7 @@ struct CameraMirrorView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .top)
+        .frame(maxHeight: 220)
         .onDisappear {
             appState.cameraMirrorManager.stopPreview()
         }

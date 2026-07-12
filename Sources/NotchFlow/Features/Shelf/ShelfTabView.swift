@@ -28,7 +28,7 @@ struct ShelfTabView: View {
     }
 
     private var isDropActive: Bool {
-        appState.displayManager.isDragNearNotch
+        appState.displayManager.isFileDragInProgress && appState.displayManager.isDragNearNotch
     }
 
     var body: some View {
@@ -42,6 +42,12 @@ struct ShelfTabView: View {
                 .padding(.top, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+            Task {
+                await appState.shelfManager.handleDrop(providers: providers, isPremium: appState.isPremium)
+            }
+            return true
+        }
     }
 
     private var shelfToolbar: some View {

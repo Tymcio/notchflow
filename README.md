@@ -21,7 +21,7 @@ NotchFlow turns the MacBook notch into a useful, non-intrusive island — a floa
 
 | Area | Free | Premium |
 |------|------|---------|
-| **Island** | Default size, system theme | Custom width/height, Midnight / Aurora / Ember themes |
+| **Island** | Default size, system theme | Custom width, clipboard height, Midnight / Aurora / Ember themes |
 | **Media** | Spotify & Apple Music controls, artwork, scrubber | + Lyrics snippet |
 | **Shelf** | 1 item (drop on island) | Up to 12 items, multi-file ZIP staging |
 | **Notes** | 5 quick notes | Unlimited + pin |

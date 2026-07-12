@@ -86,12 +86,17 @@ final class AppState {
     var onLiveActivityChange: (() -> Void)?
     var onShelfChange: (() -> Void)?
 
+    func updateMeasuredExpandedIslandSize(_ size: CGSize, module: IslandModule) {
+        displayManager.setMeasuredExpandedHeight(size.height, for: module)
+    }
+
     func start() async {
         licenseStatus = licenseManager.status
         settings.isPremiumEnabled = isPremium
         await licenseManager.refreshIfNeeded()
         licenseStatus = licenseManager.status
         settings.isPremiumEnabled = isPremium
+        displayManager.refreshGeometryNow()
 
         mediaMonitor.start()
         hudManager.start()

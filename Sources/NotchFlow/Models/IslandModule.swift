@@ -44,4 +44,31 @@ enum IslandModule: String, CaseIterable, Identifiable, Sendable {
         default: false
         }
     }
+
+    /// Modules with long scrollable content use the configured max height instead of intrinsic sizing.
+    var prefersIntrinsicExpandedHeight: Bool {
+        switch self {
+        case .clipboard:
+            false
+        default:
+            true
+        }
+    }
+
+    /// Reasonable first-pass content height before intrinsic measurement completes.
+    var estimatedContentHeight: CGFloat {
+        switch self {
+        case .calendar: 440
+        case .media: 92
+        case .shelf: 132
+        case .focus: 188
+        case .notes: 156
+        case .mirror: 196
+        case .clipboard: NotchFlowConstants.maximumExpandedContentHeight
+        }
+    }
+
+    var estimatedTotalExpandedHeight: CGFloat {
+        NotchFlowConstants.expandedTotalHeight(forContentHeight: estimatedContentHeight)
+    }
 }
