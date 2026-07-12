@@ -33,6 +33,7 @@ Purchase: [notchflow.eu](https://notchflow.eu)
 | Media controls (Spotify, Apple Music) | ✓ | ✓ |
 | Lyrics snippet | — | ✓ |
 | Calendar month grid | ✓ | ✓ |
+| Upcoming events preview | ✓ | ✓ |
 | Quick notes | 5 max | Unlimited + pin |
 | Clipboard history | 5 max | 50 + search |
 | Camera mirror | Locked | Live preview |
@@ -73,6 +74,7 @@ Purchase: [notchflow.eu](https://notchflow.eu)
 | Local API — media & island | ✓ | ✓ |
 | Local API — notes, clipboard, mirror | — | ✓ |
 | Hide island for selected apps | — | ✓ |
+| Hide island settings panel | — | ✓ |
 | Sparkle auto-updates | Official builds | Official builds |
 
 ## Implementation reference
@@ -86,15 +88,6 @@ static let premiumClipboardLimit = 50
 ```
 
 Premium status is determined by `LicenseStatus.isPremium` (annual or lifetime tier from LemonSqueezy validation).
-
-## Roadmap items (not yet in UI)
-
-These exist in code but are not fully exposed in the island UI yet:
-
-- **Calendar preview** — upcoming events fetched; preview view not shown
-- **App blacklist settings** — hide logic works; no settings panel yet
-
-When these ship, they will be documented here and in the pricing tables above.
 
 ## Self-build vs official build
 

@@ -27,10 +27,10 @@ NotchFlow turns the MacBook notch into a useful, non-intrusive island — a floa
 | **Notes** | 5 quick notes | Unlimited + pin |
 | **Clipboard** | 5 entries (opt-in monitoring) | 50 entries + search |
 | **Mirror** | Tab visible (locked) | Live camera preview |
-| **Calendar** | Month grid | — |
+| **Calendar** | Month grid + upcoming preview | — |
 | **HUD** | Custom volume & brightness overlays | — |
 | **Integrations** | URL scheme, local API (media) | Local API (notes, clipboard, mirror) |
-| **Hide mode** | — | Hide island for selected apps |
+| **Hide mode** | — | Hide island for selected apps (settings panel) |
 
 Full breakdown: **[docs/free-vs-premium.md](docs/free-vs-premium.md)**
 
