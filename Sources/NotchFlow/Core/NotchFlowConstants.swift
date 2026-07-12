@@ -19,6 +19,8 @@ enum NotchFlowConstants {
     static let hoverExpandThreshold: CGFloat = 32
     /// Slight horizontal forgiveness when aiming at the physical notch cutout.
     static let hoverNotchHorizontalExpand: CGFloat = 8
+    /// Hover must linger in the notch band before expanding, so quick clicks reach the app below.
+    static let hoverExpandDwellMilliseconds = 220
     /// Extra width beyond expanded island when detecting file drags.
     static let dragDropZoneHorizontalPadding: CGFloat = 40
     /// Extra height below expanded island for file drop targeting.

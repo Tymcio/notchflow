@@ -78,8 +78,11 @@ final class NotchPanelController: ObservableObject {
 
     private var panel: NotchPanel?
     private var hideTask: Task<Void, Never>?
+    private var hoverDwellTask: Task<Void, Never>?
+    private var clickMonitor: Any?
     private var escapeMonitor: Any?
     private var suppressAutoShow = false
+    private var suppressQuickExpandUntilHoverEnd = false
     private let displayManager: DisplayManager
     private let appState: AppState
     private var cancellables = Set<AnyCancellable>()
@@ -95,6 +98,16 @@ final class NotchPanelController: ObservableObject {
             self?.refreshViewIfVisible()
         }
         bind()
+        installClickMonitor()
+    }
+
+    deinit {
+        if let clickMonitor {
+            NSEvent.removeMonitor(clickMonitor)
+        }
+        if let escapeMonitor {
+            NSEvent.removeMonitor(escapeMonitor)
+        }
     }
 
     func prepareForTyping() {
@@ -155,11 +168,26 @@ final class NotchPanelController: ObservableObject {
             suppressAutoShow = false
             hideTask?.cancel()
             if displayManager.isDragNearNotch {
+                hoverDwellTask?.cancel()
                 appState.activeModule = .shelf
+                presentExpanded()
+                return
             }
-            presentExpanded()
+            if isExpanded {
+                hoverDwellTask?.cancel()
+                presentExpanded()
+                return
+            }
+            if suppressQuickExpandUntilHoverEnd {
+                keepIdleVisibleIfNeeded()
+                return
+            }
+            scheduleExpandAfterHoverDwell()
             return
         }
+
+        hoverDwellTask?.cancel()
+        suppressQuickExpandUntilHoverEnd = false
 
         if suppressAutoShow {
             scheduleHide()
@@ -282,6 +310,75 @@ final class NotchPanelController: ObservableObject {
         if panel == nil {
             panel = NotchPanel(rootView: makeIslandView())
         }
+    }
+
+    private func keepIdleVisibleIfNeeded() {
+        guard appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap else { return }
+        if !isVisible || isExpanded {
+            presentIdle()
+        }
+    }
+
+    private func scheduleExpandAfterHoverDwell() {
+        hoverDwellTask?.cancel()
+        keepIdleVisibleIfNeeded()
+        hoverDwellTask = Task {
+            try? await Task.sleep(
+                for: .milliseconds(NotchFlowConstants.hoverExpandDwellMilliseconds)
+            )
+            await MainActor.run {
+                guard !Task.isCancelled else { return }
+                guard self.displayManager.isNotchInteractionActive else { return }
+                guard !self.suppressQuickExpandUntilHoverEnd else { return }
+                if self.displayManager.isDragNearNotch {
+                    self.appState.activeModule = .shelf
+                }
+                self.presentExpanded()
+            }
+        }
+    }
+
+    private func installClickMonitor() {
+        clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            Task { @MainActor in
+                self?.handleMouseDown(at: NSEvent.mouseLocation)
+            }
+        }
+
+        if clickMonitor == nil {
+            clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+                self?.handleMouseDown(at: NSEvent.mouseLocation)
+                return event
+            }
+        }
+    }
+
+    private func handleMouseDown(at location: NSPoint) {
+        hoverDwellTask?.cancel()
+
+        guard !isExpanded else { return }
+        guard isLocationInHoverTriggerBand(location) else { return }
+
+        suppressQuickExpandUntilHoverEnd = true
+    }
+
+    private func isLocationInHoverTriggerBand(_ location: NSPoint) -> Bool {
+        guard let geometry = displayManager.geometry else { return false }
+
+        let triggerRect: CGRect
+        if geometry.hasPhysicalNotch {
+            triggerRect = geometry.hoverTriggerRect.insetBy(
+                dx: -NotchFlowConstants.hoverNotchHorizontalExpand,
+                dy: -NotchFlowConstants.hoverNotchHorizontalExpand
+            )
+        } else {
+            triggerRect = geometry.hoverTriggerRect.insetBy(
+                dx: -NotchFlowConstants.hoverExpandThreshold,
+                dy: -NotchFlowConstants.hoverExpandThreshold
+            )
+        }
+
+        return triggerRect.contains(location)
     }
 
     private func scheduleHide() {
