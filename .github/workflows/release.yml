@@ -32,6 +32,7 @@ jobs:
         env:
           DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
           NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
+          POLAR_ORGANIZATION_ID: ${{ secrets.POLAR_ORGANIZATION_ID }}
         run: Scripts/sign-and-notarize.sh
 
       - name: Generate appcast
