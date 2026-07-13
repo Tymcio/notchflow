@@ -41,9 +41,7 @@ final class HUDManager {
                 object: nil,
                 queue: .main
             ) { [weak self] notification in
-                Task { @MainActor in
-                    self?.handle(notification: notification, name: name)
-                }
+                self?.handle(notification: notification, name: name)
             }
             observers.append(token)
         }

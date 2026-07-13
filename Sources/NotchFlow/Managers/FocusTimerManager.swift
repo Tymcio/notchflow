@@ -144,9 +144,7 @@ final class FocusTimerManager {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.reconcileWallClock()
-            }
+            self?.reconcileWallClock()
         }
     }
 
@@ -233,9 +231,7 @@ final class FocusTimerManager {
     private func startTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.tick()
-            }
+            self?.tick()
         }
     }
 

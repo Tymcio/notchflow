@@ -282,7 +282,7 @@ final class DisplayManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.refreshHideState()
                 self?.menuBarLayoutManager.refresh(for: self?.activeScreen, publishImmediately: true)
                 self?.recomputeGeometry(for: self?.activeScreen)
@@ -296,7 +296,7 @@ final class DisplayManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.refreshActiveScreen()
             }
         }
@@ -308,7 +308,7 @@ final class DisplayManager: ObservableObject {
             object: NSApp,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.refreshMouseMonitoringIfNeeded()
             }
         }
