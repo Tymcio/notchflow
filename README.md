@@ -66,6 +66,8 @@ open build/NotchFlow.app
 
 > **Important:** Do not run the raw binary from `.build/` — it will crash without `Sparkle.framework`. Always use `Scripts/package_app.sh` or `Scripts/compile_and_run.sh`.
 
+See [docs/polar-setup.md](docs/polar-setup.md) for checkout and license configuration.
+
 Self-built copies run all free features. Premium features require a license from [notchflow.eu](https://notchflow.eu).
 
 ## Development
@@ -89,7 +91,7 @@ Setup guide: [docs/raycast-integration.md](docs/raycast-integration.md)
 - No telemetry in v1.0
 - Clipboard monitoring is **opt-in** and stored locally
 - Local API binds to `127.0.0.1` only; token in Keychain
-- Network use limited to license validation (LemonSqueezy) and Sparkle updates
+- Network use limited to license validation (Polar) and Sparkle updates
 - No Terminal install scripts — drag-to-Applications only
 
 Details: [website/privacy.html](website/privacy.html) · [website/security.html](website/security.html)

@@ -54,13 +54,22 @@ if [[ "${MENU_BAR_APP:-0}" == "1" ]]; then
   LS_UI_ELEMENT="true"
 fi
 
-# Premium gates: free-for-all during beta. Set ENFORCE_LICENSE=1 for release builds.
+# Premium gates: enforced on release builds. Set ENFORCE_LICENSE=0 for local beta.
 LICENSE_PLIST=""
-if [[ "${ENFORCE_LICENSE:-0}" == "1" ]]; then
+if [[ "${ENFORCE_LICENSE:-1}" == "1" ]]; then
   LICENSE_PLIST="$(cat <<LICENSE
   <key>NFEnforceLicense</key>
   <true/>
 LICENSE
+)"
+fi
+
+POLAR_PLIST=""
+if [[ -n "${POLAR_ORGANIZATION_ID:-}" ]]; then
+  POLAR_PLIST="$(cat <<POLAR
+  <key>PolarOrganizationID</key>
+  <string>${POLAR_ORGANIZATION_ID}</string>
+POLAR
 )"
 fi
 
@@ -107,6 +116,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>NSApplication</string>
 ${SPARKLE_PLIST}
 ${LICENSE_PLIST}
+${POLAR_PLIST}
   <key>CFBundleURLTypes</key>
   <array>
     <dict>

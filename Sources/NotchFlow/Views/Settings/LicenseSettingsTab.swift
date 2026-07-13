@@ -42,7 +42,7 @@ struct LicenseSettingsTab: View {
 
                 GroupBox("Klucz licencyjny") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Wklej klucz z zakupu na notchflow.eu (format: XXXXX-XXXXX-XXXXX-XXXXX).")
+                        Text("Wklej klucz z zakupu na notchflow.eu (np. NOTCHFLOW_… lub UUID z e-maila Polar).")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)

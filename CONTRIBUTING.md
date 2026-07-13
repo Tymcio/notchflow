@@ -41,7 +41,7 @@ CI (`.github/workflows/ci.yml`) runs build, test, and package on every push/PR.
 |------|---------|
 | `Sources/NotchFlow/App/` | Entry point, app state, delegate |
 | `Sources/NotchFlow/Features/` | Media, notes, clipboard, mirror, calendar |
-| `Sources/NotchFlow/Licensing/` | LemonSqueezy validation, Keychain |
+| `Sources/NotchFlow/Licensing/` | Polar license validation, Keychain |
 | `Sources/NotchFlow/Managers/` | Display, HUD, shelf, pomodoro |
 | `Sources/NotchFlow/Views/` | Island UI, settings, overlays |
 | `Sources/NotchFlow/Services/` | Local API, URL scheme, Sparkle |

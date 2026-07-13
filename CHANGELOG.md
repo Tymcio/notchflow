@@ -17,7 +17,7 @@ All notable changes to NotchFlow are documented here. Version numbers follow [Se
 - Camera mirror tab (premium)
 - App blacklist settings panel (hide island for selected apps, premium)
 - Lyrics snippet display in the media player (premium, opt-in via Privacy settings)
-- Premium licensing via LemonSqueezy (annual & lifetime)
+- Premium licensing via Polar (annual & lifetime)
 - Sparkle auto-updates on official signed builds
 - Local HTTP API and Raycast extension
 - URL scheme deeplinks (`notchflow://`)
@@ -31,6 +31,7 @@ All notable changes to NotchFlow are documented here. Version numbers follow [Se
 - Clipboard search is premium-only (free tier shows locked state)
 - Hover-to-expand waits 220 ms so quick clicks in the menu bar reach apps below
 - Island height adapts dynamically to tab content; premium height slider applies to clipboard only
+- Premium payments and license keys via Polar (Merchant of Record)
 - Shelf drag-out restored on file icons without breaking open-on-click
 
 ### Fixed

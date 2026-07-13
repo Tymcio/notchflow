@@ -21,19 +21,23 @@
     <div class="container">
       <a class="logo" href="../">
         <img class="logo-mark" src="../assets/logo-mark.png" alt="" height="28" width="56" />
-        notch<span class="gradient-text">flow</span>
+        <span class="logo-text">notch<span class="gradient-text">flow</span></span>
       </a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Otwórz menu">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 5h14v1.5H3V5zm0 5h14v1.5H3V10zm0 5h14v1.5H3V15z"/></svg>
-      </button>
       <nav>
         <ul class="nav-links" id="nav">
           <li><a href="../#features">Funkcje</a></li>
           <li><a href="pricing/">Cennik</a></li>
           <li><a href="../#download">Pobierz</a></li>
+          <li class="nav-lang">
+            <span class="nav-lang-label">Język</span>
+            <div class="lang-switch" role="navigation" aria-label="Język">
+              <a href="../privacy.html">EN</a>
+              <a href="privacy.html" aria-current="page">PL</a>
+            </div>
+          </li>
         </ul>
       </nav>
-      <div class="header-actions">
+      <div class="header-toolbar">
         <div class="lang-switch" role="navigation" aria-label="Język">
           <a href="../privacy.html">EN</a>
           <a href="privacy.html" aria-current="page">PL</a>
@@ -41,6 +45,9 @@
         <button class="theme-toggle" type="button" aria-label="Zmień motyw">
           <svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
           <svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        </button>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Otwórz menu">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 5h14v1.5H3V5zm0 5h14v1.5H3V10zm0 5h14v1.5H3V15z"/></svg>
         </button>
       </div>
     </div>
@@ -70,7 +77,7 @@
         <li>kontakt mailowy z nami,</li>
         <li>korzystanie z Aplikacji NotchFlow — w zakresie, w jakim dane opuszczają urządzenie użytkownika.</li>
       </ul>
-      <p>Polityka nie obejmuje serwisów zewnętrznych (np. GitHub, Lemon Squeezy), które mają własne regulaminy i polityki prywatności.</p>
+      <p>Polityka nie obejmuje serwisów zewnętrznych (np. GitHub, Polar), które mają własne regulaminy i polityki prywatności.</p>
 
       <h2>3. Jakie dane przetwarzamy</h2>
 
@@ -90,13 +97,13 @@
       <p>Jeśli napiszesz do nas (np. na <a href="mailto:hello@notchflow.eu">hello@notchflow.eu</a> lub <a href="mailto:privacy@notchflow.eu">privacy@notchflow.eu</a>), przetwarzamy podany adres e-mail, treść wiadomości oraz ewentualne dane, które dobrowolnie dołączysz (np. wersja macOS, opis problemu).</p>
 
       <h3>3.3. Zakup licencji premium</h3>
-      <p>Płatności obsługuje <strong>Lemon Squeezy</strong> (Merchant of Record). W procesie zakupu Lemon Squeezy zbiera m.in. adres e-mail, dane rozliczeniowe i informacje o płatności. My otrzymujemy informacje niezbędne do realizacji licencji (np. e-mail, status zamówienia, klucz licencyjny), ale <strong>nie przechowujemy danych kart płatniczych</strong>.</p>
+      <p>Płatności obsługuje <strong>Polar</strong> (Merchant of Record). W procesie zakupu Polar zbiera m.in. adres e-mail, dane rozliczeniowe i informacje o płatności. My otrzymujemy informacje niezbędne do realizacji licencji (np. e-mail, status zamówienia, klucz licencyjny), ale <strong>nie przechowujemy danych kart płatniczych</strong>.</p>
 
       <h3>3.4. Aplikacja NotchFlow (macOS)</h3>
       <p>Aplikacja nie wymaga konta użytkownika. Większość danych (notatki, schowek, ustawienia, pliki półki) przechowywana jest lokalnie w katalogu Application Support na Twoim Macu i nie jest przesyłana na nasze serwery.</p>
       <p>Dane mogą opuszczać urządzenie wyłącznie w następujących przypadkach:</p>
       <ul>
-        <li><strong>walidacja licencji premium</strong> — klucz licencyjny i nazwa urządzenia wysyłane do Lemon Squeezy (tylko gdy aktywujesz premium),</li>
+        <li><strong>walidacja licencji premium</strong> — klucz licencyjny i nazwa urządzenia wysyłane do Polar (tylko gdy aktywujesz premium),</li>
         <li><strong>aktualizacje</strong> — oficjalne buildy pobierają metadane appcast z notchflow.eu (Sparkle),</li>
         <li><strong>tekst piosenki (opcjonalnie)</strong> — tytuł i wykonawca utworu wysyłane do lrclib.net, jeśli włączysz tę funkcję w Ustawienia → Prywatność,</li>
         <li><strong>okładki albumów</strong> — Aplikacja pobiera grafikę z serwerów Spotify CDN (np. i.scdn.co) na podstawie metadanych odtwarzanego utworu,</li>
@@ -159,7 +166,7 @@
       <p>Dane mogą być przekazywane podmiotom przetwarzającym działającym na nasze zlecenie lub niezależnie (jako odrębni administratorzy):</p>
       <ul>
         <li><strong>Google LLC (Google Analytics)</strong> — statystyki odwiedzin Strony, wyłącznie po zgodzie (<a href="https://policies.google.com/privacy">polityka prywatności Google</a>),</li>
-        <li><strong>Lemon Squeezy</strong> — płatności, faktury, walidacja licencji (<a href="https://www.lemonsqueezy.com/privacy">polityka prywatności</a>),</li>
+        <li><strong>Polar</strong> — płatności, faktury, walidacja licencji (<a href="https://polar.sh/legal/privacy">polityka prywatności</a>),</li>
         <li><strong>dostawca hostingu Strony</strong> — utrzymanie serwisu notchflow.eu i pliku appcast,</li>
         <li><strong>Google LLC</strong> — dostarczanie czcionek Google Fonts,</li>
         <li><strong>GitHub (Microsoft)</strong> — hosting wydań Aplikacji,</li>
@@ -169,7 +176,7 @@
       <p>Nie sprzedajemy danych osobowych podmiotom trzecim.</p>
 
       <h2>6. Przekazywanie danych poza EOG</h2>
-      <p>Niektórzy dostawcy (np. Lemon Squeezy, Google, GitHub) mogą przetwarzać dane w Stanach Zjednoczonych lub innych państwach spoza Europejskiego Obszaru Gospodarczego. Przekazywanie odbywa się z zachowaniem wymogów RODO, w tym na podstawie standardowych klauzul umownych lub decyzji Komisji Europejskiej o adekwatności, zgodnie z politykami tych podmiotów.</p>
+      <p>Niektórzy dostawcy (np. Polar, Google, GitHub) mogą przetwarzać dane w Stanach Zjednoczonych lub innych państwach spoza Europejskiego Obszaru Gospodarczego. Przekazywanie odbywa się z zachowaniem wymogów RODO, w tym na podstawie standardowych klauzul umownych lub decyzji Komisji Europejskiej o adekwatności, zgodnie z politykami tych podmiotów.</p>
 
       <h2>7. Okres przechowywania</h2>
       <ul>

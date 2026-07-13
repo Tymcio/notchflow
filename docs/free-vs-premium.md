@@ -10,7 +10,7 @@ NotchFlow is **open source** (GPL-3.0) — you can build and run it yourself wit
 | **Premium Annual** | €12/year | All premium features, 2 Macs |
 | **Premium Lifetime** | €24 one-time | All premium features, perpetual |
 
-Purchase: [notchflow.eu](https://notchflow.eu)
+Purchase: [notchflow.eu](https://notchflow.eu) (checkout via [Polar](https://polar.sh))
 
 ## Feature comparison
 
@@ -88,7 +88,7 @@ static let freeClipboardLimit = 5
 static let premiumClipboardLimit = 50
 ```
 
-Premium status is determined by `LicenseStatus.isPremium` (annual or lifetime tier from LemonSqueezy validation).
+Premium status is determined by `LicenseStatus.isPremium` (annual or lifetime tier from Polar license validation).
 
 ## Self-build vs official build
 

@@ -11,7 +11,7 @@ This repository (`https://github.com/Tymcio/notchflow`) is **public**. Everythin
 | Release scripts (no secrets inside) | `Scripts/sign-and-notarize.sh`, `make_appcast.sh` |
 | Package manifest | `Package.swift`, `Package.resolved`, `version.env` |
 | Entitlements | `NotchFlow.entitlements` |
-| Documentation | `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/` |
+| Documentation | `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/` (incl. `docs/polar-setup.md`) |
 | Integrations | `integrations/raycast/` |
 | Marketing site source | `website/` |
 | CI workflows | `.github/workflows/ci.yml`, `release.yml` |

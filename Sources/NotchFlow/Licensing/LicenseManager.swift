@@ -45,7 +45,13 @@ final class LicenseManager {
     }
 
     private let keychain = KeychainStore(service: "eu.notchflow.app.license")
-    private let apiClient = LemonSqueezyLicenseClient()
+    private let apiClient = PolarLicenseClient()
+
+    private enum KeychainKey {
+        static let licenseKey = "license_key"
+        static let activationID = "license_activation_id"
+        static let licenseStatus = "license_status"
+    }
 
     func refreshIfNeeded() async {
         if let cached = loadCachedStatus(), isWithinGracePeriod(cached) {
@@ -53,15 +59,15 @@ final class LicenseManager {
             return
         }
 
-        guard let key = keychain.read(key: "license_key") else {
+        guard let key = keychain.read(key: KeychainKey.licenseKey) else {
             status = .free
             return
         }
 
         do {
-            let validated = try await apiClient.validate(key: key, instanceName: Host.current().localizedName ?? "Mac")
-            try persist(status: validated)
-            status = validated
+            let session = try await validateStoredSession(key: key)
+            try persist(session: session)
+            status = session.status
         } catch {
             NotchFlowLog.license.error("License refresh failed: \(error.localizedDescription, privacy: .public)")
             if let cached = loadCachedStatus(), isWithinGracePeriod(cached) {
@@ -73,29 +79,51 @@ final class LicenseManager {
     }
 
     func activate(key: String) async throws {
-        let validated = try await apiClient.activate(key: key, instanceName: Host.current().localizedName ?? "Mac")
-        try keychain.save(key: "license_key", value: key)
-        try persist(status: validated)
-        status = validated
+        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        let session = try await apiClient.activate(
+            key: trimmed,
+            instanceName: Host.current().localizedName ?? "Mac"
+        )
+        try keychain.save(key: KeychainKey.licenseKey, value: trimmed)
+        try keychain.save(key: KeychainKey.activationID, value: session.activationID)
+        try persist(session: session)
+        status = session.status
     }
 
     func deactivate() throws {
-        try keychain.delete(key: "license_key")
-        try keychain.delete(key: "license_status")
+        try keychain.delete(key: KeychainKey.licenseKey)
+        try keychain.delete(key: KeychainKey.activationID)
+        try keychain.delete(key: KeychainKey.licenseStatus)
         status = .free
     }
 
     var storedLicenseKey: String? {
-        keychain.read(key: "license_key")
+        keychain.read(key: KeychainKey.licenseKey)
     }
 
-    private func persist(status: LicenseStatus) throws {
-        let data = try JSONEncoder().encode(PersistedLicenseStatus(status: status))
-        try keychain.save(key: "license_status", data: data)
+    private func validateStoredSession(key: String) async throws -> PolarLicenseSession {
+        if let activationID = keychain.read(key: KeychainKey.activationID) {
+            do {
+                return try await apiClient.validate(key: key, activationID: activationID)
+            } catch LicenseValidationError.invalidKey {
+                try? keychain.delete(key: KeychainKey.activationID)
+            }
+        }
+
+        return try await apiClient.activate(
+            key: key,
+            instanceName: Host.current().localizedName ?? "Mac"
+        )
+    }
+
+    private func persist(session: PolarLicenseSession) throws {
+        try keychain.save(key: KeychainKey.activationID, value: session.activationID)
+        let data = try JSONEncoder().encode(PersistedLicenseStatus(status: session.status))
+        try keychain.save(key: KeychainKey.licenseStatus, data: data)
     }
 
     private func loadCachedStatus() -> LicenseStatus? {
-        guard let data = keychain.readData(key: "license_status"),
+        guard let data = keychain.readData(key: KeychainKey.licenseStatus),
               let persisted = try? JSONDecoder().decode(PersistedLicenseStatus.self, from: data) else {
             return nil
         }

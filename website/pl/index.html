@@ -29,20 +29,24 @@
     <div class="container">
       <a class="logo" href="../">
         <img class="logo-mark" src="../assets/logo-mark.png" alt="" height="28" width="56" />
-        notch<span class="gradient-text">flow</span>
+        <span class="logo-text">notch<span class="gradient-text">flow</span></span>
       </a>
-      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Otwórz menu">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 5h14v1.5H3V5zm0 5h14v1.5H3V10zm0 5h14v1.5H3V15z"/></svg>
-      </button>
       <nav>
         <ul class="nav-links" id="nav">
           <li><a href="#features">Funkcje</a></li>
           <li><a href="#screenshots">Zrzuty ekranu</a></li>
           <li><a href="#why">Dlaczego NotchFlow?</a></li>
           <li><a href="#faq">FAQ</a></li>
+          <li class="nav-lang">
+            <span class="nav-lang-label">Język</span>
+            <div class="lang-switch" role="navigation" aria-label="Język">
+              <a href="../">EN</a>
+              <a href="../pl/" aria-current="page">PL</a>
+            </div>
+          </li>
         </ul>
       </nav>
-      <div class="header-actions">
+      <div class="header-toolbar">
         <div class="lang-switch" role="navigation" aria-label="Język">
           <a href="../">EN</a>
           <a href="../pl/" aria-current="page">PL</a>
@@ -51,8 +55,11 @@
           <svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
           <svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
         </button>
-        <a class="btn btn-primary btn-sm" href="#download">Pobierz za darmo</a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Otwórz menu">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 5h14v1.5H3V5zm0 5h14v1.5H3V10zm0 5h14v1.5H3V15z"/></svg>
+        </button>
       </div>
+      <a class="btn btn-primary btn-sm header-cta" href="#download">Pobierz za darmo</a>
     </div>
   </header>
 
@@ -320,7 +327,7 @@
               <li>50 wpisów schowka + wyszukiwanie</li>
               <li>Ukrywanie wyspy dla wybranych aplikacji</li>
             </ul>
-            <a class="btn btn-primary" href="https://notchflow.lemonsqueezy.com/checkout/lifetime">Kup dożywotnią</a>
+            <a class="btn btn-primary" data-polar-checkout="lifetime" href="https://notchflow.eu/pricing/">Kup dożywotnią</a>
           </article>
           <article class="pricing-card">
             <h3>Premium Roczna</h3>
@@ -328,9 +335,9 @@
             <ul>
               <li>Wszystkie funkcje premium</li>
               <li>Aktualizacje w cenie</li>
-              <li>Licencja na 2 Maci</li>
+              <li>Licencja na 2 Macbooki</li>
             </ul>
-            <a class="btn" href="https://notchflow.lemonsqueezy.com/checkout/annual">Kup roczną</a>
+            <a class="btn" data-polar-checkout="annual" href="https://notchflow.eu/pricing/">Kup roczną</a>
           </article>
         </div>
         <p class="section-link"><a href="pricing/">Pełne porównanie funkcji →</a></p>
@@ -382,7 +389,7 @@
         <div class="footer-brand">
           <a class="logo" href="../">
             <img class="logo-mark" src="../assets/logo-mark.png" alt="" height="28" width="56" />
-            notch<span class="gradient-text">flow</span>
+            <span class="logo-text">notch<span class="gradient-text">flow</span></span>
           </a>
           <p>Natywna aplikacja macOS, która zamienia notch w centrum kontroli. Tworzona w UE.</p>
           <div class="footer-social">
@@ -417,6 +424,7 @@
     </div>
   </footer>
 
+  <script src="../checkout-urls.js"></script>
   <script src="../site.js"></script>
   <script src="../analytics.js"></script>
 </body>
