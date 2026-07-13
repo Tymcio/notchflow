@@ -23,9 +23,53 @@ GITHUB_OWNER="${GITHUB_OWNER:-Tymcio}"
 GITHUB_REPO="${GITHUB_REPO:-notchflow}"
 DMG_URL="${DMG_URL:-https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest/download/${APP_NAME}.dmg}"
 
-SIGN_UPDATE="$ROOT_DIR/build/${APP_NAME}.app/Contents/Frameworks/Sparkle.framework/Resources/sign_update"
-if [[ ! -x "$SIGN_UPDATE" ]]; then
-  echo "Missing Sparkle sign_update tool: $SIGN_UPDATE"
+SPARKLE_TOOLS_VERSION="${SPARKLE_TOOLS_VERSION:-2.9.4}"
+
+resolve_sign_update() {
+  local candidates=(
+    # If Sparkle embeds tools in app bundle (sometimes it doesn't)
+    "$ROOT_DIR/build/${APP_NAME}.app/Contents/Frameworks/Sparkle.framework/Resources/sign_update"
+    "$ROOT_DIR/build/${APP_NAME}.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/sign_update"
+    "$ROOT_DIR/build/${APP_NAME}.app/Contents/Frameworks/Sparkle.framework/Versions/B/Resources/sign_update"
+
+    # SwiftPM checkout locations (CI/local dev)
+    "$ROOT_DIR/.build/checkouts/Sparkle/bin/sign_update"
+    "$ROOT_DIR/.build/checkouts/Sparkle/Sparkle/bin/sign_update"
+
+    # Downloaded tools fallback (this script will populate)
+    "$ROOT_DIR/build/sparkle-tools/bin/sign_update"
+  )
+
+  for c in "${candidates[@]}"; do
+    if [[ -x "$c" ]]; then
+      echo "$c"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+download_sparkle_tools() {
+  local tools_dir="$ROOT_DIR/build/sparkle-tools"
+  local zip_path="$ROOT_DIR/build/Sparkle-for-SPM.zip"
+  local url="https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_TOOLS_VERSION}/Sparkle-for-Swift-Package-Manager.zip"
+
+  mkdir -p "$tools_dir"
+  echo "Downloading Sparkle tools (${SPARKLE_TOOLS_VERSION}) to: $tools_dir"
+  curl -fsSL -o "$zip_path" "$url"
+  unzip -q -o "$zip_path" -d "$tools_dir"
+  rm -f "$zip_path"
+}
+
+SIGN_UPDATE="$(resolve_sign_update || true)"
+if [[ -z "${SIGN_UPDATE:-}" ]]; then
+  download_sparkle_tools
+  SIGN_UPDATE="$(resolve_sign_update || true)"
+fi
+
+if [[ -z "${SIGN_UPDATE:-}" ]] || [[ ! -x "$SIGN_UPDATE" ]]; then
+  echo "Missing Sparkle sign_update tool (searched app bundle, SwiftPM checkout, and downloaded tools)."
   exit 1
 fi
 
