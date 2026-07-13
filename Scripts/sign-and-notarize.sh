@@ -15,10 +15,28 @@ DMG_PATH="$ROOT_DIR/build/${APP_NAME}-${MARKETING_VERSION}.dmg"
 ENFORCE_LICENSE=1 "$ROOT_DIR/Scripts/package_app.sh"
 
 echo "Signing app..."
+SPARKLE_FW="$APP_PATH/Contents/Frameworks/Sparkle.framework"
+if [[ -d "$SPARKLE_FW" ]]; then
+  echo "Signing Sparkle helpers..."
+  # Sign nested helper tools + XPCs first, then the framework itself.
+  for item in \
+    "$SPARKLE_FW/Versions/B/Autoupdate" \
+    "$SPARKLE_FW/Versions/B/Updater.app" \
+    "$SPARKLE_FW/Versions/B/XPCServices/"*.xpc \
+    "$SPARKLE_FW/Versions/B/Updater.app/Contents/XPCServices/"*.xpc; do
+    if [[ -e "$item" ]]; then
+      codesign --force --options runtime --timestamp \
+        --sign "$DEVELOPER_ID_APPLICATION" \
+        "$item"
+    fi
+  done
+fi
+
+echo "Signing embedded frameworks..."
 codesign --force --options runtime --timestamp \
   --entitlements "$ROOT_DIR/NotchFlow.entitlements" \
   --sign "$DEVELOPER_ID_APPLICATION" \
-  "$APP_PATH/Contents/Frameworks/"*.framework 2>/dev/null || true
+  "$APP_PATH/Contents/Frameworks/"*.framework
 
 codesign --force --options runtime --timestamp \
   --entitlements "$ROOT_DIR/NotchFlow.entitlements" \
