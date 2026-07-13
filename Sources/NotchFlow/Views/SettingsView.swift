@@ -66,7 +66,8 @@ struct SettingsView: View {
                 licenseKey: $licenseKey,
                 licenseMessage: $licenseMessage,
                 onActivate: activateLicense,
-                onDeactivate: deactivateLicense
+                onDeactivate: deactivateLicense,
+                onDeactivateInPolar: deactivateInPolar
             )
         case .privacy:
             PrivacySettingsTab(settings: appState.settings)
@@ -92,6 +93,17 @@ struct SettingsView: View {
             licenseMessage = "Licencja została usunięta z tego Maca."
         } catch {
             licenseMessage = error.localizedDescription
+        }
+    }
+
+    private func deactivateInPolar() {
+        Task {
+            do {
+                try await appState.licenseManager.deactivateInPolar()
+                licenseMessage = "Aktywacja została zwolniona w Polar. Możesz aktywować klucz na innym Macu."
+            } catch {
+                licenseMessage = error.localizedDescription
+            }
         }
     }
 }

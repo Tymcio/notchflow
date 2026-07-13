@@ -3,6 +3,7 @@ import Foundation
 struct PolarLicenseClient {
     private let activateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/activate")!
     private let validateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/validate")!
+    private let deactivateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/deactivate")!
 
     private var organizationID: String {
         if let bundled = Bundle.main.object(forInfoDictionaryKey: "PolarOrganizationID") as? String,
@@ -43,7 +44,25 @@ struct PolarLicenseClient {
         return try parseSession(data: data, key: key)
     }
 
-    private func post(to url: URL, payload: [String: Any]) async throws -> Data {
+    func deactivate(key: String, activationID: String) async throws {
+        guard !organizationID.isEmpty else {
+            throw LicenseValidationError.networkFailure
+        }
+
+        let payload: [String: Any] = [
+            "key": key,
+            "organization_id": organizationID,
+            "activation_id": activationID,
+        ]
+
+        _ = try await post(to: deactivateURL, payload: payload, expectedStatusCodes: 200..<300)
+    }
+
+    private func post(
+        to url: URL,
+        payload: [String: Any],
+        expectedStatusCodes: Range<Int> = 200..<300
+    ) async throws -> Data {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -56,7 +75,7 @@ struct PolarLicenseClient {
             }
 
             switch http.statusCode {
-            case 200..<300:
+            case expectedStatusCodes:
                 return data
             case 404:
                 throw LicenseValidationError.invalidKey

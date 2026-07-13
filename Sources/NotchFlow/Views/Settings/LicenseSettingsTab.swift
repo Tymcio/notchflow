@@ -6,6 +6,7 @@ struct LicenseSettingsTab: View {
     @Binding var licenseMessage: String
     let onActivate: () -> Void
     let onDeactivate: () -> Void
+    let onDeactivateInPolar: () -> Void
 
     var body: some View {
         ScrollView {
@@ -60,6 +61,10 @@ struct LicenseSettingsTab: View {
                             Button("Usuń z tego Maca", role: .destructive, action: onDeactivate)
                                 .disabled(!status.isPremium && licenseKey.isEmpty)
                         }
+
+                        Button("Zwolnij aktywację (Polar)", action: onDeactivateInPolar)
+                            .buttonStyle(.bordered)
+                            .disabled(!status.isPremium)
 
                         if !licenseMessage.isEmpty {
                             Text(licenseMessage)

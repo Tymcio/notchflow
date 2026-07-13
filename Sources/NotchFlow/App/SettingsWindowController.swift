@@ -24,12 +24,16 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             newWindow.minSize = NSSize(width: 640, height: 480)
             newWindow.isReleasedWhenClosed = false
             newWindow.delegate = self
+            // Open settings on the currently active Space (even if the user is in full-screen).
+            newWindow.collectionBehavior.insert(.moveToActiveSpace)
+            newWindow.collectionBehavior.insert(.fullScreenAuxiliary)
             newWindow.center()
             window = newWindow
         } else if let hosting = window?.contentViewController as? NSHostingController<SettingsView> {
             hosting.rootView = SettingsView(appState: appState, initialTab: tab)
         }
 
+        window?.collectionBehavior.insert(.moveToActiveSpace)
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

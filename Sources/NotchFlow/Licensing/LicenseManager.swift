@@ -25,6 +25,7 @@ enum LicenseValidationError: Error, LocalizedError {
     case networkFailure
     case activationLimitReached
     case expired
+    case cannotDeactivate
 
     var errorDescription: String? {
         switch self {
@@ -32,6 +33,7 @@ enum LicenseValidationError: Error, LocalizedError {
         case .networkFailure: "Nie udało się połączyć z serwerem licencji. Sprawdź internet i spróbuj ponownie."
         case .activationLimitReached: "Osiągnięto limit aktywacji dla tego klucza (maks. 2 Maci)."
         case .expired: "Roczna licencja wygasła."
+        case .cannotDeactivate: "Nie można dezaktywować tej aktywacji. Spróbuj później lub użyj portalu Polar (Purchases → Deactivate)."
         }
     }
 }
@@ -92,6 +94,26 @@ final class LicenseManager {
 
     func deactivate() throws {
         try keychain.delete(key: KeychainKey.licenseKey)
+        try keychain.delete(key: KeychainKey.activationID)
+        try keychain.delete(key: KeychainKey.licenseStatus)
+        status = .free
+    }
+
+    func deactivateInPolar() async throws {
+        guard let key = keychain.read(key: KeychainKey.licenseKey),
+              let activationID = keychain.read(key: KeychainKey.activationID) else {
+            throw LicenseValidationError.cannotDeactivate
+        }
+
+        do {
+            try await apiClient.deactivate(key: key, activationID: activationID)
+        } catch LicenseValidationError.invalidKey {
+            // Treat "not found" as already deactivated / rotated; proceed with cleanup.
+        } catch {
+            throw LicenseValidationError.cannotDeactivate
+        }
+
+        // Keep the license key so the user can re-activate easily.
         try keychain.delete(key: KeychainKey.activationID)
         try keychain.delete(key: KeychainKey.licenseStatus)
         status = .free
