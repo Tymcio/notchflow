@@ -82,8 +82,15 @@ KEY_FILE="$(mktemp -t notchflow-sparkle.XXXXXX.key)"
 chmod 600 "$KEY_FILE"
 printf "%s" "$SPARKLE_PRIVATE_ED_KEY" >"$KEY_FILE"
 
-ED_SIGNATURE="$("$SIGN_UPDATE" --ed-key-file "$KEY_FILE" "$DMG_PATH")"
+RAW_SIGNATURE="$("$SIGN_UPDATE" --ed-key-file "$KEY_FILE" "$DMG_PATH")"
 rm -f "$KEY_FILE"
+
+ED_SIGNATURE="$RAW_SIGNATURE"
+# `sign_update` often prints a full XML attribute snippet, e.g.
+# sparkle:edSignature="..." length="...". We only want the base64 payload.
+if [[ "$RAW_SIGNATURE" =~ sparkle:edSignature=\"([^\"]+)\" ]]; then
+  ED_SIGNATURE="${BASH_REMATCH[1]}"
+fi
 
 cat > "$APPCAST_PATH" <<XML
 <?xml version="1.0" encoding="utf-8"?>
