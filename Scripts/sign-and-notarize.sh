@@ -29,7 +29,41 @@ echo "Creating DMG..."
 hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
 
 echo "Notarizing..."
-xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+NOTARY_JSON="$(mktemp)"
+if xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait --output-format json >"$NOTARY_JSON"; then
+  true
+else
+  echo "Notary submission failed. Raw output:"
+  cat "$NOTARY_JSON" || true
+  exit 1
+fi
+
+SUBMISSION_ID="$(python3 - <<'PY'
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as f:
+    data = json.load(f)
+print(data.get("id", ""))
+PY
+"$NOTARY_JSON")"
+
+STATUS="$(python3 - <<'PY'
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as f:
+    data = json.load(f)
+print(data.get("status", ""))
+PY
+"$NOTARY_JSON")"
+
+echo "Notary submission id: ${SUBMISSION_ID}"
+echo "Notary status: ${STATUS}"
+
+if [[ -n "$SUBMISSION_ID" ]] && [[ "$STATUS" != "Accepted" ]]; then
+  echo "Notary log for ${SUBMISSION_ID}:"
+  xcrun notarytool log "$SUBMISSION_ID" --keychain-profile "$NOTARY_PROFILE" || true
+  exit 1
+fi
 
 echo "Stapling..."
 xcrun stapler staple "$DMG_PATH"
