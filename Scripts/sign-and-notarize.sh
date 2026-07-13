@@ -29,7 +29,7 @@ echo "Creating DMG..."
 hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
 
 echo "Notarizing..."
-NOTARY_JSON="$(mktemp)"
+NOTARY_JSON="$(mktemp -t notchflow-notary.XXXXXX.json)"
 if xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait --output-format json >"$NOTARY_JSON"; then
   true
 else
@@ -38,23 +38,29 @@ else
   exit 1
 fi
 
-SUBMISSION_ID="$(python3 - <<'PY'
+SUBMISSION_ID="$(python3 - "$NOTARY_JSON" <<'PY'
 import json
 import sys
-with open(sys.argv[1], "r", encoding="utf-8") as f:
+path = sys.argv[1] if len(sys.argv) > 1 else ""
+if not path:
+    raise SystemExit("missing json path arg")
+with open(path, "r", encoding="utf-8") as f:
     data = json.load(f)
 print(data.get("id", ""))
 PY
-"$NOTARY_JSON")"
+)"
 
-STATUS="$(python3 - <<'PY'
+STATUS="$(python3 - "$NOTARY_JSON" <<'PY'
 import json
 import sys
-with open(sys.argv[1], "r", encoding="utf-8") as f:
+path = sys.argv[1] if len(sys.argv) > 1 else ""
+if not path:
+    raise SystemExit("missing json path arg")
+with open(path, "r", encoding="utf-8") as f:
     data = json.load(f)
 print(data.get("status", ""))
 PY
-"$NOTARY_JSON")"
+)"
 
 echo "Notary submission id: ${SUBMISSION_ID}"
 echo "Notary status: ${STATUS}"
