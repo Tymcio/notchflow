@@ -35,22 +35,8 @@ enum URLSchemeHandler {
 
     @MainActor
     private static func handleMirrorToggle(appState: AppState) {
-        if appState.cameraMirrorManager.isActive {
-            appState.cameraMirrorManager.stopPreview()
-            return
-        }
-
-        let alert = NSAlert()
-        alert.messageText = "Włączyć podgląd kamery?"
-        alert.informativeText = "Aplikacja żąda włączenia lustra kamery przez adres notchflow://. Kontynuować?"
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: "Włącz")
-        alert.addButton(withTitle: "Anuluj")
-
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
-
         Task {
-            await appState.cameraMirrorManager.startPreview()
+            await MirrorActivation.confirmAndToggle(in: appState)
         }
     }
 }

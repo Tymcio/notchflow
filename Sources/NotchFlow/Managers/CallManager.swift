@@ -10,8 +10,6 @@ final class CallManager {
     private(set) var activeCall: ActiveCallActivity?
     private(set) var lastBanner: ParsedNotificationBanner?
 
-    private var activeCallTimer: Timer?
-
     var isEnabled = false {
         didSet {
             if !isEnabled {
@@ -68,7 +66,6 @@ final class CallManager {
             appBundleID: banner.appBundleID,
             startedAt: .now
         )
-        startActiveCallTimer()
         onStateChange?()
     }
 
@@ -89,8 +86,6 @@ final class CallManager {
         incomingCall = nil
         activeCall = nil
         lastBanner = nil
-        activeCallTimer?.invalidate()
-        activeCallTimer = nil
         onStateChange?()
     }
 
@@ -113,14 +108,5 @@ final class CallManager {
         if title == banner.appName, !body.isEmpty { return body }
         if body.isEmpty || body == title { return title }
         return title
-    }
-
-    private func startActiveCallTimer() {
-        activeCallTimer?.invalidate()
-        activeCallTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.onStateChange?()
-            }
-        }
     }
 }

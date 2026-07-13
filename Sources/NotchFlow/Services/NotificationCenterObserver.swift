@@ -35,7 +35,7 @@ final class NotificationCenterObserver {
     private var consecutiveEmptyScans = 0
 
     private var pollInterval: Duration {
-        consecutiveEmptyScans >= 8 ? .milliseconds(1_500) : .milliseconds(450)
+        consecutiveEmptyScans >= 6 ? .milliseconds(3_000) : .milliseconds(1_000)
     }
 
     var isAccessibilityTrusted: Bool {
@@ -84,6 +84,12 @@ final class NotificationCenterObserver {
         guard isEnabled, isAccessibilityTrusted else { return }
         guard let pid = AXHelpers.notificationCenterPID() else { return }
 
+        guard notificationCenterMayHaveBanners(pid: pid) else {
+            consecutiveEmptyScans += 1
+            onScanComplete?([])
+            return
+        }
+
         let appElement = AXUIElementCreateApplication(pid)
         let banners = collectBanners(from: appElement, depth: 0)
 
@@ -103,6 +109,18 @@ final class NotificationCenterObserver {
         }
 
         onScanComplete?(banners)
+    }
+
+    private func notificationCenterMayHaveBanners(pid: pid_t) -> Bool {
+        let appElement = AXUIElementCreateApplication(pid)
+        for child in AXHelpers.children(of: appElement) {
+            if AXHelpers.isHidden(child) { continue }
+            guard let frame = AXHelpers.frame(of: child) else { continue }
+            if frame.width >= 180, frame.height >= 36, frame.height <= 240 {
+                return true
+            }
+        }
+        return false
     }
 
     private func collectBanners(from element: AXUIElement, depth: Int) -> [ParsedNotificationBanner] {

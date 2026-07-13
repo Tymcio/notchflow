@@ -20,7 +20,13 @@ final class NotchPanel: NSPanel {
         )
         configurePanel()
         contentView = hostingView
+        // Content view must track the window during animated resizes,
+        // otherwise the SwiftUI content stays at the old size and gets clipped.
         hostingView.autoresizingMask = [.width, .height]
+        // Never let SwiftUI content drive the window size: AppKit resizes such windows
+        // keeping the bottom edge fixed, which pushes the panel upward past the screen top.
+        // The window frame is owned exclusively by NotchGeometry via setFrame(_:animated:).
+        hostingView.sizingOptions = []
     }
 
     func updateRootView(_ rootView: NotchIslandView) {
@@ -32,16 +38,13 @@ final class NotchPanel: NSPanel {
         makeKeyAndOrderFront(nil)
     }
 
+    // Window frame changes are always applied instantly. Animating via
+    // `animator().setFrame` is unsafe here: geometry can retarget the frame several
+    // times in quick succession (module switch + intrinsic height measurement), and
+    // retargeting an in-flight NSWindow frame animation throws the window to wild
+    // positions (observed x of -1039 and +11537) before it settles back.
     func setFrame(_ frame: CGRect, animated: Bool) {
-        if animated {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.35
-                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                animator().setFrame(frame, display: true)
-            }
-        } else {
-            setFrame(frame, display: true)
-        }
+        super.setFrame(frame, display: true)
     }
 
     func setIgnoresMouseEvents(_ ignore: Bool) {
@@ -51,7 +54,7 @@ final class NotchPanel: NSPanel {
     private func configurePanel() {
         isFloatingPanel = true
         level = .statusBar
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         backgroundColor = .clear
         isOpaque = false
         hasShadow = false
@@ -82,8 +85,10 @@ final class NotchPanelController: ObservableObject {
     private var panel: NotchPanel?
     private var hideTask: Task<Void, Never>?
     private var hoverDwellTask: Task<Void, Never>?
+    private var hoverExitGraceTask: Task<Void, Never>?
     private var clickMonitor: Any?
     private var escapeMonitor: Any?
+    private var spaceChangeObserver: NSObjectProtocol?
     private var suppressAutoShow = false
     private var suppressQuickExpandUntilHoverEnd = false
     private let displayManager: DisplayManager
@@ -102,9 +107,13 @@ final class NotchPanelController: ObservableObject {
         }
         bind()
         installClickMonitor()
+        installSpaceChangeObserver()
     }
 
     deinit {
+        if let spaceChangeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(spaceChangeObserver)
+        }
         if let clickMonitor {
             NSEvent.removeMonitor(clickMonitor)
         }
@@ -148,7 +157,7 @@ final class NotchPanelController: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] _ in
                 guard let self else { return }
-                self.repositionIfVisible(animated: !self.isExpanded)
+                self.repositionIfVisible(animated: self.isExpanded)
             }
             .store(in: &cancellables)
 
@@ -168,6 +177,7 @@ final class NotchPanelController: ObservableObject {
         }
 
         if hovering {
+            hoverExitGraceTask?.cancel()
             suppressAutoShow = false
             hideTask?.cancel()
             if displayManager.isFileDragInProgress && displayManager.isDragNearNotch {
@@ -189,6 +199,25 @@ final class NotchPanelController: ObservableObject {
             return
         }
 
+        scheduleHoverExitAfterGrace()
+    }
+
+    private func scheduleHoverExitAfterGrace() {
+        hoverExitGraceTask?.cancel()
+        hoverExitGraceTask = Task { @MainActor in
+            try? await Task.sleep(
+                for: .milliseconds(NotchFlowConstants.hoverProximityLossGraceMilliseconds)
+            )
+            guard !Task.isCancelled else {
+                hoverExitGraceTask = nil
+                return
+            }
+            handleHoverEnded()
+            hoverExitGraceTask = nil
+        }
+    }
+
+    private func handleHoverEnded() {
         hoverDwellTask?.cancel()
         suppressQuickExpandUntilHoverEnd = false
 
@@ -198,7 +227,11 @@ final class NotchPanelController: ObservableObject {
         }
 
         if appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap {
-            presentIdle()
+            if displayManager.geometry != nil {
+                presentIdle()
+            } else {
+                dismissImmediately()
+            }
             return
         }
 
@@ -220,7 +253,6 @@ final class NotchPanelController: ObservableObject {
         }
 
         if displayManager.isNotchInteractionActive {
-            refreshViewIfVisible()
             return
         }
 
@@ -233,9 +265,11 @@ final class NotchPanelController: ObservableObject {
 
         if appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap {
             if !isVisible || isExpanded {
-                presentIdle()
-            } else {
-                refreshViewIfVisible()
+                if displayManager.geometry != nil {
+                    presentIdle()
+                } else {
+                    dismissImmediately()
+                }
             }
         } else if isVisible {
             dismissImmediately()
@@ -263,11 +297,15 @@ final class NotchPanelController: ObservableObject {
         }
         repositionIfVisible(animated: false)
         panel?.setIgnoresMouseEvents(false)
-        panel?.orderFrontRegardless()
+        bringPanelToFront()
         installEscapeMonitorIfNeeded()
     }
 
     private func presentIdle() {
+        guard displayManager.geometry != nil else {
+            dismissImmediately()
+            return
+        }
         displayManager.refreshMenuLayoutNow()
         guard !shouldHideIdleForMenuOverlap else {
             if isVisible, !isExpanded {
@@ -285,8 +323,28 @@ final class NotchPanelController: ObservableObject {
         }
         repositionIfVisible(animated: false)
         panel?.setIgnoresMouseEvents(!idleAcceptsMouseEvents)
-        panel?.orderFrontRegardless()
+        bringPanelToFront()
         installEscapeMonitorIfNeeded()
+    }
+
+    private func bringPanelToFront() {
+        guard let panel else { return }
+        panel.orderFrontRegardless()
+    }
+
+    private func installSpaceChangeObserver() {
+        spaceChangeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.isVisible else { return }
+                self.displayManager.refreshGeometryNow()
+                self.repositionIfVisible(animated: false)
+                self.bringPanelToFront()
+            }
+        }
     }
 
     private var idleAcceptsMouseEvents: Bool {
@@ -334,19 +392,27 @@ final class NotchPanelController: ObservableObject {
     private func scheduleExpandAfterHoverDwell() {
         hoverDwellTask?.cancel()
         keepIdleVisibleIfNeeded()
-        hoverDwellTask = Task {
+        hoverDwellTask = Task { @MainActor in
             try? await Task.sleep(
                 for: .milliseconds(NotchFlowConstants.hoverExpandDwellMilliseconds)
             )
-            await MainActor.run {
-                guard !Task.isCancelled else { return }
-                guard self.displayManager.isNotchInteractionActive else { return }
-                guard !self.suppressQuickExpandUntilHoverEnd else { return }
-                if self.displayManager.isFileDragInProgress && self.displayManager.isDragNearNotch {
-                    self.appState.activeModule = .shelf
-                }
-                self.presentExpanded()
+            guard !Task.isCancelled else {
+                hoverDwellTask = nil
+                return
             }
+            guard displayManager.isNotchInteractionActive else {
+                hoverDwellTask = nil
+                return
+            }
+            guard !suppressQuickExpandUntilHoverEnd else {
+                hoverDwellTask = nil
+                return
+            }
+            if displayManager.isFileDragInProgress && displayManager.isDragNearNotch {
+                appState.activeModule = .shelf
+            }
+            presentExpanded()
+            hoverDwellTask = nil
         }
     }
 
@@ -376,21 +442,7 @@ final class NotchPanelController: ObservableObject {
 
     private func isLocationInHoverTriggerBand(_ location: NSPoint) -> Bool {
         guard let geometry = displayManager.geometry else { return false }
-
-        let triggerRect: CGRect
-        if geometry.hasPhysicalNotch {
-            triggerRect = geometry.hoverTriggerRect.insetBy(
-                dx: -NotchFlowConstants.hoverNotchHorizontalExpand,
-                dy: -NotchFlowConstants.hoverNotchHorizontalExpand
-            )
-        } else {
-            triggerRect = geometry.hoverTriggerRect.insetBy(
-                dx: -NotchFlowConstants.hoverExpandThreshold,
-                dy: -NotchFlowConstants.hoverExpandThreshold
-            )
-        }
-
-        return triggerRect.contains(location)
+        return geometry.hoverProximityRect(forExit: false).contains(location)
     }
 
     private func scheduleHide() {
@@ -402,7 +454,11 @@ final class NotchPanelController: ObservableObject {
                 if self.suppressAutoShow {
                     self.dismissImmediately()
                 } else if self.appState.shouldShowIdleNotch, !self.shouldHideIdleForMenuOverlap {
-                    self.presentIdle()
+                    if self.displayManager.geometry != nil {
+                        self.presentIdle()
+                    } else {
+                        self.dismissImmediately()
+                    }
                 } else {
                     self.dismissImmediately()
                 }
@@ -412,8 +468,11 @@ final class NotchPanelController: ObservableObject {
 
     private func dismissImmediately() {
         hideTask?.cancel()
+        hoverExitGraceTask?.cancel()
+        hoverDwellTask?.cancel()
         removeEscapeMonitor()
         appState.isIslandInputFocused = false
+        appState.cameraMirrorManager.stopPreview()
         isVisible = false
         isExpanded = false
         displayManager.clearMeasuredExpandedHeight()
@@ -448,7 +507,15 @@ final class NotchPanelController: ObservableObject {
         )
     }
 
+    func syncMediaPollingState() {
+        syncMediaPolling()
+    }
+
     private func syncMediaPolling() {
-        appState.mediaMonitor.updateIslandPresentation(isVisible: isVisible, isExpanded: isExpanded)
+        appState.mediaMonitor.updateIslandPresentation(
+            isVisible: isVisible,
+            isExpanded: isExpanded,
+            activeModule: appState.activeModule
+        )
     }
 }

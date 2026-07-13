@@ -58,20 +58,115 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
         let info = notification.userInfo ?? [:]
         let sourceBundleID = bundleIdentifier(for: notification.name.rawValue)
 
+        let playerState = firstString(in: info, keys: ["Player State", "State"])?.lowercased()
+        if playerState == "stopped" {
+            if let sourceBundleID,
+               latestState.bundleIdentifier == nil || latestState.bundleIdentifier == sourceBundleID {
+                latestState = .empty
+                handler?(latestState)
+            }
+            return
+        }
+
         let title = firstString(in: info, keys: ["Title", "Name"]) ?? latestState.title
         let artist = firstString(in: info, keys: ["Artist", "Album Artist"]) ?? latestState.artist
         let album = firstString(in: info, keys: ["Album"]) ?? latestState.album
         let artworkString = firstString(in: info, keys: ["Album Art URL", "Artwork URL"])
         let artworkURL = artworkString.flatMap { URL(string: $0) } ?? latestState.artworkURL
-        let artworkData = parseArtworkData(from: info, fallbackURL: artworkURL) ?? latestState.artworkData
 
         let playbackRate = doubleValue(info["Playback Rate"]) ?? 0
-        let playerState = firstString(in: info, keys: ["Player State", "State"])?.lowercased()
         let bundleID = firstString(in: info, keys: ["Player Bundle Identifier"]) ?? sourceBundleID ?? latestState.bundleIdentifier
 
         let timing = parseTiming(from: info, bundleID: bundleID, previous: latestState)
         let isPlaying = playbackRate > 0 || playerState == "playing"
 
+        if !isPlaying,
+           latestState.isPlaying,
+           let sourceBundleID,
+           sourceBundleID != latestState.bundleIdentifier {
+            return
+        }
+
+        if !isPlaying, playerState == "paused" || playbackRate == 0 {
+            latestState = MediaPlaybackState(
+                title: title.isEmpty ? latestState.title : title,
+                artist: artist,
+                album: album,
+                artworkURL: artworkURL,
+                artworkData: latestState.artworkData,
+                isPlaying: false,
+                elapsed: timing.elapsed,
+                duration: timing.duration,
+                bundleIdentifier: bundleID,
+                lyricsSnippet: latestState.lyricsSnippet
+            )
+            handler?(latestState)
+            return
+        }
+
+        let artworkDataFromNotification = parseArtworkDataSync(from: info)
+        if let artworkDataFromNotification {
+            applyState(
+                title: title,
+                artist: artist,
+                album: album,
+                artworkURL: artworkURL,
+                artworkData: artworkDataFromNotification,
+                isPlaying: isPlaying,
+                timing: timing,
+                bundleID: bundleID
+            )
+            return
+        }
+
+        if let artworkURL, artworkURL.isFileURL {
+            let expectedBundleID = bundleID
+            let capturedTitle = title
+            let capturedArtist = artist
+            let capturedAlbum = album
+            let capturedIsPlaying = isPlaying
+            let capturedTiming = timing
+            Task.detached(priority: .utility) { [weak self] in
+                let data = try? Data(contentsOf: artworkURL)
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+                    self.applyState(
+                        title: capturedTitle,
+                        artist: capturedArtist,
+                        album: capturedAlbum,
+                        artworkURL: artworkURL,
+                        artworkData: data ?? self.latestState.artworkData,
+                        isPlaying: capturedIsPlaying,
+                        timing: capturedTiming,
+                        bundleID: expectedBundleID
+                    )
+                }
+            }
+            return
+        }
+
+        applyState(
+            title: title,
+            artist: artist,
+            album: album,
+            artworkURL: artworkURL,
+            artworkData: latestState.artworkData,
+            isPlaying: isPlaying,
+            timing: timing,
+            bundleID: bundleID
+        )
+    }
+
+    private func applyState(
+        title: String,
+        artist: String,
+        album: String,
+        artworkURL: URL?,
+        artworkData: Data?,
+        isPlaying: Bool,
+        timing: (elapsed: Double, duration: Double),
+        bundleID: String?
+    ) {
         latestState = MediaPlaybackState(
             title: title.isEmpty ? "Not Playing" : title,
             artist: artist,
@@ -128,15 +223,12 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
         handler?(latestState)
     }
 
-    private func parseArtworkData(from info: [AnyHashable: Any], fallbackURL: URL?) -> Data? {
+    private func parseArtworkDataSync(from info: [AnyHashable: Any]) -> Data? {
         if let data = info["Artwork"] as? Data {
             return data
         }
         if let data = info["Artwork"] as? NSData {
             return data as Data
-        }
-        if let url = fallbackURL, url.isFileURL {
-            return try? Data(contentsOf: url)
         }
         return nil
     }

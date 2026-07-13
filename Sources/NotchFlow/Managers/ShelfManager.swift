@@ -300,7 +300,7 @@ final class ShelfManager {
     private func writeBookmarkFile(_ bookmark: Data) -> URL? {
         let bookmarkURL = shelfDirectory.appendingPathComponent("pin-\(UUID().uuidString).bookmark")
         do {
-            try bookmark.write(to: bookmarkURL)
+            try SecureFileWriter.write(bookmark, to: bookmarkURL)
             return bookmarkURL
         } catch {
             NotchFlowLog.storage.error("Failed to write shelf bookmark: \(error.localizedDescription, privacy: .public)")
@@ -405,7 +405,12 @@ final class ShelfManager {
             return entry
         }
         let indexURL = shelfDirectory.appendingPathComponent("index.plist")
-        (payload as NSArray).write(to: indexURL, atomically: true)
+        do {
+            let data = try PropertyListSerialization.data(fromPropertyList: payload, format: .binary, options: 0)
+            try SecureFileWriter.write(data, to: indexURL)
+        } catch {
+            NotchFlowLog.storage.error("Failed to persist shelf index: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func createZipArchive(from items: [ShelfItem]) throws -> ShelfItem {

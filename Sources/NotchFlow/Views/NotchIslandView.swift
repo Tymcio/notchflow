@@ -12,10 +12,10 @@ struct NotchIslandView: View {
     }
 
     private var effectiveExpandedHeight: CGFloat? {
+        // Always follow the geometry height: the panel window is sized from it, and any
+        // taller frame here makes NSHostingView grow the window upward past the screen top.
+        // Geometry already starts from the module's estimate before intrinsic measurement.
         guard isExpanded, let geometry else { return nil }
-        if appState.activeModule.prefersIntrinsicExpandedHeight {
-            return max(geometry.expandedSize.height, appState.activeModule.estimatedTotalExpandedHeight)
-        }
         return geometry.expandedSize.height
     }
 
@@ -24,7 +24,7 @@ struct NotchIslandView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
             islandBody
             if let hud = appState.hudState {
                 HUDOverlayView(state: hud)
@@ -32,11 +32,11 @@ struct NotchIslandView: View {
             }
         }
         .frame(
-            width: isExpanded ? geometry?.expandedSize.width : nil,
-            height: effectiveExpandedHeight,
-            alignment: .top
+            width: isExpanded ? geometry?.expandedSize.width : geometry?.idleSize.width,
+            height: isExpanded ? effectiveExpandedHeight : geometry?.idleSize.height,
+            alignment: .topLeading
         )
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     @ViewBuilder
@@ -56,14 +56,12 @@ struct NotchIslandView: View {
             activity: activity,
             mediaState: appState.mediaState,
             accent: appState.settings.selectedTheme.accent,
-            leftWingWidth: geometry.idleLeftWingWidth,
-            rightWingWidth: geometry.idleRightWingWidth,
-            notchCutoutWidth: geometry.physicalNotchCutoutWidth,
-            innerOverlap: NotchFlowConstants.idleWingInnerOverlap,
+            wingLayout: geometry.idleWingLayout(),
             onAnswerCall: { appState.answerIncomingCall() },
             onDeclineCall: { appState.declineIncomingCall() }
         )
-        .frame(width: geometry.idleSize.width, height: geometry.idleSize.height)
+        .frame(width: geometry.idleSize.width, height: geometry.idleSize.height, alignment: .topLeading)
+        .clipShape(Rectangle())
     }
 
     @ViewBuilder
@@ -88,7 +86,7 @@ struct NotchIslandView: View {
         }
         .clipShape(shape)
         .overlay {
-            shape.stroke(.white.opacity(0.08), lineWidth: 0.5)
+            shape.stroke(IslandStyle.surfaceStroke, lineWidth: 0.5)
         }
         .overlay {
             if showsFileDropChrome {
@@ -111,10 +109,14 @@ struct NotchIslandView: View {
             )
         }
         .onChange(of: appState.activeModule) { _, module in
+            if module != .mirror {
+                appState.cameraMirrorManager.stopPreview()
+            }
             displayManager.clearDragDropState()
             displayManager.updateExpandedHeight(for: module)
+            AppController.panelController?.syncMediaPollingState()
         }
-        .animation(nil, value: appState.activeModule)
+        .animation(IslandMotion.quick, value: appState.activeModule)
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             guard displayManager.isFileDragInProgress else { return false }
             Task {
@@ -151,6 +153,8 @@ struct NotchIslandView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, NotchFlowConstants.expandedContentBottomPadding)
                 .frame(maxWidth: .infinity, alignment: .top)
+                .id(appState.activeModule)
+                .transition(.opacity)
         }
         .frame(width: panelWidth, alignment: .top)
     }

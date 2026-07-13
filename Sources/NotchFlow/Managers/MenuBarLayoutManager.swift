@@ -13,6 +13,9 @@ final class MenuBarLayoutManager: ObservableObject {
 
     private var workspaceObserver: NSObjectProtocol?
     private var delayedRefreshTask: Task<Void, Never>?
+    private var menuEdgePublishTask: Task<Void, Never>?
+    private var menuEdgeByPID: [pid_t: CGFloat] = [:]
+    private var lastForegroundAppPID: pid_t?
     private let settings: NotchSettings
     private weak var activeScreen: NSScreen?
 
@@ -30,13 +33,14 @@ final class MenuBarLayoutManager: ObservableObject {
             NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
         }
         delayedRefreshTask?.cancel()
+        menuEdgePublishTask?.cancel()
     }
 
     func setActiveScreen(_ screen: NSScreen?) {
         activeScreen = screen
     }
 
-    func refresh(for screen: NSScreen? = nil) {
+    func refresh(for screen: NSScreen? = nil, publishImmediately: Bool = false) {
         if let screen {
             activeScreen = screen
         }
@@ -54,20 +58,61 @@ final class MenuBarLayoutManager: ObservableObject {
             return
         }
 
+        let selfPID = ProcessInfo.processInfo.processIdentifier
         let pid = app.processIdentifier
-        guard pid != ProcessInfo.processInfo.processIdentifier else {
-            // Our own panel briefly became frontmost; keep the last known edge
-            // so the wing doesn't pop back to full width.
-            return
+        let menuPID: pid_t
+        if pid == selfPID || app.activationPolicy != .regular {
+            // System dialogs (e.g. TCC permission prompts) and background agents own no
+            // menu bar; querying them via AX blocks the main thread until timeout.
+            guard let lastForegroundAppPID else { return }
+            menuPID = lastForegroundAppPID
+        } else {
+            lastForegroundAppPID = pid
+            menuPID = pid
+            if publishImmediately, let cachedEdge = menuEdgeByPID[menuPID] {
+                if appMenuRightEdgeX != cachedEdge {
+                    appMenuRightEdgeX = cachedEdge
+                }
+            }
         }
 
         let newEdge = Self.readLeftMenuClusterRightEdgeX(
-            for: pid,
+            for: menuPID,
             leftMenuBounds: activeScreen?.auxiliaryTopLeftArea
         )
-        Self.logger.debug("refresh app=\(app.localizedName ?? "?", privacy: .public) edge=\(newEdge.map(String.init(describing:)) ?? "nil", privacy: .public)")
-        if newEdge != appMenuRightEdgeX {
-            appMenuRightEdgeX = newEdge
+        Self.logger.debug(
+            "refresh app=\(app.localizedName ?? "?", privacy: .public) menuPID=\(menuPID) edge=\(newEdge.map(String.init(describing:)) ?? "nil", privacy: .public)"
+        )
+        if let newEdge {
+            menuEdgeByPID[menuPID] = newEdge
+            applyMenuEdge(newEdge, publishImmediately: publishImmediately)
+        } else if menuEdgeByPID[menuPID] == nil {
+            applyMenuEdge(nil, publishImmediately: publishImmediately)
+        }
+    }
+
+    private func applyMenuEdge(_ newEdge: CGFloat?, publishImmediately: Bool) {
+        if publishImmediately {
+            menuEdgePublishTask?.cancel()
+            if newEdge != appMenuRightEdgeX {
+                appMenuRightEdgeX = newEdge
+            }
+            return
+        }
+
+        publishMenuEdge(newEdge)
+    }
+
+    private func publishMenuEdge(_ newEdge: CGFloat?) {
+        menuEdgePublishTask?.cancel()
+        menuEdgePublishTask = Task {
+            try? await Task.sleep(for: .milliseconds(90))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                if newEdge != self.appMenuRightEdgeX {
+                    self.appMenuRightEdgeX = newEdge
+                }
+            }
         }
     }
 
@@ -101,19 +146,20 @@ final class MenuBarLayoutManager: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                self?.refresh()
-                self?.scheduleDelayedRefresh()
+                self?.scheduleAppActivationRefreshes()
             }
         }
     }
 
-    private func scheduleDelayedRefresh() {
+    private func scheduleAppActivationRefreshes() {
         delayedRefreshTask?.cancel()
+        refresh(publishImmediately: true)
+
         delayedRefreshTask = Task {
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(for: .milliseconds(220))
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                self.refresh()
+                self.refresh(publishImmediately: true)
             }
         }
     }
@@ -121,6 +167,8 @@ final class MenuBarLayoutManager: ObservableObject {
     /// Right edge of the last menu item in the left cluster (before the notch).
     static func readLeftMenuClusterRightEdgeX(for pid: pid_t, leftMenuBounds: CGRect?) -> CGFloat? {
         let appElement = AXUIElementCreateApplication(pid)
+        // These reads run on the main thread; never wait long for an unresponsive process.
+        AXUIElementSetMessagingTimeout(appElement, 0.25)
 
         var menuBarRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(appElement, kAXMenuBarAttribute as CFString, &menuBarRef) == .success,
@@ -152,11 +200,16 @@ final class MenuBarLayoutManager: ObservableObject {
         for child in children {
             guard let frame = axFrame(for: child) else { continue }
             guard frame.width >= 12, frame.height >= 10 else { continue }
+            guard frame.width <= NotchFlowConstants.menuBarItemMaxWidth else { continue }
             guard !isHidden(child) else { continue }
 
             if let leftClusterMaxX {
                 // Ignore items on the right side of the notch (e.g. Help, Window).
                 guard frame.midX <= leftClusterMaxX + NotchFlowConstants.menuBarItemClusterFudge else {
+                    continue
+                }
+                // Reject Accessibility frames that span the whole bar (common in Electron apps).
+                guard frame.maxX <= leftClusterMaxX + NotchFlowConstants.menuBarItemClusterFudge + 24 else {
                     continue
                 }
             }

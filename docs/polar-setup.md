@@ -2,6 +2,8 @@
 
 NotchFlow uses [Polar](https://polar.sh) as Merchant of Record for premium sales and license key validation.
 
+Powiązane: **[polar-rejestracja.md](polar-rejestracja.md)** (pełna instrukcja założenia konta, organizacji, KYC i wypłat).
+
 ## 1. Create Polar organization
 
 1. Sign up at [polar.sh](https://polar.sh)
@@ -23,20 +25,66 @@ For each product, add a **License Keys** benefit:
 - **Activation limit: 2** (required — app enforces per-device activation)
 - Allow customers to deactivate devices in Polar portal (recommended)
 
-## 3. Checkout links
+## 3. Checkout integration (website)
 
-After creating products, copy checkout URLs from Polar dashboard and update:
+NotchFlow uses **Checkout Links** — persistent Polar URLs that create a checkout session on visit. No backend or Polar SDK on the website.
 
-```
-website/checkout-urls.js
-```
+### 3.1 Create Checkout Links (Polar dashboard)
+
+**Products → Checkout Links → New Link** — create **two** links (one per product).
+
+| Setting | Lifetime link | Annual link |
+|---------|---------------|-------------|
+| **Product** | `NotchFlow Premium Lifetime` only | `NotchFlow Premium Annual` only |
+| **Label** | `NotchFlow Lifetime` | `NotchFlow Annual` |
+| **Discount** | — | — |
+| **Allow discount codes** | Off (unless you run promos) | Off |
+| **Success URL** | `https://notchflow.eu/pricing/?purchased=lifetime` | `https://notchflow.eu/pricing/?purchased=annual` |
+| **Return URL** | `https://notchflow.eu/pricing/` | `https://notchflow.eu/pricing/` |
+| **Trial** | — | Off (no trial for v1.0) |
+| **Metadata** | optional: `plan=lifetime` | optional: `plan=annual` |
+
+For Polish pricing page redirects, you can instead use:
+
+- `https://notchflow.eu/pl/pricing/?purchased=lifetime`
+- `https://notchflow.eu/pl/pricing/?purchased=annual`
+
+Or keep English pricing URLs for both — the success banner detects `/pl/` and shows Polish copy.
+
+After saving, copy each link URL (`https://buy.polar.sh/polar_cl_…`).
+
+### 3.2 Wire URLs in the repo
+
+Update `website/checkout-urls.js`:
 
 ```javascript
 var NOTCHFLOW_CHECKOUT = {
-  lifetime: "https://buy.polar.sh/polar_cl_…",
-  annual: "https://buy.polar.sh/polar_cl_…",
+  lifetime: "https://buy.polar.sh/polar_cl_XXXXX",
+  annual: "https://buy.polar.sh/polar_cl_YYYYY",
 };
 ```
+
+The script finds every `[data-polar-checkout="lifetime|annual"]` button on:
+
+- `website/index.html`
+- `website/pricing/index.html`
+- `website/pl/index.html`
+- `website/pl/pricing/index.html`
+
+No other website changes are required for checkout.
+
+### 3.3 Optional: branding
+
+**Settings → Branding** in Polar: logo and accent color for the hosted checkout page. Matches notchflow.eu visually.
+
+### 3.4 Customer flow after payment
+
+1. Customer clicks **Buy** on notchflow.eu → Polar checkout (card, Apple Pay, etc.)
+2. Polar emails **license key** (`NOTCHFLOW_…`)
+3. Success URL redirects to pricing with a thank-you banner
+4. Customer opens NotchFlow → **Settings → License** → paste key → **Activate**
+
+License validation is in the macOS app (`PolarLicenseClient.swift`), not on the website.
 
 ## 4. App configuration
 

@@ -46,6 +46,11 @@ final class CameraMirrorManager {
             return
         }
 
+        try? camera.lockForConfiguration()
+        camera.activeVideoMinFrameDuration = CMTime(value: 1, timescale: 30)
+        camera.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: 30)
+        camera.unlockForConfiguration()
+
         let output = AVCaptureVideoDataOutput()
         output.alwaysDiscardsLateVideoFrames = true
         output.videoSettings = [

@@ -48,6 +48,8 @@ struct IslandModuleTabButton: View {
         }
         .buttonStyle(.plain)
         .help(module.title)
+        .accessibilityLabel(module.title)
+        .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 
     private var iconSize: CGFloat {

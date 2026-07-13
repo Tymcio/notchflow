@@ -14,6 +14,6 @@ struct HUDOverlayView: View {
                 .frame(width: 120)
         }
         .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: IslandRadius.large, style: .continuous))
     }
 }

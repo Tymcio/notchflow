@@ -87,10 +87,9 @@ struct GeneralSettingsTab: View {
                         pickApplication()
                     }
                 } else {
-                    Text("Ukrywanie wyspy dla wybranych aplikacji jest funkcją Premium.")
+                    Text("Ukrywanie wyspy dla wybranych aplikacji jest funkcją Premium — aktywuj licencję w sekcji poniżej.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Button("Wprowadź klucz licencji…", action: onOpenLicense)
                 }
             }
 

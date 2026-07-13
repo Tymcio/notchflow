@@ -73,9 +73,24 @@ final class ScriptingBridgeMediaSource: MediaSourceProviding, @unchecked Sendabl
     }
 
     private func fetchState() async -> MediaPlaybackState {
-        if let spotify = fetchSpotifyState() { return spotify }
-        if let music = fetchMusicState() { return music }
-        return latestState == .empty ? .empty : latestState
+        let spotify = fetchSpotifyState()
+        let music = fetchMusicState()
+
+        if music?.isPlaying == true { return music! }
+        if spotify?.isPlaying == true { return spotify! }
+
+        if let bundleID = latestState.bundleIdentifier {
+            switch bundleID {
+            case "com.apple.Music", "com.apple.iTunes":
+                if let music { return music }
+            case "com.spotify.client":
+                if let spotify { return spotify }
+            default:
+                break
+            }
+        }
+
+        return .empty
     }
 
     private func fetchSpotifyState() -> MediaPlaybackState? {

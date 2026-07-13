@@ -2,9 +2,14 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+    private static let statusAutosaveName = "eu.notchflow.app.status"
+
     private var appState: AppState?
     private var panelController: NotchPanelController?
     private var statusItem: NSStatusItem?
+    private var statusItemVisibilityObservation: NSKeyValueObservation?
+    private var workspaceActivationObserver: NSObjectProtocol?
+    private var statusItemRestoreTask: Task<Void, Never>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -37,6 +42,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         false
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        ensureStatusItemVisible()
+    }
+
     func openSettings() {
         guard let appState else { return }
         SettingsWindowController.shared.show(appState: appState)
@@ -51,16 +60,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func configureStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        guard let statusItem else { return }
+        clearPersistedStatusItemVisibility()
+
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem = item
 
         // Stable identity + no removalAllowed: macOS otherwise treats the icon as optional
         // and can hide it together with other menu bar items in System Settings.
-        statusItem.autosaveName = "eu.notchflow.app.status"
-        statusItem.behavior = []
-        statusItem.isVisible = true
+        item.behavior = []
+        forceStatusItemVisible(item)
 
-        guard let button = statusItem.button else { return }
+        statusItemVisibilityObservation = item.observe(\.isVisible, options: [.new]) { [weak self] item, change in
+            guard change.newValue == false else { return }
+            Task { @MainActor in
+                self?.restoreStatusItemVisibility(item)
+            }
+        }
+
+        workspaceActivationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.scheduleStatusItemVisibilityRestore()
+            }
+        }
+
+        guard let button = item.button else { return }
 
         button.image = MenuBarIcon.makeTemplateImage()
         button.toolTip = "NotchFlow — najedź na notch, aby otworzyć"
@@ -72,11 +99,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(withTitle: "Zakończ NotchFlow", action: #selector(quitAction), keyEquivalent: "q")
 
-        for item in menu.items {
-            item.target = self
+        for menuEntry in menu.items {
+            menuEntry.target = self
         }
 
-        statusItem.menu = menu
+        item.menu = menu
+    }
+
+    private func clearPersistedStatusItemVisibility() {
+        UserDefaults.standard.removeObject(forKey: Self.persistedVisibilityKey)
+    }
+
+    private func forceStatusItemVisible(_ item: NSStatusItem) {
+        item.isVisible = true
+        item.autosaveName = Self.statusAutosaveName
+        item.isVisible = true
+        DispatchQueue.main.async {
+            item.isVisible = true
+        }
+    }
+
+    private func restoreStatusItemVisibility(_ item: NSStatusItem) {
+        clearPersistedStatusItemVisibility()
+        item.isVisible = true
+        DispatchQueue.main.async {
+            item.isVisible = true
+        }
+    }
+
+    private func ensureStatusItemVisible() {
+        guard let statusItem else { return }
+        guard !statusItem.isVisible else { return }
+        restoreStatusItemVisibility(statusItem)
+    }
+
+    private func scheduleStatusItemVisibilityRestore() {
+        ensureStatusItemVisible()
+
+        statusItemRestoreTask?.cancel()
+        statusItemRestoreTask = Task {
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                self.ensureStatusItemVisible()
+            }
+        }
+    }
+
+    private static var persistedVisibilityKey: String {
+        "NSStatusItem Visibility \(statusAutosaveName)"
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

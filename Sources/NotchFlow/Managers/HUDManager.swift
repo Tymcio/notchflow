@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 enum HUDKind: String, Sendable {
@@ -55,13 +56,13 @@ final class HUDManager {
             let volume = (userInfo["Volume"] as? Double)
                 ?? (userInfo["VolumeScalar"] as? Double)
                 ?? Double(NSApplication.shared.windows.count > 0 ? 0.5 : 0.5)
-            showHUD(kind: .volume, value: volume, label: "Volume")
+            showHUD(kind: .volume, value: volume, label: "Głośność")
             return
         }
 
         if name.contains("Brightness") {
             let brightness = (userInfo["Brightness"] as? Double) ?? 0.5
-            showHUD(kind: .brightness, value: brightness, label: "Brightness")
+            showHUD(kind: .brightness, value: brightness, label: "Jasność")
         }
     }
 
@@ -83,5 +84,3 @@ final class HUDManager {
         }
     }
 }
-
-import AppKit

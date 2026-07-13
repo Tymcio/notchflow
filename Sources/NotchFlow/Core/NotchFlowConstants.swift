@@ -33,8 +33,14 @@ enum NotchFlowConstants {
     static let hoverExpandThreshold: CGFloat = 32
     /// Slight horizontal forgiveness when aiming at the physical notch cutout.
     static let hoverNotchHorizontalExpand: CGFloat = 8
+    /// Extra vertical forgiveness for the physical notch band (menu-bar coordinates jitter).
+    static let hoverNotchVerticalExpand: CGFloat = 24
+    /// Extra padding before hover is considered lost (hysteresis vs. enter rect).
+    static let hoverProximityHysteresisPadding: CGFloat = 16
     /// Hover must linger in the notch band before expanding, so quick clicks reach the app below.
     static let hoverExpandDwellMilliseconds = 220
+    /// Brief proximity loss is ignored so dwell/expand is not cancelled by pointer jitter.
+    static let hoverProximityLossGraceMilliseconds = 100
     /// Extra width beyond expanded island when detecting file drags.
     static let dragDropZoneHorizontalPadding: CGFloat = 40
     /// Extra height below expanded island for file drop targeting.
@@ -43,8 +49,11 @@ enum NotchFlowConstants {
     static let expandedTabSlotWidth: CGFloat = 36
     static let idleWingProtrusion: CGFloat = 54
     static let idleWingInnerOverlap: CGFloat = 12
+    /// Vertical adjustment of idle wings vs. the menu-bar notch band (0 = flush with notch bottom).
+    static let idleWingVerticalTrim: CGFloat = 0
     static let notchWidthOverlapFudge: CGFloat = 4
-    static let idleBottomBleed: CGFloat = 1
+    /// Maximum plausible width for a single menu-bar item when reading via Accessibility.
+    static let menuBarItemMaxWidth: CGFloat = 220
     static let defaultNotchCutoutWidth: CGFloat = 184
     /// Space to leave on the right of the notch for menu bar status items (incl. our own icon).
     static let menuBarStatusItemReserve: CGFloat = 96

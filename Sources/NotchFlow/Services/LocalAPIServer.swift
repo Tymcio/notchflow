@@ -39,6 +39,8 @@ final class LocalAPIServer {
         self.appState = appState
         guard appState.settings.localAPIEnabled else { return }
 
+        _ = try APIAuth.token()
+
         let params = NWParameters.tcp
         params.requiredInterfaceType = .loopback
         params.allowLocalEndpointReuse = true
@@ -240,6 +242,9 @@ final class LocalAPIServer {
             if appState.cameraMirrorManager.isActive {
                 appState.cameraMirrorManager.stopPreview()
             } else {
+                guard MirrorActivation.confirmStart() else {
+                    return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "mirror denied")))
+                }
                 await appState.cameraMirrorManager.startPreview()
             }
             return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))

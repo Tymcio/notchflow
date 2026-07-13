@@ -19,8 +19,8 @@ struct NotchGeometry: Equatable {
     let notchLeftX: CGFloat?
 
     var shouldHideIdleForMenuOverlap: Bool {
-        guard let notchLeftX, let appMenuRightEdgeX else { return false }
-        return appMenuRightEdgeX + NotchFlowConstants.menuOverlapMargin > notchLeftX
+        // Left-wing width already drops to 0 when the app menu is too wide; keep the right wing visible.
+        idleLeftWingWidth == 0 && idleRightWingWidth == 0
     }
 
     var contentTopInset: CGFloat {
@@ -45,6 +45,65 @@ struct NotchGeometry: Equatable {
         return max(minimumForTrailingClearance, minimumForAllTabs).rounded(.up)
     }
 
+  /// Expanded hit target for pointer proximity. `forExit: true` uses a looser rect so hover does not flicker off.
+    func hoverProximityRect(forExit: Bool) -> CGRect {
+        if hasPhysicalNotch {
+            let horizontal = NotchFlowConstants.hoverNotchHorizontalExpand
+                + (forExit ? NotchFlowConstants.hoverProximityHysteresisPadding : 0)
+            let vertical = NotchFlowConstants.hoverNotchVerticalExpand
+                + (forExit ? NotchFlowConstants.hoverProximityHysteresisPadding : 0)
+            return hoverTriggerRect.insetBy(dx: -horizontal, dy: -vertical)
+        }
+
+        let padding = NotchFlowConstants.hoverExpandThreshold
+            + (forExit ? NotchFlowConstants.hoverProximityHysteresisPadding : 0)
+        return hoverTriggerRect.insetBy(dx: -padding, dy: -padding)
+    }
+
+    /// Width reserved for the leading wing slot so hiding the wing does not shift the notch cutout.
+    var idleLeftSlotWidth: CGFloat {
+        hasPhysicalNotch ? NotchFlowConstants.idleWingProtrusion : idleLeftWingWidth
+    }
+
+    func idleLeftSlotFrameWidth(
+        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap
+    ) -> CGFloat {
+        guard idleLeftSlotWidth > 0 else { return 0 }
+        return idleLeftSlotWidth + innerOverlap
+    }
+
+    func idleCenterClearWidth(
+        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap
+    ) -> CGFloat {
+        let leftOverlap = idleLeftSlotWidth > 0 ? innerOverlap : 0
+        let rightOverlap = idleRightWingWidth > 0 ? innerOverlap : 0
+        return max(0, physicalNotchCutoutWidth - leftOverlap - rightOverlap)
+    }
+
+    func idleRightSlotFrameWidth(
+        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap
+    ) -> CGFloat {
+        guard idleRightWingWidth > 0 else { return 0 }
+        return idleRightWingWidth + innerOverlap
+    }
+
+    func idleWingLayout(
+        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap
+    ) -> IdleWingLayout {
+        let leftSlotWidth = idleLeftSlotFrameWidth(innerOverlap: innerOverlap)
+        let centerClearWidth = idleCenterClearWidth(innerOverlap: innerOverlap)
+        let rightSlotWidth = idleRightSlotFrameWidth(innerOverlap: innerOverlap)
+        return IdleWingLayout(
+            visibleLeftWidth: idleLeftWingWidth,
+            visibleRightWidth: idleRightWingWidth,
+            leftSlotWidth: leftSlotWidth,
+            centerClearWidth: centerClearWidth,
+            rightSlotWidth: rightSlotWidth,
+            panelWidth: idleSize.width,
+            panelHeight: idleSize.height
+        )
+    }
+
     func frame(isExpanded: Bool, isIdle: Bool = false) -> CGRect {
         let size: CGSize
         if isExpanded {
@@ -62,9 +121,9 @@ struct NotchGeometry: Equatable {
             y = screenTopY - size.height
             x = notchLeftX + physicalNotchCutoutWidth / 2 - size.width / 2
         } else if isIdle, let notchLeftX {
-            // Anchor wings to notch edges so they protrude into the menu bar.
+            // Keep the notch cutout at a fixed screen position; only toggle wing visibility.
             y = screenTopY - size.height
-            x = notchLeftX - idleLeftWingWidth
+            x = notchLeftX - idleLeftSlotWidth
         } else {
             y = screenTopY - size.height
             x = screenMidX - size.width / 2
@@ -74,12 +133,27 @@ struct NotchGeometry: Equatable {
             x: x.rounded(.toNearestOrAwayFromZero),
             y: y.rounded(.toNearestOrAwayFromZero),
             width: size.width.rounded(.toNearestOrAwayFromZero),
-            height: size.height.rounded(.toNearestOrAwayFromZero)
+            height: size.height.rounded(.down)
         )
     }
 }
 
+struct IdleWingLayout: Equatable {
+    let visibleLeftWidth: CGFloat
+    let visibleRightWidth: CGFloat
+    let leftSlotWidth: CGFloat
+    let centerClearWidth: CGFloat
+    let rightSlotWidth: CGFloat
+    let panelWidth: CGFloat
+    let panelHeight: CGFloat
+}
+
 extension NotchGeometry {
+    @MainActor
+    static func idlePanelHeight(notchTopInset: CGFloat) -> CGFloat {
+        max(0, notchTopInset - NotchFlowConstants.idleWingVerticalTrim).rounded(.down)
+    }
+
     @MainActor
     static func make(
         for screen: NSScreen,
@@ -103,7 +177,12 @@ extension NotchGeometry {
             hasNotch: hasNotch,
             appMenuRightEdgeX: appMenuRightEdgeX
         )
-        let idleWidth = cutoutWidth + leftWingWidth + rightWingWidth
+        let idleWidth: CGFloat
+        if hasNotch {
+            idleWidth = cutoutWidth + defaultWingWidth + rightWingWidth
+        } else {
+            idleWidth = cutoutWidth + leftWingWidth + rightWingWidth
+        }
 
         let contentHeight = NotchFlowConstants.minimumExpandedContentHeight
 
@@ -148,7 +227,7 @@ extension NotchGeometry {
             expandedSize: CGSize(width: expandedWidth, height: expandedHeight),
             idleSize: CGSize(
                 width: idleWidth.rounded(.toNearestOrAwayFromZero),
-                height: (notchTopInset + NotchFlowConstants.idleBottomBleed).rounded(.toNearestOrAwayFromZero)
+                height: Self.idlePanelHeight(notchTopInset: notchTopInset)
             ),
             physicalNotchCutoutWidth: cutoutWidth,
             idleLeftWingWidth: leftWingWidth,

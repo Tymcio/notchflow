@@ -127,7 +127,7 @@ final class LicenseManager {
               let persisted = try? JSONDecoder().decode(PersistedLicenseStatus.self, from: data) else {
             return nil
         }
-        return persisted.toStatus()
+        return persisted.toStatus(key: keychain.read(key: KeychainKey.licenseKey))
     }
 
     private func isWithinGracePeriod(_ status: LicenseStatus) -> Bool {
@@ -142,18 +142,16 @@ final class LicenseManager {
 
 private struct PersistedLicenseStatus: Codable {
     let tier: LicenseTier
-    let key: String?
     let validatedAt: Date?
     let expiresAt: Date?
 
     init(status: LicenseStatus) {
         tier = status.tier
-        key = status.key
         validatedAt = status.validatedAt
         expiresAt = status.expiresAt
     }
 
-    func toStatus() -> LicenseStatus {
+    func toStatus(key: String?) -> LicenseStatus {
         LicenseStatus(tier: tier, key: key, validatedAt: validatedAt, expiresAt: expiresAt)
     }
 }

@@ -229,7 +229,7 @@ final class DisplayManager: ObservableObject {
     /// Synchronously re-reads the app menu edge and rebuilds geometry.
     /// Called right before presenting the idle island so wing widths are fresh.
     func refreshMenuLayoutNow() {
-        menuBarLayoutManager.refresh(for: activeScreen)
+        menuBarLayoutManager.refresh(for: activeScreen, publishImmediately: true)
         recomputeGeometry(for: activeScreen)
     }
 
@@ -253,22 +253,14 @@ final class DisplayManager: ObservableObject {
             return
         }
 
-        let triggerRect: CGRect
-        if geometry.hasPhysicalNotch {
-            // Widen horizontally; allow a few points vertically for menu-bar coordinate rounding.
-            triggerRect = geometry.hoverTriggerRect.insetBy(
-                dx: -NotchFlowConstants.hoverNotchHorizontalExpand,
-                dy: -NotchFlowConstants.hoverNotchHorizontalExpand
-            )
-        } else {
-            triggerRect = geometry.hoverTriggerRect.insetBy(
-                dx: -NotchFlowConstants.hoverExpandThreshold,
-                dy: -NotchFlowConstants.hoverExpandThreshold
-            )
+        let inPanel = activePanelFrame.map { $0.insetBy(dx: -8, dy: -8).contains(location) } ?? false
+        if inPanel {
+            isPointerNearNotch = true
+            return
         }
 
+        let triggerRect = geometry.hoverProximityRect(forExit: isPointerNearNotch)
         isPointerNearNotch = triggerRect.contains(location)
-            || (activePanelFrame.map { $0.insetBy(dx: -8, dy: -8).contains(location) } ?? false)
     }
 
     func refreshHideState() {
@@ -292,7 +284,7 @@ final class DisplayManager: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.refreshHideState()
-                self?.menuBarLayoutManager.refresh(for: self?.activeScreen)
+                self?.menuBarLayoutManager.refresh(for: self?.activeScreen, publishImmediately: true)
                 self?.recomputeGeometry(for: self?.activeScreen)
             }
         }

@@ -160,6 +160,7 @@ struct CalendarTabView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(IslandStyle.secondaryText)
+            .accessibilityLabel("Poprzedni miesiąc")
 
             Text(MonthCalendarModel.monthTitle(for: visibleMonth))
                 .font(.subheadline.weight(.semibold))
@@ -176,6 +177,7 @@ struct CalendarTabView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(IslandStyle.secondaryText)
+            .accessibilityLabel("Następny miesiąc")
         }
     }
 
@@ -247,7 +249,8 @@ struct CalendarTabView: View {
     }
 
     private func requestCalendarAccess() {
-        activatePanel()
+        // Do not activate our panel here: the system permission dialog needs focus,
+        // and a key floating panel above it makes "Allow" unclickable.
         Task {
             await appState.calendarManager.ensureAccess()
             appState.calendarAccessGranted = appState.calendarManager.hasAccess

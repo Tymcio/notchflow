@@ -126,6 +126,7 @@ struct ClipboardHistoryView: View {
 
             Toggle("", isOn: monitoringBinding)
                 .labelsHidden()
+                .accessibilityLabel("Monitoring schowka")
                 .toggleStyle(.switch)
                 .tint(.white)
         }
@@ -344,7 +345,7 @@ struct ClipboardHistoryView: View {
 
     private func copyAPIConfig() {
         let payload = """
-        {"baseURL":"\(apiBaseURL)","token":"\(APIAuth.token())"}
+        {"baseURL":"\(apiBaseURL)","token":"\(APIAuth.resolvedToken())"}
         """
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(payload, forType: .string)

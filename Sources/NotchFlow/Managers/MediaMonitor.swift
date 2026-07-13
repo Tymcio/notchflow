@@ -1,7 +1,14 @@
+import AppKit
 import Foundation
 
 @MainActor
 final class MediaMonitor {
+    private static let trackedPlayerBundleIDs: Set<String> = [
+        "com.spotify.client",
+        "com.apple.Music",
+        "com.apple.iTunes"
+    ]
+
     var onStateChange: ((MediaPlaybackState) -> Void)?
 
     private let source: MediaSourceProviding
@@ -9,14 +16,26 @@ final class MediaMonitor {
     private let lyricsService = LyricsService()
     private var currentState = MediaPlaybackState.empty
     private var lastFetchedArtworkTrackKey: String?
+    private var artworkRequestID = 0
     private var islandVisible = false
+    private var islandExpanded = false
+    private var activeModule: IslandModule = .media
     private var scriptingPollingActive = false
+    private var playerTerminateObserver: NSObjectProtocol?
 
     init(source: MediaSourceProviding = DistributedMediaSource()) {
         self.source = source
     }
 
+    deinit {
+        if let playerTerminateObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(playerTerminateObserver)
+        }
+    }
+
     func start() {
+        registerPlayerTerminationObserver()
+
         Task {
             await source.startMonitoring { [weak self] state in
                 Task { @MainActor in
@@ -34,8 +53,10 @@ final class MediaMonitor {
         }
     }
 
-    func updateIslandPresentation(isVisible: Bool, isExpanded: Bool) {
+    func updateIslandPresentation(isVisible: Bool, isExpanded: Bool, activeModule: IslandModule) {
         islandVisible = isVisible
+        islandExpanded = isExpanded
+        self.activeModule = activeModule
         Task {
             await refreshScriptingPolling()
         }
@@ -57,8 +78,45 @@ final class MediaMonitor {
         MediaPlayerController.seek(to: position, playerBundleID: currentState.bundleIdentifier)
     }
 
+    private func registerPlayerTerminationObserver() {
+        playerTerminateObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didTerminateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor in
+                guard let bundleID = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? String else {
+                    return
+                }
+                self?.handlePlayerTerminated(bundleID: bundleID)
+            }
+        }
+    }
+
+    private func handlePlayerTerminated(bundleID: String) {
+        guard Self.trackedPlayerBundleIDs.contains(bundleID) else { return }
+        guard currentState.bundleIdentifier == bundleID else { return }
+        Task {
+            await applyState(.empty)
+        }
+    }
+
     private func mergeScriptingState(_ scriptState: MediaPlaybackState) async {
-        guard scriptState != .empty else { return }
+        if scriptState == .empty {
+            if currentState.title != "Not Playing", !currentState.title.isEmpty {
+                await applyState(.empty)
+            }
+            return
+        }
+
+        if !scriptState.isPlaying,
+           currentState.isPlaying,
+           let scriptBundle = scriptState.bundleIdentifier,
+           let currentBundle = currentState.bundleIdentifier,
+           scriptBundle != currentBundle {
+            return
+        }
+
         var merged = currentState
         let sameTrack = scriptState.isSameTrack(as: merged)
 
@@ -96,6 +154,15 @@ final class MediaMonitor {
 
     private func applyState(_ state: MediaPlaybackState) async {
         var enriched = mergePreservingMediaAssets(incoming: state, current: currentState)
+
+        if !enriched.isPlaying,
+           currentState.isPlaying,
+           let incomingBundle = enriched.bundleIdentifier,
+           let currentBundle = currentState.bundleIdentifier,
+           incomingBundle != currentBundle,
+           enriched.isSameTrack(as: currentState) == false {
+            enriched = currentState
+        }
 
         if enriched.isPlaying,
            enriched.lyricsSnippet == nil,
@@ -136,7 +203,10 @@ final class MediaMonitor {
     }
 
     private func refreshScriptingPolling() async {
-        let needsPolling = currentState.isPlaying && islandVisible
+        let needsPolling = currentState.isPlaying
+            && islandVisible
+            && islandExpanded
+            && activeModule == .media
         guard needsPolling != scriptingPollingActive else { return }
         scriptingPollingActive = needsPolling
         await scriptingSource.setPollingActive(needsPolling)
@@ -146,11 +216,12 @@ final class MediaMonitor {
         let sameTrack = incoming.isSameTrack(as: current)
 
         let isPlaying = incoming.isPlaying
-            || (sameTrack && current.isPlaying && incoming.elapsed > current.elapsed + 0.2)
+            || (incoming.isPlaying && sameTrack && current.isPlaying && incoming.elapsed > current.elapsed + 0.2)
 
         let elapsed = MediaPlaybackState.preferredTiming(incoming: incoming.elapsed, current: current.elapsed)
         let duration = MediaPlaybackState.preferredTiming(incoming: incoming.duration, current: current.duration)
         let timingUpdated = elapsed != current.elapsed || duration != current.duration
+        let playingChanged = isPlaying != current.isPlaying
 
         return MediaPlaybackState(
             title: incoming.title,
@@ -163,7 +234,7 @@ final class MediaMonitor {
             duration: duration,
             bundleIdentifier: incoming.bundleIdentifier ?? current.bundleIdentifier,
             lyricsSnippet: incoming.lyricsSnippet ?? current.lyricsSnippet,
-            positionSampledAt: timingUpdated ? Date() : current.positionSampledAt
+            positionSampledAt: (timingUpdated || playingChanged) ? Date() : current.positionSampledAt
         )
     }
 
@@ -177,6 +248,8 @@ final class MediaMonitor {
         let bundleID = state.bundleIdentifier
         let trackKey = state.trackKey
         let artworkURL = state.artworkURL
+        artworkRequestID += 1
+        let requestID = artworkRequestID
 
         let artworkData = await Task.detached(priority: .utility) { () async -> Data? in
             if let url = artworkURL, let data = await MusicArtworkFetcher.fetchFromURL(url) {
@@ -185,6 +258,7 @@ final class MediaMonitor {
             return await MusicArtworkFetcher.fetch(bundleID: bundleID, trackKey: trackKey)
         }.value
 
+        guard requestID == artworkRequestID, trackKey == currentState.trackKey else { return state }
         guard let artworkData else { return state }
 
         lastFetchedArtworkTrackKey = state.trackKey

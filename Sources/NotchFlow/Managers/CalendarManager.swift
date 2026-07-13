@@ -54,8 +54,18 @@ final class CalendarManager {
     private let store = EKEventStore()
     private var refreshTask: Task<Void, Never>?
 
+    /// Prompts the user for calendar access (system dialog). Call only from an explicit user action.
     func ensureAccess() async {
         hasAccess = await requestAccess()
+        if hasAccess {
+            await refreshUpcomingEvent()
+            await refreshDayEvents()
+        }
+    }
+
+    /// Reads the current authorization status without showing the system prompt.
+    func refreshAccessStatus() async {
+        hasAccess = EKEventStore.authorizationStatus(for: .event) == .fullAccess
         if hasAccess {
             await refreshUpcomingEvent()
             await refreshDayEvents()

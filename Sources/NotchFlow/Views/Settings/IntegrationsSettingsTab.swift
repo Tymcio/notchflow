@@ -56,11 +56,11 @@ struct IntegrationsSettingsTab: View {
 
                 LabeledContent("Token API") {
                     HStack {
-                        Text(APIAuth.token().prefix(12) + "…")
+                        Text(APIAuth.resolvedToken().prefix(12) + "…")
                             .font(.caption.monospaced())
                         Button(copiedToken ? "Skopiowano" : "Kopiuj") {
                             NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(APIAuth.token(), forType: .string)
+                            NSPasteboard.general.setString(APIAuth.resolvedToken(), forType: .string)
                             copiedToken = true
                         }
                     }

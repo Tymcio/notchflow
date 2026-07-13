@@ -28,6 +28,30 @@ struct FocusTimerActivity: Equatable, Sendable {
     let progress: Double
     let isRunning: Bool
     let modeLabel: String
+    let phaseEndDate: Date?
+    let stopwatchStartDate: Date?
+    let totalSeconds: Int
+    let mode: FocusTimerMode
+
+    init(
+        formattedTime: String,
+        progress: Double,
+        isRunning: Bool,
+        modeLabel: String,
+        phaseEndDate: Date? = nil,
+        stopwatchStartDate: Date? = nil,
+        totalSeconds: Int = 0,
+        mode: FocusTimerMode = .idle
+    ) {
+        self.formattedTime = formattedTime
+        self.progress = progress
+        self.isRunning = isRunning
+        self.modeLabel = modeLabel
+        self.phaseEndDate = phaseEndDate
+        self.stopwatchStartDate = stopwatchStartDate
+        self.totalSeconds = totalSeconds
+        self.mode = mode
+    }
 }
 
 struct NotificationPeekActivity: Equatable, Sendable {

@@ -101,7 +101,9 @@ final class AppState {
         mediaMonitor.start()
         hudManager.start()
         focusTimerManager.startMonitoring()
-        await calendarManager.ensureAccess()
+        // Only read the current status here; the system prompt is shown from the
+        // calendar tab's "Udziel dostępu" button, where the user expects it.
+        await calendarManager.refreshAccessStatus()
         calendarAccessGranted = calendarManager.hasAccess
         if calendarManager.hasAccess {
             calendarManager.startAutoRefresh()
@@ -189,12 +191,18 @@ final class AppState {
         }
 
         hudManager.onHUDChange = { [weak self] state in
-            self?.hudState = state
+            withAnimation(.easeOut(duration: 0.2)) {
+                self?.hudState = state
+            }
         }
 
         focusTimerManager.onStateChange = { [weak self] state in
-            self?.focusTimerState = state
-            self?.notifyLiveActivityChange()
+            guard let self else { return }
+            let previousShowsInIdle = self.focusTimerState.showsInIdleNotch
+            self.focusTimerState = state
+            if state.showsInIdleNotch != previousShowsInIdle {
+                self.notifyLiveActivityChange()
+            }
         }
 
         calendarManager.onEventChange = { [weak self] event in

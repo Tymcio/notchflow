@@ -196,10 +196,15 @@ a:hover { color: var(--accent-hover); }
   background: var(--elevated);
 }
 
-.header-actions {
+.header-toolbar {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.header-cta {
+  flex-shrink: 0;
 }
 
 .lang-switch {
@@ -282,6 +287,34 @@ a:hover { color: var(--accent-hover); }
 @media (max-width: 860px) {
   .nav-toggle { display: block; }
 
+  .site-header .container {
+    gap: 0.75rem;
+  }
+
+  .logo {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .site-header nav {
+    flex: 0 0 0;
+    width: 0;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .header-toolbar {
+    margin-left: auto;
+  }
+
+  .header-toolbar .lang-switch {
+    display: none;
+  }
+
+  .site-header a.header-cta {
+    display: none;
+  }
+
   .nav-links {
     display: none;
     position: absolute;
@@ -298,6 +331,35 @@ a:hover { color: var(--accent-hover); }
   .nav-links.is-open { display: flex; }
 
   .nav-links a { width: 100%; }
+
+  .nav-lang {
+    width: 100%;
+    margin-top: 0.35rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .nav-lang-label {
+    display: block;
+    margin-bottom: 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+}
+
+@media (min-width: 861px) {
+  .site-header nav {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav-lang {
+    display: none;
+  }
 }
 
 /* Buttons */
@@ -1344,6 +1406,28 @@ a:hover { color: var(--accent-hover); }
   background: var(--elevated);
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
+}
+
+/* Post-purchase banner (Polar Success URL redirect) */
+
+.purchase-success-banner {
+  margin-bottom: 2rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.purchase-success-title {
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.purchase-success-text {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
 }
 
 /* Cookie consent (GDPR / Consent Mode v2) */

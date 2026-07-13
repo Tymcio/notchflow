@@ -85,12 +85,50 @@ final class NotchGeometryTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(10 + leading + spacer, notchRight)
     }
 
-    func testShouldHideIdleWhenMenuReachesNotch() {
+    func testIdleFrameKeepsNotchAlignedWhenLeftWingHidden() {
+        let settings = NotchSettings.shared
+        guard let screen = NSScreen.main,
+              screen.safeAreaInsets.top > 0,
+              let notchLeftX = screen.auxiliaryTopLeftArea.map({ $0.maxX - NotchFlowConstants.notchWidthOverlapFudge / 2 }) else {
+            return
+        }
+
+        let full = NotchGeometry.make(for: screen, settings: settings, appMenuRightEdgeX: 640)
+        let hiddenLeft = NotchGeometry.make(for: screen, settings: settings, appMenuRightEdgeX: 650)
+
+        XCTAssertGreaterThan(full.idleLeftWingWidth, 0)
+        XCTAssertEqual(hiddenLeft.idleLeftWingWidth, 0)
+
+        let fullFrame = full.frame(isExpanded: false, isIdle: true)
+        let hiddenLeftFrame = hiddenLeft.frame(isExpanded: false, isIdle: true)
+
+        XCTAssertEqual(fullFrame.minX, notchLeftX - NotchFlowConstants.idleWingProtrusion)
+        XCTAssertEqual(hiddenLeftFrame.minX, fullFrame.minX)
+        XCTAssertEqual(hiddenLeftFrame.width, fullFrame.width)
+        XCTAssertEqual(
+            hiddenLeftFrame.width,
+            hiddenLeft.physicalNotchCutoutWidth + NotchFlowConstants.idleWingProtrusion + hiddenLeft.idleRightWingWidth
+        )
+
+        let fullLayout = full.idleWingLayout()
+        let hiddenLayout = hiddenLeft.idleWingLayout()
+        XCTAssertEqual(fullLayout.leftSlotWidth, hiddenLayout.leftSlotWidth)
+        XCTAssertEqual(fullLayout.centerClearWidth, hiddenLayout.centerClearWidth)
+        XCTAssertEqual(fullLayout.rightSlotWidth, hiddenLayout.rightSlotWidth)
+        XCTAssertEqual(fullLayout.panelWidth, hiddenLayout.panelWidth)
+        XCTAssertEqual(fullLayout.panelHeight, hiddenLayout.panelHeight)
+        XCTAssertLessThanOrEqual(fullLayout.panelHeight, full.notchTopInset)
+        XCTAssertEqual(hiddenLayout.visibleLeftWidth, 0)
+    }
+
+    func testShouldHideIdleOnlyWhenBothWingsUnavailable() {
         let settings = NotchSettings.shared
         guard let screen = NSScreen.main, screen.safeAreaInsets.top > 0 else { return }
 
         let geometry = NotchGeometry.make(for: screen, settings: settings, appMenuRightEdgeX: 10_000)
-        XCTAssertTrue(geometry.shouldHideIdleForMenuOverlap)
+        XCTAssertEqual(geometry.idleLeftWingWidth, 0)
+        XCTAssertGreaterThan(geometry.idleRightWingWidth, 0)
+        XCTAssertFalse(geometry.shouldHideIdleForMenuOverlap)
     }
 }
 

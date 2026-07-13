@@ -1,12 +1,21 @@
 import CryptoKit
 import Foundation
 
+enum APIAuthError: Error {
+    case tokenPersistenceFailed
+}
+
 enum APIAuth {
     private static let keychain = KeychainStore(service: "eu.notchflow.app.api")
     private static let tokenKey = "local_api_token"
+    private static var cachedToken: String?
 
-    static func token() -> String {
+    static func token() throws -> String {
+        if let cachedToken {
+            return cachedToken
+        }
         if let existing = keychain.read(key: tokenKey) {
+            cachedToken = existing
             return existing
         }
         let key = SymmetricKey(size: .bits256)
@@ -15,10 +24,12 @@ enum APIAuth {
         }
         do {
             try keychain.save(key: tokenKey, value: generated)
+            cachedToken = generated
+            return generated
         } catch {
             NotchFlowLog.api.error("Failed to persist API token: \(error.localizedDescription, privacy: .public)")
+            throw APIAuthError.tokenPersistenceFailed
         }
-        return generated
     }
 
     static func validate(_ headerValue: String?) -> Bool {
@@ -26,7 +37,12 @@ enum APIAuth {
         let presented = headerValue.hasPrefix("Bearer ")
             ? String(headerValue.dropFirst("Bearer ".count))
             : headerValue
-        return timingSafeCompare(presented, token())
+        guard let expected = try? token() else { return false }
+        return timingSafeCompare(presented, expected)
+    }
+
+    static func resolvedToken() -> String {
+        (try? token()) ?? ""
     }
 
     private static func timingSafeCompare(_ lhs: String, _ rhs: String) -> Bool {
