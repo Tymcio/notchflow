@@ -144,7 +144,10 @@ final class FocusTimerManager {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.reconcileWallClock()
+            guard let self else { return }
+            Task { @MainActor in
+                self.reconcileWallClock()
+            }
         }
     }
 
@@ -231,7 +234,10 @@ final class FocusTimerManager {
     private func startTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            self?.tick()
+            guard let self else { return }
+            Task { @MainActor in
+                self.tick()
+            }
         }
     }
 

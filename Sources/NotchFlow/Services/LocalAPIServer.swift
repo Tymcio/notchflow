@@ -47,16 +47,18 @@ final class LocalAPIServer {
 
         listener = try makeListener(using: params)
         listener?.newConnectionHandler = { [weak self] connection in
+            guard let self else { return }
             Task { @MainActor in
-                await self?.handle(connection: connection)
+                await self.handle(connection: connection)
             }
         }
 
         listener?.stateUpdateHandler = { [weak self] state in
+            guard let self else { return }
             Task { @MainActor in
-                if case .ready = state, let port = self?.listener?.port?.rawValue {
-                    self?.port = port
-                    self?.persistConfig(port: port)
+                if case .ready = state, let port = self.listener?.port?.rawValue {
+                    self.port = port
+                    self.persistConfig(port: port)
                 }
             }
         }

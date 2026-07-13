@@ -38,16 +38,18 @@ final class MediaMonitor {
 
         Task {
             await source.startMonitoring { [weak self] state in
+                guard let self else { return }
                 Task { @MainActor in
-                    await self?.applyState(state)
+                    await self.applyState(state)
                 }
             }
         }
 
         Task {
             await scriptingSource.startMonitoring { [weak self] scriptState in
+                guard let self else { return }
                 Task { @MainActor in
-                    await self?.mergeScriptingState(scriptState)
+                    await self.mergeScriptingState(scriptState)
                 }
             }
         }
@@ -84,11 +86,12 @@ final class MediaMonitor {
             object: nil,
             queue: .main
         ) { [weak self] notification in
+            guard let self else { return }
+            guard let bundleID = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? String else {
+                return
+            }
             Task { @MainActor in
-                guard let bundleID = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? String else {
-                    return
-                }
-                self?.handlePlayerTerminated(bundleID: bundleID)
+                self.handlePlayerTerminated(bundleID: bundleID)
             }
         }
     }
