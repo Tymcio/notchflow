@@ -46,6 +46,9 @@ codesign --force --options runtime --timestamp \
 echo "Creating DMG..."
 hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
 
+# Convenience filename for Sparkle updates via GitHub Releases "latest".
+cp -f "$DMG_PATH" "$ROOT_DIR/build/${APP_NAME}.dmg"
+
 echo "Notarizing..."
 NOTARY_JSON="$(mktemp -t notchflow-notary.XXXXXX.json)"
 if xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait --output-format json >"$NOTARY_JSON"; then

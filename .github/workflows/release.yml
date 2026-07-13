@@ -48,14 +48,20 @@ jobs:
           DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
           NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
           POLAR_ORGANIZATION_ID: ${{ secrets.POLAR_ORGANIZATION_ID }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+          SPARKLE_FEED_URL: https://github.com/Tymcio/notchflow/releases/latest/download/appcast.xml
         run: Scripts/sign-and-notarize.sh
 
       - name: Generate appcast
+        env:
+          SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
+          DMG_URL: https://github.com/Tymcio/notchflow/releases/latest/download/NotchFlow.dmg
         run: Scripts/make_appcast.sh
 
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            build/NotchFlow.dmg
             build/NotchFlow-*.dmg
             build/appcast.xml
