@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 struct CalendarTabView: View {
     @Bindable var appState: AppState
     @State private var visibleMonth = Date()
@@ -251,7 +252,7 @@ struct CalendarTabView: View {
     private func requestCalendarAccess() {
         // Do not activate our panel here: the system permission dialog needs focus,
         // and a key floating panel above it makes "Allow" unclickable.
-        Task {
+        Task { @MainActor in
             await appState.calendarManager.ensureAccess()
             appState.calendarAccessGranted = appState.calendarManager.hasAccess
             if appState.calendarManager.hasAccess {

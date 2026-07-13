@@ -72,7 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         statusItemVisibilityObservation = item.observe(\.isVisible, options: [.new]) { [weak self] item, change in
             guard change.newValue == false else { return }
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.restoreStatusItemVisibility(item)
             }
         }

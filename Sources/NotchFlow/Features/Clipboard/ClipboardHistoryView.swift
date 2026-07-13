@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 struct ClipboardHistoryView: View {
     @Bindable var appState: AppState
     @State private var query = ""
