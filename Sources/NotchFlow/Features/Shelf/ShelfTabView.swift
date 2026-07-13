@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 struct ShelfTabView: View {
     @Bindable var appState: AppState
 

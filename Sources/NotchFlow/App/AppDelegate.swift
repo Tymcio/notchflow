@@ -82,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.scheduleStatusItemVisibilityRestore()
             }
         }

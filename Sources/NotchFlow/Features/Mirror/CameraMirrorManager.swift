@@ -63,7 +63,7 @@ final class CameraMirrorManager {
         }
 
         let delegate = CameraPreviewSampleBufferDelegate { [weak self] image in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.deliverFrame(image)
             }
         }
@@ -123,7 +123,7 @@ final class CameraMirrorManager {
             \.videoRotationAngleForHorizonLevelPreview,
             options: [.new]
         ) { [weak self] coordinator, _ in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 self?.applyOutputRotation(coordinator.videoRotationAngleForHorizonLevelPreview)
             }
         }

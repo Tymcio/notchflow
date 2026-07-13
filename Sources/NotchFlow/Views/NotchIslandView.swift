@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct NotchIslandView: View {
     let isExpanded: Bool
     @ObservedObject var displayManager: DisplayManager

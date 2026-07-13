@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct CameraMirrorView: View {
     @Bindable var appState: AppState
 

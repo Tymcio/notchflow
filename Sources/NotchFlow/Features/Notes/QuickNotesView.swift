@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct QuickNotesView: View {
     @Bindable var appState: AppState
     @State private var draft = ""

@@ -338,7 +338,7 @@ final class NotchPanelController: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            DispatchQueue.main.async { [weak self] in
                 guard let self, self.isVisible else { return }
                 self.displayManager.refreshGeometryNow()
                 self.repositionIfVisible(animated: false)

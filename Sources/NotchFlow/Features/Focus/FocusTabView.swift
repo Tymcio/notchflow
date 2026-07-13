@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct FocusTabView: View {
     @Bindable var appState: AppState
 

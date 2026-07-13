@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 struct IntegrationsSettingsTab: View {
     @Bindable var appState: AppState
     @State private var copiedToken = false
