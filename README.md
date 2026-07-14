@@ -11,7 +11,7 @@ Native macOS notch utility for Apple Silicon MacBooks. Transparent, lightweight,
 
 ## What is NotchFlow?
 
-NotchFlow turns the MacBook notch into a useful, non-intrusive island — a floating `NSPanel` that sits around the physical notch (or a virtual capsule on external displays). It stays above your apps without stealing focus.
+NotchFlow turns the MacBook notch into a useful, non-intrusive island — a floating `NSPanel` around the physical notch on the built-in display. With an external monitor attached, the island follows your cursor; on screens without a hardware notch it uses a centered capsule at the top. **Requires a notched MacBook** — does not run on Macs without a notch (Mac mini, iMac, Mac Studio, etc.).
 
 - Menu bar app (no Dock icon) — look for the capsule icon after launch
 - Hover the **top-center of your screen** to expand the island

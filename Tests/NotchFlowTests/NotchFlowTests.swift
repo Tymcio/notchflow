@@ -3,6 +3,11 @@ import XCTest
 
 @MainActor
 final class NotchGeometryTests: XCTestCase {
+    func testAnyConnectedScreenHasPhysicalNotchMatchesScreens() {
+        let expected = NSScreen.screens.contains { $0.safeAreaInsets.top > 0 }
+        XCTAssertEqual(NotchGeometry.anyConnectedScreenHasPhysicalNotch(), expected)
+    }
+
     func testVirtualCapsuleDefaultsWhenNoNotch() {
         let settings = NotchSettings.shared
         if let screen = NSScreen.main {

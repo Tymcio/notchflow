@@ -6,7 +6,7 @@ All notable changes to NotchFlow are documented here. Version numbers follow [Se
 
 ### Added
 
-- Notch island with hover-to-expand on built-in and external displays
+- Notch island with hover-to-expand on the built-in notched display; follows the cursor on external displays when attached to a notched MacBook
 - Media controls for Spotify and Apple Music (play/pause, seek, artwork, idle wings)
 - Live Activities in idle notch (incoming/active calls, app notifications, focus timer, media wings)
 - Floating shelf with APFS hard-link storage and drag-and-drop on the island

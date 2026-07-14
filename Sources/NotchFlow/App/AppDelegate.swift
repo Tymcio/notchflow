@@ -12,6 +12,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItemRestoreTask: Task<Void, Never>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard NotchGeometry.anyConnectedScreenHasPhysicalNotch() else {
+            showUnsupportedMacAlertAndTerminate()
+            return
+        }
+
         NSApp.setActivationPolicy(.accessory)
 
         let state = AppState()
@@ -181,6 +186,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         #if canImport(Sparkle)
         SparkleUpdaterController.shared.start()
         #endif
+    }
+
+    private func showUnsupportedMacAlertAndTerminate() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+
+        let alert = NSAlert()
+        alert.messageText = "NotchFlow wymaga MacBooka z notchem"
+        alert.informativeText = """
+        NotchFlow działa tylko na MacBookach z wycięciem (notch) w ekranie. \
+        Ten Mac nie ma notcha, więc aplikacja nie może się uruchomić.
+
+        Obsługiwane: MacBook Pro / Air z notchem (macOS 14+, Apple Silicon).
+        """
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+
+        NSApp.terminate(nil)
     }
 
     private func showFirstLaunchHintIfNeeded() {

@@ -19,7 +19,7 @@ Purchase: [notchflow.eu](https://notchflow.eu) (checkout via [Polar](https://pol
 | Feature | Free | Premium |
 |---------|------|---------|
 | Hover-to-expand island | ✓ | ✓ |
-| Multi-display support | ✓ | ✓ |
+| Multi-display support (notched MacBook) | ✓ | ✓ |
 | Default size (400×188) | ✓ | ✓ |
 | Custom width (280–420) | — | ✓ |
 | Custom clipboard height (168–480) | — | ✓ |

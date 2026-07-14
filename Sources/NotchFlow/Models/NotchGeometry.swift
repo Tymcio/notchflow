@@ -149,6 +149,12 @@ struct IdleWingLayout: Equatable {
 }
 
 extension NotchGeometry {
+    /// True when at least one connected display reports a menu-bar safe area (physical notch).
+    @MainActor
+    static func anyConnectedScreenHasPhysicalNotch() -> Bool {
+        NSScreen.screens.contains { $0.safeAreaInsets.top > 0 }
+    }
+
     @MainActor
     static func idlePanelHeight(notchTopInset: CGFloat) -> CGFloat {
         max(0, notchTopInset - NotchFlowConstants.idleWingVerticalTrim).rounded(.down)
