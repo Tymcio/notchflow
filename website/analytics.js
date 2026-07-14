@@ -21,9 +21,18 @@
     },
   };
 
+  let trackingActive = false;
+
   function getLang() {
     const lang = (document.documentElement.lang || "en").toLowerCase();
     return lang.startsWith("pl") ? "pl" : "en";
+  }
+
+  function getSiteContext() {
+    return {
+      site_language: getLang(),
+      page_location: window.location.pathname,
+    };
   }
 
   function getCopy() {
@@ -57,6 +66,15 @@
       ad_user_data: "denied",
       ad_personalization: "denied",
     });
+    trackingActive = granted;
+  }
+
+  function track(eventName, params) {
+    if (!trackingActive || typeof window.gtag !== "function") return;
+    window.gtag("event", eventName, {
+      ...getSiteContext(),
+      ...params,
+    });
   }
 
   function loadGoogleAnalytics(measurementId) {
@@ -74,6 +92,8 @@
       allow_google_signals: false,
       allow_ad_personalization_signals: false,
       send_page_view: true,
+      site_language: getLang(),
+      content_group: getLang() === "pl" ? "Polish site" : "English site",
     });
   }
 
@@ -89,6 +109,122 @@
       banner.classList.add("is-visible");
       document.body.classList.add("cookie-banner-open");
     });
+  }
+
+  function linkLabel(element) {
+    const text = (element.textContent || "").replace(/\s+/g, " ").trim();
+    if (text) return text.slice(0, 100);
+    return element.getAttribute("aria-label") || element.getAttribute("href") || "unknown";
+  }
+
+  function initClickTracking() {
+    document.addEventListener("click", (event) => {
+      if (!trackingActive) return;
+
+      const checkout = event.target.closest("[data-polar-checkout]");
+      if (checkout) {
+        track("begin_checkout", {
+          product: checkout.getAttribute("data-polar-checkout"),
+          link_text: linkLabel(checkout),
+          page_location: window.location.pathname,
+        });
+        return;
+      }
+
+      const screenshotTab = event.target.closest(".screenshot-tab");
+      if (screenshotTab) {
+        track("select_content", {
+          content_type: "screenshot_tab",
+          item_id: screenshotTab.getAttribute("data-shot") || screenshotTab.textContent?.trim(),
+        });
+        return;
+      }
+
+      const langLink = event.target.closest(".lang-switch a[href]");
+      if (langLink) {
+        const target = (langLink.textContent || "").trim().toLowerCase();
+        track("language_switch", {
+          from_language: getLang(),
+          to_language: target === "pl" ? "pl" : target === "en" ? "en" : target,
+        });
+        return;
+      }
+
+      const anchor = event.target.closest("a[href]");
+      if (!anchor || anchor.closest(".cookie-banner")) return;
+
+      const href = anchor.getAttribute("href") || "";
+      const label = linkLabel(anchor);
+
+      if (href.includes("github.com/Tymcio/notchflow/releases")) {
+        track("download_click", {
+          link_url: href,
+          link_text: label,
+          page_location: window.location.pathname,
+        });
+        return;
+      }
+
+      if (href === "#download" || anchor.classList.contains("header-cta")) {
+        track("cta_click", {
+          cta_type: "download",
+          link_text: label,
+          page_location: window.location.pathname,
+        });
+        return;
+      }
+
+      if (href.startsWith("http") && !href.includes(window.location.hostname)) {
+        track("outbound_click", {
+          link_url: href,
+          link_text: label,
+          page_location: window.location.pathname,
+        });
+        return;
+      }
+
+      if (anchor.classList.contains("btn-primary") || anchor.classList.contains("btn-lg")) {
+        track("cta_click", {
+          cta_type: "primary",
+          link_url: href,
+          link_text: label,
+          page_location: window.location.pathname,
+        });
+      }
+    });
+
+    document.querySelector(".theme-toggle")?.addEventListener("click", () => {
+      track("theme_toggle", {
+        theme: document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark",
+      });
+    });
+  }
+
+  function initScrollTracking() {
+    const thresholds = [25, 50, 75, 90];
+    const fired = new Set();
+
+    function onScroll() {
+      if (!trackingActive) return;
+
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - window.innerHeight;
+      if (scrollable <= 0) return;
+
+      const percent = Math.round((window.scrollY / scrollable) * 100);
+      thresholds.forEach((threshold) => {
+        if (percent >= threshold && !fired.has(threshold)) {
+          fired.add(threshold);
+          track("scroll_depth", {
+            percent_scrolled: threshold,
+            page_location: window.location.pathname,
+          });
+        }
+      });
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
   }
 
   function createBanner(measurementId) {
@@ -118,6 +254,7 @@
       setStoredConsent("accepted");
       updateConsent(true);
       loadGoogleAnalytics(measurementId);
+      track("consent_update", { consent_status: "accepted" });
       hideBanner(banner);
     });
 
@@ -144,6 +281,9 @@
     const measurementId = getMeasurementId();
     if (!measurementId) return;
 
+    initClickTracking();
+    initScrollTracking();
+
     const banner = createBanner(measurementId);
     initManageLinks(banner);
 
@@ -156,11 +296,15 @@
 
     if (consent === "rejected") {
       updateConsent(false);
-      return;
+    } else {
+      showBanner(banner);
     }
-
-    showBanner(banner);
   }
+
+  window.notchflowAnalytics = {
+    track,
+    isEnabled: () => trackingActive,
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

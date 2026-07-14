@@ -30,9 +30,22 @@ def is_outer_black(r: int, g: int, b: int, a: int) -> bool:
 def make_wallpaper(size: tuple[int, int], screenshot: Image.Image) -> Image.Image:
     """Vertical blue gradient sampled from the screenshot wallpaper."""
     width, height = size
-    top = screenshot.getpixel((width // 2, 0))[:3]
-    mid = screenshot.getpixel((width // 2, min(120, screenshot.height - 1)))[:3]
-    bottom = screenshot.getpixel((width // 2, min(280, screenshot.height - 1)))[:3]
+    # The screenshot is a "hero crop" that can include a dark island backdrop.
+    # We sample the wallpaper color near the bottom (where the wallpaper is visible)
+    # and use that as the base for the whole MacBook display wallpaper.
+    sample_y = min(520, screenshot.height - 1)
+    base = screenshot.getpixel((min(width // 2, screenshot.width - 1), sample_y))[:3]
+
+    def mix(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[int, int, int]:
+        return (
+            int(a[0] * (1 - t) + b[0] * t),
+            int(a[1] * (1 - t) + b[1] * t),
+            int(a[2] * (1 - t) + b[2] * t),
+        )
+
+    top = mix(base, (255, 255, 255), 0.06)
+    mid = base
+    bottom = base
 
     wallpaper = Image.new("RGB", size)
     px = wallpaper.load()
@@ -57,9 +70,18 @@ def build_screen_content(screenshot: Image.Image, screen_size: tuple[int, int]) 
     screen_w, screen_h = screen_size
     wallpaper = make_wallpaper(screen_size, screenshot)
 
-    scale = screen_w / screenshot.width
-    scaled_h = int(screenshot.height * scale)
-    scaled = screenshot.resize((screen_w, scaled_h), Image.Resampling.LANCZOS)
+    # We only want the "hero" UI (not the whole desktop). The screenshot assets are
+    # already tightly cropped, but may still include a darker lower gradient portion.
+    # For the MacBook hero we keep the top portion (island + a bit of wallpaper) and
+    # let our generated wallpaper fill the rest of the display.
+    # Keep enough height to include the blue wallpaper under the island.
+    # (The 01-music screenshot has the wallpaper visible near the bottom.)
+    hero_crop_h = min(int(screenshot.height * 0.88), screenshot.height)
+    hero = screenshot.crop((0, 0, screenshot.width, hero_crop_h))
+
+    scale = screen_w / hero.width
+    scaled_h = int(hero.height * scale)
+    scaled = hero.resize((screen_w, scaled_h), Image.Resampling.LANCZOS)
 
     content = wallpaper.convert("RGBA")
     content.paste(scaled, (0, 0))
@@ -97,7 +119,12 @@ def composite(macbook: Image.Image, screen_content: Image.Image) -> Image.Image:
     for y in range(SCREEN_TOP, SCREEN_BOTTOM + 1):
         for x in range(SCREEN_LEFT, SCREEN_RIGHT + 1):
             r, g, b, a = mac_px[x, y]
-            if a == 0 or r > 12 or g > 12 or b > 12:
+            if a == 0:
+                continue
+            # Only replace the actual display pixels. The Apple asset contains
+            # bezel / frame shading inside the measured rect (e.g. ~34 gray on
+            # the sides) which must remain visible.
+            if max(r, g, b) > 12:
                 continue
             sx = x - SCREEN_LEFT
             sy = y - SCREEN_TOP

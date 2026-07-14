@@ -2,6 +2,15 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.14] - 2026-07-14
+
+### Changed
+
+- Website: redesigned feature mockups (music, calendar, shelf), trust pills, hero badge, and “Works in the background” visual
+- Website: Google Analytics 4 (`G-2G5766758K`) with GDPR Consent Mode v2 — loads only after consent
+- Website: event tracking (downloads, checkout, CTA, outbound links, screenshot tabs, scroll depth, theme toggle)
+- Website: `site_language` (`en`/`pl`) on all analytics events for EN/PL reporting in GA4
+
 ## [1.0.13] - 2026-07-14
 
 ### Changed
