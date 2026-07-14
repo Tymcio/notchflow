@@ -232,11 +232,11 @@ final class NotificationCenterObserver {
     ) -> Bool {
         let hasAnswer = buttons.contains { title in
             let lower = title.lowercased()
-            return lower.contains("answer") || lower.contains("odbierz") || lower.contains("accept")
+            return Self.answerKeywords.contains { lower.contains($0) }
         }
         let hasDecline = buttons.contains { title in
             let lower = title.lowercased()
-            return lower.contains("decline") || lower.contains("odrzuć") || lower.contains("reject")
+            return Self.declineKeywords.contains { lower.contains($0) }
         }
         guard hasAnswer, hasDecline else { return false }
 
@@ -246,17 +246,41 @@ final class NotificationCenterObserver {
         }
 
         let combined = (texts + buttons).joined(separator: " ").lowercased()
-        let callKeywords = ["połączenie", "incoming call", "facetime", "telefon", "incoming", "przychodzące"]
-        return callKeywords.contains { combined.contains($0) }
+        return Self.callKeywords.contains { combined.contains($0) }
     }
 
     private func isAnswerButton(_ element: AXUIElement) -> Bool {
         let title = (AXHelpers.title(of: element) ?? AXHelpers.description(of: element) ?? "").lowercased()
-        return title.contains("answer") || title.contains("odbierz") || title.contains("accept")
+        return Self.answerKeywords.contains { title.contains($0) }
     }
 
     private func isDeclineButton(_ element: AXUIElement) -> Bool {
         let title = (AXHelpers.title(of: element) ?? AXHelpers.description(of: element) ?? "").lowercased()
-        return title.contains("decline") || title.contains("odrzuć") || title.contains("reject")
+        return Self.declineKeywords.contains { title.contains($0) }
     }
+
+    // Localized banner/button keywords for supported system languages (en, pl, de, it, es).
+    private static let answerKeywords = [
+        "answer", "accept",           // en
+        "odbierz",                    // pl
+        "annehmen",                   // de
+        "rispondi", "accetta",        // it
+        "contestar", "responder", "aceptar", // es
+    ]
+
+    private static let declineKeywords = [
+        "decline", "reject",          // en
+        "odrzuć",                     // pl
+        "ablehnen",                   // de
+        "rifiuta",                    // it
+        "rechazar",                   // es
+    ]
+
+    private static let callKeywords = [
+        "incoming call", "incoming", "facetime", "telefon",  // en/shared
+        "połączenie", "przychodzące",                        // pl
+        "eingehender anruf", "anruf",                        // de
+        "chiamata in arrivo", "chiamata",                    // it
+        "llamada entrante", "llamada",                       // es
+    ]
 }

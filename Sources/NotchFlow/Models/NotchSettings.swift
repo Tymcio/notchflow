@@ -117,7 +117,9 @@ final class NotchSettings {
         lyricsSharingEnabled = defaults.bool(forKey: Keys.lyricsSharingEnabled)
         callsInNotchEnabled = defaults.bool(forKey: Keys.callsInNotchEnabled)
         appNotificationsEnabled = defaults.bool(forKey: Keys.appNotificationsEnabled)
-        allowedNotificationBundleIDs = defaults.stringArray(forKey: Keys.allowedNotificationBundleIDs) ?? []
+        allowedNotificationBundleIDs = Self.migratedAllowedNotificationBundleIDs(
+            defaults.stringArray(forKey: Keys.allowedNotificationBundleIDs) ?? []
+        )
         hideNotificationBody = defaults.bool(forKey: Keys.hideNotificationBody)
     }
 
@@ -130,6 +132,17 @@ final class NotchSettings {
             UserDefaults.standard.set(customIslandHeight, forKey: Keys.customIslandHeight)
             onDimensionsChange?()
         }
+    }
+
+    private static func migratedAllowedNotificationBundleIDs(_ ids: [String]) -> [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for id in ids {
+            let canonical = NotificationAppCatalog.canonicalBundleID(for: id)
+            guard seen.insert(canonical).inserted else { continue }
+            result.append(canonical)
+        }
+        return result
     }
 }
 
@@ -146,7 +159,7 @@ enum IslandTheme: String, CaseIterable, Identifiable, Sendable {
         case .system: "NotchFlow"
         case .midnight: "Graphite"
         case .aurora: "Aurora"
-        case .violet: "Fiolet"
+        case .violet: loc("Violet")
         }
     }
 

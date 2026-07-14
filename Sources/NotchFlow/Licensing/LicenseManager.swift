@@ -29,11 +29,11 @@ enum LicenseValidationError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidKey: "Klucz licencyjny jest nieprawidłowy."
-        case .networkFailure: "Nie udało się połączyć z serwerem licencji. Sprawdź internet i spróbuj ponownie."
-        case .activationLimitReached: "Osiągnięto limit aktywacji dla tego klucza (maks. 2 Maci)."
-        case .expired: "Roczna licencja wygasła."
-        case .cannotDeactivate: "Nie można dezaktywować tej aktywacji. Spróbuj później lub użyj portalu Polar (Purchases → Deactivate)."
+        case .invalidKey: loc("The license key is invalid.")
+        case .networkFailure: loc("Could not connect to the license server. Check your internet connection and try again.")
+        case .activationLimitReached: loc("Activation limit reached for this key (max. 2 Macs).")
+        case .expired: loc("The annual license has expired.")
+        case .cannotDeactivate: loc("Cannot deactivate this activation. Try again later or use the Polar portal (Purchases → Deactivate).")
         }
     }
 }

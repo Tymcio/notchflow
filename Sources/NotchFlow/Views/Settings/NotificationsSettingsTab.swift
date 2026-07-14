@@ -7,73 +7,76 @@ struct NotificationsSettingsTab: View {
     @ObservedObject var menuBarLayoutManager: MenuBarLayoutManager
 
     var body: some View {
-        Form {
-            Section("Połączenia w notchu") {
-                Toggle("Pokazuj połączenia przychodzące w wyspie", isOn: $settings.callsInNotchEnabled)
+        SettingsFormContent {
+            Section {
+                Toggle(loc("Show incoming calls in the island"), isOn: $settings.callsInNotchEnabled)
                     .disabled(!isPremium)
                     .onChange(of: settings.callsInNotchEnabled) { _, _ in
                         AppController.appState?.applyNotificationSettings()
                     }
-
-                if !isPremium {
-                    Text("Połączenia w notchu wymagają licencji Premium.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            } header: {
+                Text(loc("Calls in the notch"))
+            } footer: {
+                VStack(alignment: .leading, spacing: 6) {
+                    if !isPremium {
+                        SettingsFooterCaption("Calls in the notch require a Premium license.")
+                    }
+                    SettingsFooterCaption("FaceTime and calls relayed from iPhone appear in the island instead of only as a side banner.")
                 }
-
-                Text("FaceTime i połączenia przekazywane z iPhone'a pojawią się w wyspie zamiast tylko jako banner z boku.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
-            Section("Powiadomienia aplikacji") {
-                Toggle("Pokazuj powiadomienia wybranych aplikacji w wyspie", isOn: $settings.appNotificationsEnabled)
+            Section {
+                Toggle(loc("Show notifications from selected apps in the island"), isOn: $settings.appNotificationsEnabled)
                     .disabled(!isPremium)
                     .onChange(of: settings.appNotificationsEnabled) { _, _ in
                         AppController.appState?.applyNotificationSettings()
                     }
 
-                Toggle("Ukryj treść wiadomości (pokaż tylko nadawcę)", isOn: $settings.hideNotificationBody)
+                Toggle(loc("Hide message body (show sender only)"), isOn: $settings.hideNotificationBody)
                     .disabled(!settings.appNotificationsEnabled || !isPremium)
                     .onChange(of: settings.hideNotificationBody) { _, _ in
                         AppController.appState?.applyNotificationSettings()
                     }
-
+            } header: {
+                Text(loc("App notifications"))
+            } footer: {
                 if settings.appNotificationsEnabled && isPremium {
-                    Text("Używasz Rambox? Włącz Rambox na liście — powiadomienia z WhatsApp, Telegram i MSN idą przez Rambox, nie przez natywne apki.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    appPicker
+                    SettingsFooterCaption("Using Rambox? Enable Rambox in the list — WhatsApp, Telegram, and MSN notifications go through Rambox, not native apps.")
                 }
             }
 
-            Section("Uprawnienia") {
-                if menuBarLayoutManager.isAccessibilityTrusted {
-                    Text("Dostępność jest włączona — NotchFlow może odczytywać bannery powiadomień systemowych.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Wymagane uprawnienie Dostępności, aby wykrywać połączenia i powiadomienia z Notification Center.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            if settings.appNotificationsEnabled && isPremium {
+                Section {
+                    appPicker
+                } header: {
+                    Text(loc("Apps"))
+                }
+            }
 
+            Section {
+                if !menuBarLayoutManager.isAccessibilityTrusted {
                     HStack {
-                        Button("Nadaj uprawnienie") {
+                        Button(loc("Grant permission")) {
                             menuBarLayoutManager.requestPermission()
                         }
-                        Button("Otwórz ustawienia systemowe") {
+                        Button(loc("Open System Settings")) {
                             menuBarLayoutManager.openAccessibilitySettings()
                         }
                     }
                 }
-
-                Text("Treść powiadomień jest trzymana wyłącznie w pamięci RAM i nie jest zapisywana na dysk.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } header: {
+                Text(loc("Permissions"))
+            } footer: {
+                VStack(alignment: .leading, spacing: 6) {
+                    if menuBarLayoutManager.isAccessibilityTrusted {
+                        SettingsFooterCaption("Accessibility is enabled — NotchFlow can read system notification banners.")
+                    } else {
+                        SettingsFooterCaption("Accessibility permission is required to detect calls and Notification Center alerts.")
+                    }
+                    SettingsFooterCaption("Notification content is kept in RAM only and is not saved to disk.")
+                }
             }
         }
-        .padding()
     }
 
     @ViewBuilder
@@ -81,11 +84,7 @@ struct NotificationsSettingsTab: View {
         ForEach(NotificationHubManager.suggestedApps, id: \.bundleID) { app in
             Toggle(isOn: binding(for: app.bundleID)) {
                 HStack(spacing: 8) {
-                    if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
-                        Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                            .resizable()
-                            .frame(width: 18, height: 18)
-                    }
+                    CatalogAppIcon(bundleID: app.bundleID)
                     Text(app.name)
                 }
             }

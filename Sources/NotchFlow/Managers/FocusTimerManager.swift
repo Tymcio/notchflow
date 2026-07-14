@@ -89,11 +89,11 @@ struct FocusTimerState: Equatable, Sendable {
 
     var modeLabel: String {
         switch mode {
-        case .idle: "Minutnik"
-        case .countdown: "Minutnik"
-        case .pomodoroWork: "Skupienie"
-        case .pomodoroBreak: "Przerwa"
-        case .stopwatch: "Stoper"
+        case .idle: loc("Timer")
+        case .countdown: loc("Timer")
+        case .pomodoroWork: loc("Focus")
+        case .pomodoroBreak: loc("Break")
+        case .stopwatch: loc("Stopwatch")
         }
     }
 
@@ -270,7 +270,7 @@ final class FocusTimerManager {
         case .countdown:
             state.remainingSeconds = 0
             state.phaseEndDate = nil
-            finishCountdown(title: "Minutnik zakończony", body: "Czas minął.")
+            finishCountdown(title: loc("Timer finished"), body: loc("Time is up."))
         case .pomodoroWork:
             state.completedPomodoroSessions += 1
             let useLongBreak = state.completedPomodoroSessions.isMultiple(of: sessionsBeforeLongBreak)
@@ -279,14 +279,17 @@ final class FocusTimerManager {
             state.remainingSeconds = state.totalSeconds
             state.isRunning = true
             state.phaseEndDate = Date().addingTimeInterval(TimeInterval(state.remainingSeconds))
-            NotificationService.post(title: "Przerwa", body: useLongBreak ? "Dłuższa przerwa." : "Krótka przerwa.")
+            NotificationService.post(
+                title: loc("Break"),
+                body: useLongBreak ? loc("Long break.") : loc("Short break.")
+            )
         case .pomodoroBreak:
             state.mode = .pomodoroWork
             state.totalSeconds = workDurationSeconds
             state.remainingSeconds = workDurationSeconds
             state.isRunning = true
             state.phaseEndDate = Date().addingTimeInterval(TimeInterval(state.remainingSeconds))
-            NotificationService.post(title: "Skupienie", body: "Kolejna sesja Pomodoro.")
+            NotificationService.post(title: loc("Focus"), body: loc("Next Pomodoro session."))
         case .stopwatch, .idle:
             break
         }

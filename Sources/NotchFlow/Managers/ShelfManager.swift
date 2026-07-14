@@ -310,10 +310,10 @@ final class ShelfManager {
 
     private func presentOpenFailure(for item: ShelfItem) {
         let alert = NSAlert()
-        alert.messageText = "Nie można otworzyć pliku"
-        alert.informativeText = "„\(item.displayName)” jest niedostępny. Usuń skrót z półki i dodaj go ponownie."
+        alert.messageText = loc("Cannot open file")
+        alert.informativeText = locFormat("\"%@\" is unavailable. Remove the shortcut from the shelf and add it again.", item.displayName)
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: loc("OK"))
         alert.runModal()
     }
 

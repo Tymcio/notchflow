@@ -183,9 +183,9 @@ struct FocusTabView: View {
 
     private var pomodoroHint: String {
         switch state.mode {
-        case .pomodoroBreak: "Czas na przerwę — oddychaj"
-        case .pomodoroWork: "Sesja skupienia w toku"
-        default: "25 min pracy · 5 min przerwy"
+        case .pomodoroBreak: loc("Time for a break — breathe")
+        case .pomodoroWork: loc("Focus session in progress")
+        default: loc("25 min work · 5 min break")
         }
     }
 
@@ -236,9 +236,9 @@ struct FocusTabView: View {
 
     private var primaryTitle: String {
         if state.mode == .idle {
-            return pickerMode == .stopwatch ? "Start stopera" : "Start"
+            return pickerMode == .stopwatch ? loc("Start stopwatch") : loc("Start")
         }
-        return state.isRunning ? "Pauza" : "Wznów"
+        return state.isRunning ? loc("Pause") : loc("Resume")
     }
 
     private func primaryAction() {
@@ -288,9 +288,9 @@ private enum FocusPickerMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .countdown: "Minutnik"
-        case .stopwatch: "Stoper"
-        case .pomodoro: "Pomodoro"
+        case .countdown: loc("Timer")
+        case .stopwatch: loc("Stopwatch")
+        case .pomodoro: loc("Pomodoro")
         }
     }
 

@@ -4,29 +4,36 @@ struct PrivacySettingsTab: View {
     @Bindable var settings: NotchSettings
 
     var body: some View {
-        Form {
-            Toggle("Monitoruj schowek", isOn: $settings.clipboardMonitoringEnabled)
-                .onChange(of: settings.clipboardMonitoringEnabled) { _, enabled in
-                    AppController.appState?.setClipboardMonitoringEnabled(enabled)
+        SettingsFormContent {
+            Section {
+                Toggle(loc("Monitor clipboard"), isOn: $settings.clipboardMonitoringEnabled)
+                    .onChange(of: settings.clipboardMonitoringEnabled) { _, enabled in
+                        AppController.appState?.setClipboardMonitoringEnabled(enabled)
+                    }
+            } footer: {
+                SettingsFooterCaption("Stores recent copied text and links locally. Passwords and concealed pasteboard entries are skipped. Off by default.")
+            }
+
+            Section {
+                Toggle(loc("Allow URL scheme automation (notchflow://)"), isOn: $settings.urlSchemeAutomationEnabled)
+            } footer: {
+                SettingsFooterCaption("When disabled, other apps cannot control NotchFlow via notchflow://. Camera mirror requires additional confirmation.")
+            }
+
+            Section {
+                Toggle(loc("Share track titles for lyrics lookup"), isOn: $settings.lyricsSharingEnabled)
+            } footer: {
+                SettingsFooterCaption("Sends title and artist to lrclib.net only while playing and only when enabled.")
+            }
+
+            Section {
+                Link(loc("Security and privacy policy"), destination: NotchFlowConstants.websiteURL.appending(path: "security"))
+            } footer: {
+                VStack(alignment: .leading, spacing: 6) {
+                    SettingsFooterCaption("NotchFlow does not collect telemetry in version 1.0.")
+                    SettingsFooterCaption("Network access is used for license verification, updates, and optional local API.")
                 }
-            Text("Zapisuje lokalnie ostatnie skopiowane teksty i linki. Hasła i ukryte wpisy ze schowka są pomijane. Domyślnie wyłączone.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Toggle("Zezwól na automatyzację URL scheme (notchflow://)", isOn: $settings.urlSchemeAutomationEnabled)
-            Text("Gdy wyłączone, inne aplikacje nie mogą sterować NotchFlow przez adres notchflow://. Lustro kamery wymaga dodatkowego potwierdzenia.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Toggle("Udostępniaj tytuły utworów do wyszukiwania tekstów", isOn: $settings.lyricsSharingEnabled)
-            Text("Wysyła tytuł i artystę do lrclib.net wyłącznie podczas odtwarzania i tylko gdy włączone.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text("NotchFlow nie zbiera telemetrii w wersji 1.0.")
-            Text("Dostęp do sieci służy weryfikacji licencji, aktualizacjom i opcjonalnemu API lokalnemu.")
-            Link("Polityka bezpieczeństwa i prywatności", destination: NotchFlowConstants.websiteURL.appending(path: "security"))
+            }
         }
-        .padding()
     }
 }

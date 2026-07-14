@@ -16,11 +16,11 @@ enum MirrorActivation {
     @MainActor
     static func confirmStart() -> Bool {
         let alert = NSAlert()
-        alert.messageText = "Włączyć podgląd kamery?"
-        alert.informativeText = "NotchFlow poprosi o dostęp do kamery. Kontynuować?"
+        alert.messageText = loc("Enable camera preview?")
+        alert.informativeText = loc("NotchFlow will request camera access. Continue?")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Włącz")
-        alert.addButton(withTitle: "Anuluj")
+        alert.addButton(withTitle: loc("Enable"))
+        alert.addButton(withTitle: loc("Cancel"))
         return alert.runModal() == .alertFirstButtonReturn
     }
 }

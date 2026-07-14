@@ -67,11 +67,11 @@ struct CalendarTabView: View {
                     Image(systemName: "calendar.badge.exclamationmark")
                         .font(.caption)
                         .foregroundStyle(IslandStyle.tertiaryText)
-                    Text("Brak dostępu do kalendarza.")
+                    LocText("Calendar access denied.")
                         .font(.caption2)
                         .foregroundStyle(IslandStyle.tertiaryText)
                     Spacer(minLength: 0)
-                    Button("Udziel dostępu") {
+                    Button(loc("Grant access")) {
                         requestCalendarAccess()
                     }
                     .font(.caption2.weight(.semibold))
@@ -80,7 +80,7 @@ struct CalendarTabView: View {
                     .contentShape(Rectangle())
                 }
             } else if selectedDayEvents.isEmpty {
-                Text("Brak wydarzeń w tym dniu")
+                LocText("No events on this day")
                     .font(.caption2)
                     .foregroundStyle(IslandStyle.tertiaryText)
             } else {
@@ -95,11 +95,11 @@ struct CalendarTabView: View {
 
     private var selectedDayTitle: String {
         if Calendar.current.isDateInToday(selectedDay) {
-            return "Dzisiaj"
+            return loc("Today")
         }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pl_PL")
-        formatter.dateFormat = "d MMM"
+        formatter.locale = Locale.current
+        formatter.setLocalizedDateFormatFromTemplate("d MMM")
         return formatter.string(from: selectedDay)
     }
 
@@ -145,7 +145,7 @@ struct CalendarTabView: View {
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
-        .help(event.meetingURL == nil ? "Otwórz w Kalendarzu" : "Otwórz spotkanie")
+        .help(event.meetingURL == nil ? loc("Open in Calendar") : loc("Open meeting"))
     }
 
     private var header: some View {
@@ -161,7 +161,7 @@ struct CalendarTabView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(IslandStyle.secondaryText)
-            .accessibilityLabel("Poprzedni miesiąc")
+            .accessibilityLabel(loc("Previous month"))
 
             Text(MonthCalendarModel.monthTitle(for: visibleMonth))
                 .font(.subheadline.weight(.semibold))
@@ -178,13 +178,13 @@ struct CalendarTabView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(IslandStyle.secondaryText)
-            .accessibilityLabel("Następny miesiąc")
+            .accessibilityLabel(loc("Next month"))
         }
     }
 
     private var weekdayHeader: some View {
         HStack(spacing: 0) {
-            Text("T")
+            Text(loc("W"))
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(IslandStyle.tertiaryText)
                 .frame(width: 22)

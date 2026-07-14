@@ -57,13 +57,13 @@ final class HUDManager {
             let volume = (userInfo["Volume"] as? Double)
                 ?? (userInfo["VolumeScalar"] as? Double)
                 ?? Double(NSApplication.shared.windows.count > 0 ? 0.5 : 0.5)
-            showHUD(kind: .volume, value: volume, label: "Głośność")
+            showHUD(kind: .volume, value: volume, label: loc("Volume"))
             return
         }
 
         if name.contains("Brightness") {
             let brightness = (userInfo["Brightness"] as? Double) ?? 0.5
-            showHUD(kind: .brightness, value: brightness, label: "Jasność")
+            showHUD(kind: .brightness, value: brightness, label: loc("Brightness"))
         }
     }
 

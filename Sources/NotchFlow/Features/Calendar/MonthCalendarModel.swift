@@ -17,25 +17,31 @@ struct CalendarWeek: Identifiable, Equatable {
 }
 
 enum MonthCalendarModel {
-    static var polishCalendar: Calendar {
+    static var displayCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = Locale(identifier: "pl_PL")
+        calendar.locale = Locale.current
         calendar.firstWeekday = 2
         return calendar
     }
 
-    static let weekdaySymbols = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"]
+    static var weekdaySymbols: [String] {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        let symbols = formatter.veryShortWeekdaySymbols ?? formatter.shortWeekdaySymbols ?? []
+        guard symbols.count == 7 else { return symbols }
+        return Array(symbols[1...]) + [symbols[0]]
+    }
 
     static func monthTitle(for date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pl_PL")
-        formatter.dateFormat = "LLLL yyyy"
+        formatter.locale = Locale.current
+        formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
         let title = formatter.string(from: date)
         return title.prefix(1).uppercased() + title.dropFirst()
     }
 
     static func weeks(for month: Date) -> [CalendarWeek] {
-        let calendar = polishCalendar
+        let calendar = displayCalendar
         guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: month)),
               let dayRange = calendar.range(of: .day, in: .month, for: month) else {
             return []
@@ -72,11 +78,11 @@ enum MonthCalendarModel {
     }
 
     static func previousMonth(from month: Date) -> Date {
-        polishCalendar.date(byAdding: .month, value: -1, to: month) ?? month
+        displayCalendar.date(byAdding: .month, value: -1, to: month) ?? month
     }
 
     static func nextMonth(from month: Date) -> Date {
-        polishCalendar.date(byAdding: .month, value: 1, to: month) ?? month
+        displayCalendar.date(byAdding: .month, value: 1, to: month) ?? month
     }
 }
 

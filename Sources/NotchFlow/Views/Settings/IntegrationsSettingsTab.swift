@@ -9,9 +9,9 @@ struct IntegrationsSettingsTab: View {
     @State private var apiBaseURL = ""
 
     var body: some View {
-        Form {
+        SettingsFormContent {
             Section {
-                Toggle("Włącz lokalne API (Raycast)", isOn: $appState.settings.localAPIEnabled)
+                Toggle(loc("Enable local API (Raycast)"), isOn: $appState.settings.localAPIEnabled)
                     .onChange(of: appState.settings.localAPIEnabled) { _, enabled in
                         Task {
                             if enabled {
@@ -28,24 +28,24 @@ struct IntegrationsSettingsTab: View {
                     }
 
                 if appState.settings.localAPIEnabled {
-                    Label("API działa lokalnie na tym Macu", systemImage: "checkmark.circle.fill")
+                    Label(loc("API running locally on this Mac"), systemImage: "checkmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.green)
                 } else {
-                    Text("Wyłączone domyślnie — włącz tylko jeśli używasz integracji Raycast.")
+                    LocText("Off by default — enable only if you use Raycast integration.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            Section("Raycast") {
-                LabeledContent("Adres API") {
+            Section(loc("Raycast")) {
+                LabeledContent(loc("API address")) {
                     HStack {
-                        Text(apiBaseURL.isEmpty ? "Uruchom API, aby zobaczyć adres" : apiBaseURL)
+                        Text(apiBaseURL.isEmpty ? loc("Start API to see address") : apiBaseURL)
                             .font(.caption.monospaced())
                             .textSelection(.enabled)
                             .lineLimit(2)
-                        Button(copiedURL ? "Skopiowano" : "Kopiuj") {
+                        Button(copiedURL ? loc("Copied") : loc("Copy")) {
                             guard !apiBaseURL.isEmpty else { return }
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(apiBaseURL, forType: .string)
@@ -55,11 +55,11 @@ struct IntegrationsSettingsTab: View {
                     }
                 }
 
-                LabeledContent("Token API") {
+                LabeledContent(loc("API Token")) {
                     HStack {
                         Text(APIAuth.resolvedToken().prefix(12) + "…")
                             .font(.caption.monospaced())
-                        Button(copiedToken ? "Skopiowano" : "Kopiuj") {
+                        Button(copiedToken ? loc("Copied") : loc("Copy")) {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(APIAuth.resolvedToken(), forType: .string)
                             copiedToken = true
@@ -67,15 +67,13 @@ struct IntegrationsSettingsTab: View {
                     }
                 }
 
-                Text("W rozszerzeniu Raycast wystarczy Token API — adres jest odczytywany automatycznie z api.json. Stały port: \(NotchFlowConstants.localAPIPort).")
+                Text(locFormat("In the Raycast extension, only the API Token is needed — the address is read automatically from api.json. Fixed port: %lld.", NotchFlowConstants.localAPIPort))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Link("Zainstaluj rozszerzenie NotchFlow (repo)", destination: NotchFlowConstants.githubURL.appending(path: "tree/main/integrations/raycast/notchflow"))
+                Link(loc("Install NotchFlow extension (repo)"), destination: NotchFlowConstants.githubURL.appending(path: "tree/main/integrations/raycast/notchflow"))
             }
         }
-        .formStyle(.grouped)
-        .padding()
         .onAppear {
             refreshAPIInfo()
         }

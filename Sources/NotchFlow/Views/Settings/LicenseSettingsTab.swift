@@ -8,87 +8,81 @@ struct LicenseSettingsTab: View {
     let onDeactivate: () -> Void
     let onDeactivateInPolar: () -> Void
 
+    private var licenseMessageIsSuccess: Bool {
+        licenseMessage == loc("License activated.")
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                if !LicenseMode.current.isEnforced {
+        SettingsFormContent {
+            if !LicenseMode.current.isEnforced {
+                Section {
                     Label {
-                        Text("Okres beta — wszystkie funkcje Premium są odblokowane. Aktywacja klucza będzie wymagana w wersji stabilnej; wpisany teraz klucz zostanie zapamiętany.")
+                        LocText("Beta period — all Premium features are unlocked. A key will be required in the stable release; any key entered now will be remembered.")
                             .font(.caption)
                             .fixedSize(horizontal: false, vertical: true)
                     } icon: {
                         Image(systemName: "sparkles")
                     }
                     .foregroundStyle(.secondary)
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.accentColor.opacity(0.1))
-                    }
                 }
-
-                GroupBox("Status licencji") {
-                    LabeledContent("Plan") {
-                        Text(status.isPremium ? localizedTier(status.tier) : "Darmowa")
-                            .fontWeight(.medium)
-                    }
-
-                    if status.isPremium, let validatedAt = status.validatedAt {
-                        LabeledContent("Aktywowano") {
-                            Text(validatedAt, style: .date)
-                        }
-                    }
-                }
-
-                GroupBox("Klucz licencyjny") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Wklej klucz z zakupu na notchflow.eu (np. NOTCHFLOW_… lub UUID z e-maila Polar).")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        TextField("Klucz licencyjny", text: $licenseKey)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.body.monospaced())
-                            .frame(maxWidth: .infinity)
-
-                        HStack(spacing: 10) {
-                            Button("Aktywuj licencję", action: onActivate)
-                                .buttonStyle(.borderedProminent)
-                                .disabled(licenseKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                            Button("Usuń z tego Maca", role: .destructive, action: onDeactivate)
-                                .disabled(!status.isPremium && licenseKey.isEmpty)
-                        }
-
-                        Button("Zwolnij aktywację (Polar)", action: onDeactivateInPolar)
-                            .buttonStyle(.bordered)
-                            .disabled(!status.isPremium)
-
-                        if !licenseMessage.isEmpty {
-                            Text(licenseMessage)
-                                .font(.caption)
-                                .foregroundStyle(licenseMessage.contains("aktywowana") ? .green : .secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                Link("Kup Premium na notchflow.eu", destination: NotchFlowConstants.websiteURL.appending(path: "pricing"))
-                    .font(.caption)
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Section {
+                LabeledContent(loc("Plan")) {
+                    Text(status.isPremium ? localizedTier(status.tier) : loc("Free"))
+                        .fontWeight(.medium)
+                }
+
+                if status.isPremium, let validatedAt = status.validatedAt {
+                    LabeledContent(loc("Activated")) {
+                        Text(validatedAt, style: .date)
+                    }
+                }
+            } header: {
+                Text(loc("License status"))
+            }
+
+            Section {
+                TextField(loc("License key"), text: $licenseKey)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.body.monospaced())
+
+                HStack(spacing: 10) {
+                    Button(loc("Activate license"), action: onActivate)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(licenseKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    Button(loc("Remove from this Mac"), role: .destructive, action: onDeactivate)
+                        .disabled(!status.isPremium && licenseKey.isEmpty)
+                }
+
+                Button(loc("Release activation (Polar)"), action: onDeactivateInPolar)
+                    .buttonStyle(.bordered)
+                    .disabled(!status.isPremium)
+
+                if !licenseMessage.isEmpty {
+                    Text(licenseMessage)
+                        .font(.caption)
+                        .foregroundStyle(licenseMessageIsSuccess ? .green : .secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } header: {
+                Text(loc("License key"))
+            } footer: {
+                SettingsFooterCaption("Paste the key from your purchase at notchflow.eu (e.g. NOTCHFLOW_… or UUID from Polar email).")
+            }
+
+            Section {
+                Link(loc("Buy Premium at notchflow.eu"), destination: NotchFlowConstants.websiteURL.appending(path: "pricing"))
+            }
         }
     }
 
     private func localizedTier(_ tier: LicenseTier) -> String {
         switch tier {
-        case .free: "Darmowa"
-        case .annual: "Roczna"
-        case .lifetime: "Dożywotnia"
+        case .free: loc("Free")
+        case .annual: loc("Annual")
+        case .lifetime: loc("Lifetime")
         }
     }
 }

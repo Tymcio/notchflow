@@ -1,41 +1,138 @@
 import AppKit
 import Foundation
+import SwiftUI
 
 /// Mapowanie słów kluczowych i bundli — natywne apki + agregatory (Rambox itd.).
 enum NotificationAppCatalog {
+    struct BrandBadge: Sendable {
+        let symbol: String
+        let gradient: [Color]
+    }
+
     struct Entry: Sendable {
         let name: String
         let bundleID: String
+        let alternateBundleIDs: [String]
         let keywords: [String]
+        let brand: BrandBadge?
+
+        var allBundleIDs: [String] {
+            [bundleID] + alternateBundleIDs
+        }
+
+        var localizedName: String {
+            if bundleID == "com.apple.MobileSMS" {
+                return loc("Messages")
+            }
+            return name
+        }
     }
 
     static let aggregators: [Entry] = [
-        Entry(name: "Rambox", bundleID: "com.saenzramiro.rambox", keywords: ["rambox"]),
-        Entry(name: "Rambox CE", bundleID: "com.grupovrs.ramboxce", keywords: ["rambox"])
+        Entry(
+            name: "Rambox",
+            bundleID: "com.rambox",
+            alternateBundleIDs: ["com.saenzramiro.rambox"],
+            keywords: ["rambox"],
+            brand: BrandBadge(symbol: "tray.full.fill", gradient: [Color(red: 0.93, green: 0.33, blue: 0.24), Color(red: 0.78, green: 0.18, blue: 0.14)])
+        ),
+        Entry(
+            name: "Rambox CE",
+            bundleID: "com.grupovrs.ramboxce",
+            alternateBundleIDs: [],
+            keywords: ["rambox"],
+            brand: BrandBadge(symbol: "tray.full.fill", gradient: [Color(red: 0.20, green: 0.55, blue: 0.95), Color(red: 0.10, green: 0.38, blue: 0.82)])
+        )
     ]
 
     static let messagingApps: [Entry] = [
-        Entry(name: "WhatsApp", bundleID: "net.whatsapp.WhatsApp", keywords: ["whatsapp"]),
-        Entry(name: "Signal", bundleID: "org.whispersystems.signal-desktop", keywords: ["signal"]),
-        Entry(name: "Telegram", bundleID: "ru.keepcoder.Telegram", keywords: ["telegram"]),
-        Entry(name: "Wiadomości", bundleID: "com.apple.MobileSMS", keywords: ["messages", "wiadomości", "imessage"]),
-        Entry(name: "Messenger", bundleID: "com.facebook.archon", keywords: ["messenger", "msn", "facebook"]),
-        Entry(name: "Slack", bundleID: "com.tinyspeck.slackmacgap", keywords: ["slack"]),
-        Entry(name: "Discord", bundleID: "com.hnc.Discord", keywords: ["discord"]),
-        Entry(name: "Skype", bundleID: "com.skype.skype", keywords: ["skype"])
+        Entry(
+            name: "WhatsApp",
+            bundleID: "net.whatsapp.WhatsApp",
+            alternateBundleIDs: ["desktop.WhatsApp"],
+            keywords: ["whatsapp"],
+            brand: BrandBadge(symbol: "phone.fill", gradient: [Color(red: 0.15, green: 0.83, blue: 0.40), Color(red: 0.08, green: 0.68, blue: 0.32)])
+        ),
+        Entry(
+            name: "Signal",
+            bundleID: "org.whispersystems.signal-desktop",
+            alternateBundleIDs: [],
+            keywords: ["signal"],
+            brand: BrandBadge(symbol: "bubble.left.fill", gradient: [Color(red: 0.23, green: 0.46, blue: 0.94), Color(red: 0.14, green: 0.34, blue: 0.82)])
+        ),
+        Entry(
+            name: "Telegram",
+            bundleID: "org.telegram.desktop",
+            alternateBundleIDs: ["ru.keepcoder.Telegram", "ph.telegra.Telegraph"],
+            keywords: ["telegram"],
+            brand: BrandBadge(symbol: "paperplane.fill", gradient: [Color(red: 0.16, green: 0.67, blue: 0.93), Color(red: 0.09, green: 0.52, blue: 0.82)])
+        ),
+        Entry(
+            name: "Messages",
+            bundleID: "com.apple.MobileSMS",
+            alternateBundleIDs: [],
+            keywords: ["messages", "imessage", "wiadomości", "nachrichten", "messaggi", "mensajes"],
+            brand: BrandBadge(symbol: "message.fill", gradient: [Color(red: 0.28, green: 0.86, blue: 0.39), Color(red: 0.12, green: 0.72, blue: 0.30)])
+        ),
+        Entry(
+            name: "Messenger",
+            bundleID: "com.facebook.archon",
+            alternateBundleIDs: ["com.facebook.Messenger"],
+            keywords: ["messenger", "msn", "facebook"],
+            brand: BrandBadge(symbol: "bolt.fill", gradient: [Color(red: 0.45, green: 0.32, blue: 0.96), Color(red: 0.00, green: 0.52, blue: 1.00)])
+        ),
+        Entry(
+            name: "Slack",
+            bundleID: "com.tinyspeck.slackmacgap",
+            alternateBundleIDs: ["com.tinyspeck.slack"],
+            keywords: ["slack"],
+            brand: BrandBadge(symbol: "number", gradient: [Color(red: 0.58, green: 0.20, blue: 0.58), Color(red: 0.29, green: 0.08, blue: 0.29)])
+        ),
+        Entry(
+            name: "Discord",
+            bundleID: "com.hnc.Discord",
+            alternateBundleIDs: [],
+            keywords: ["discord"],
+            brand: BrandBadge(symbol: "gamecontroller.fill", gradient: [Color(red: 0.45, green: 0.52, blue: 0.95), Color(red: 0.34, green: 0.40, blue: 0.82)])
+        ),
+        Entry(
+            name: "Skype",
+            bundleID: "com.skype.skype",
+            alternateBundleIDs: ["com.microsoft.skype"],
+            keywords: ["skype"],
+            brand: BrandBadge(symbol: "video.fill", gradient: [Color(red: 0.00, green: 0.69, blue: 0.94), Color(red: 0.00, green: 0.52, blue: 0.78)])
+        )
     ]
 
-    static var suggestedApps: [(name: String, bundleID: String)] {
-        aggregators.map { ($0.name, $0.bundleID) }
-            + messagingApps.map { ($0.name, $0.bundleID) }
+    private static var allEntries: [Entry] {
+        aggregators + messagingApps
     }
 
-    static func isAggregator(_ bundleID: String) -> Bool {
-        aggregators.contains { $0.bundleID == bundleID }
+    static var suggestedApps: [(name: String, bundleID: String)] {
+        allEntries.map { ($0.localizedName, $0.bundleID) }
     }
 
     static var messagingBundleIDs: Set<String> {
         Set(messagingApps.map(\.bundleID))
+    }
+
+    static func bundleIDCandidates(for bundleID: String) -> [String] {
+        if let entry = entry(forAnyBundleID: bundleID) {
+            return entry.allBundleIDs
+        }
+        return [bundleID]
+    }
+
+    static func canonicalBundleID(for bundleID: String) -> String {
+        entry(forAnyBundleID: bundleID)?.bundleID ?? bundleID
+    }
+
+    static func brandBadge(for bundleID: String) -> BrandBadge? {
+        entry(forAnyBundleID: bundleID)?.brand
+    }
+
+    static func isAggregator(_ bundleID: String) -> Bool {
+        aggregators.contains { matches(bundleID: bundleID, entry: $0) }
     }
 
     static func resolve(from texts: [String]) -> (delivering: String, service: String, displayName: String) {
@@ -49,7 +146,7 @@ enum NotificationAppCatalog {
 
         // Jeśli w tekście nie ma „Rambox”, sprawdź czy aplikacja jest uruchomiona i banner wygląda na webową.
         if delivering == "unknown.app", isRamboxRunning, looksLikeRamboxNotification(texts) {
-            delivering = "com.saenzramiro.rambox"
+            delivering = aggregators[0].bundleID
         }
 
         var service = "unknown.app"
@@ -71,26 +168,36 @@ enum NotificationAppCatalog {
         } else if delivering != "unknown.app" {
             displayName = name(for: delivering)
         } else {
-            displayName = "Powiadomienie"
+            displayName = loc("Notification")
         }
 
         return (delivering, service, displayName)
     }
 
     static func name(for bundleID: String) -> String {
-        if let entry = (aggregators + messagingApps).first(where: { $0.bundleID == bundleID }) {
-            return entry.name
+        if let entry = entry(forAnyBundleID: bundleID) {
+            return entry.localizedName
         }
         return bundleID
     }
 
     static func keyword(for bundleID: String) -> String? {
-        (aggregators + messagingApps).first { $0.bundleID == bundleID }?.keywords.first
+        entry(forAnyBundleID: bundleID)?.keywords.first
+    }
+
+    private static func entry(forAnyBundleID bundleID: String) -> Entry? {
+        allEntries.first { matches(bundleID: bundleID, entry: $0) }
+    }
+
+    private static func matches(bundleID: String, entry: Entry) -> Bool {
+        entry.allBundleIDs.contains(bundleID)
     }
 
     private static var isRamboxRunning: Bool {
         aggregators.contains { entry in
-            NSRunningApplication.runningApplications(withBundleIdentifier: entry.bundleID).isEmpty == false
+            entry.allBundleIDs.contains { bundleID in
+                NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty == false
+            }
         }
     }
 

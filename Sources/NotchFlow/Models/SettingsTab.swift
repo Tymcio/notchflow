@@ -12,12 +12,12 @@ enum SettingsTab: String, Hashable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .general: "Ogólne"
-        case .appearance: "Wygląd"
-        case .notifications: "Powiadomienia"
-        case .license: "Licencja"
-        case .privacy: "Prywatność"
-        case .integrations: "Integracje"
+        case .general: loc("General")
+        case .appearance: loc("Appearance")
+        case .notifications: loc("Notifications")
+        case .license: loc("License")
+        case .privacy: loc("Privacy")
+        case .integrations: loc("Integrations")
         }
     }
 

@@ -9,71 +9,83 @@ struct GeneralSettingsTab: View {
     var isPremium: Bool
     var onOpenLicense: () -> Void
 
+    @State private var selectedLanguage = LanguageService.current
+
     var body: some View {
-        Form {
-            Toggle("Uruchamiaj przy logowaniu", isOn: $settings.launchAtLogin)
-                .onChange(of: settings.launchAtLogin) { _, enabled in
-                    enabled ? LaunchAtLoginService.enable() : LaunchAtLoginService.disable()
+        SettingsFormContent {
+            Section {
+                Toggle(loc("Launch at login"), isOn: $settings.launchAtLogin)
+                    .onChange(of: settings.launchAtLogin) { _, enabled in
+                        enabled ? LaunchAtLoginService.enable() : LaunchAtLoginService.disable()
+                    }
+            }
+
+            Section {
+                Picker(loc("Language"), selection: $selectedLanguage) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
                 }
+                .onChange(of: selectedLanguage) { _, newValue in
+                    LanguageService.apply(newValue)
+                }
+            } footer: {
+                SettingsFooterCaption("Changing the language restarts NotchFlow.")
+            }
 
-            Section("Najechanie na notch") {
-                if menuBarLayoutManager.isAccessibilityTrusted {
-                    Text("NotchFlow wykrywa kursor globalnie (wymaga Dostępności).")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Bez Dostępności działa tryb zapasowy nad górną krawędzią ekranu. Dla najszybszej reakcji włącz NotchFlow w Ustawienia → Prywatność → Dostępność.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
+            Section {
+                if !menuBarLayoutManager.isAccessibilityTrusted {
                     HStack {
-                        Button("Nadaj uprawnienie") {
+                        Button(loc("Grant permission")) {
                             menuBarLayoutManager.requestPermission()
                         }
-                        Button("Otwórz ustawienia systemowe") {
+                        Button(loc("Open System Settings")) {
                             menuBarLayoutManager.openAccessibilitySettings()
                         }
                     }
                 }
+            } header: {
+                Text(loc("Notch hover"))
+            } footer: {
+                if menuBarLayoutManager.isAccessibilityTrusted {
+                    SettingsFooterCaption("NotchFlow tracks the cursor globally (requires Accessibility).")
+                } else {
+                    SettingsFooterCaption("Without Accessibility, a fallback zone along the top edge is used. For the fastest response, enable NotchFlow in System Settings → Privacy → Accessibility.")
+                }
             }
 
-            Section("Menu aplikacji") {
-                Toggle("Unikaj zasłaniania menu aplikacji", isOn: $settings.avoidMenuOverlap)
+            Section {
+                Toggle(loc("Avoid covering the app menu"), isOn: $settings.avoidMenuOverlap)
                     .onChange(of: settings.avoidMenuOverlap) { _, _ in
                         menuBarLayoutManager.refresh()
                     }
 
+                if settings.avoidMenuOverlap, !menuBarLayoutManager.isAccessibilityTrusted {
+                    HStack {
+                        Button(loc("Grant permission")) {
+                            menuBarLayoutManager.requestPermission()
+                        }
+                        Button(loc("Open System Settings")) {
+                            menuBarLayoutManager.openAccessibilitySettings()
+                        }
+                    }
+                }
+            } header: {
+                Text(loc("App menu"))
+            } footer: {
                 if settings.avoidMenuOverlap {
                     if menuBarLayoutManager.isAccessibilityTrusted {
-                        Text("NotchFlow zwęża lewe skrzydełko wyspy idle, gdy menu aktywnej aplikacji podchodzi pod notch.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        SettingsFooterCaption("NotchFlow narrows the left idle wing when the active app's menu bar reaches the notch.")
                     } else {
-                        Text("Wymagane uprawnienie Dostępności, aby wykrywać pozycję menu aplikacji.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        HStack {
-                            Button("Nadaj uprawnienie") {
-                                menuBarLayoutManager.requestPermission()
-                            }
-                            Button("Otwórz ustawienia systemowe") {
-                                menuBarLayoutManager.openAccessibilitySettings()
-                            }
-                        }
+                        SettingsFooterCaption("Accessibility permission is required to detect the app menu position.")
                     }
                 }
             }
 
-            Section("Ukryj wyspę dla aplikacji") {
+            Section {
                 if isPremium {
-                    Text("Wyspa nie pojawi się, gdy aktywna jest wybrana aplikacja.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
                     if settings.hiddenAppBundleIDs.isEmpty {
-                        Text("Brak wybranych aplikacji.")
-                            .font(.caption)
+                        Text(loc("No apps selected."))
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(settings.hiddenAppBundleIDs, id: \.self) { bundleID in
@@ -83,30 +95,32 @@ struct GeneralSettingsTab: View {
                         }
                     }
 
-                    Button("Dodaj aplikację…") {
+                    Button(loc("Add app…")) {
                         pickApplication()
                     }
+                }
+            } header: {
+                Text(loc("Hide island for apps"))
+            } footer: {
+                if isPremium {
+                    SettingsFooterCaption("The island won't appear when a selected app is active.")
                 } else {
-                    Text("Ukrywanie wyspy dla wybranych aplikacji jest funkcją Premium — aktywuj licencję w sekcji poniżej.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    SettingsFooterCaption("Hiding the island for selected apps is a Premium feature — activate your license below.")
                 }
             }
 
-            Section("Premium") {
+            Section {
+                Button(loc("Enter license key…"), action: onOpenLicense)
+            } header: {
+                Text(loc("Premium"))
+            } footer: {
                 if LicenseMode.current.isEnforced {
-                    Text("Lustro kamery, motywy, większy schowek i inne funkcje wymagają aktywacji licencji.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    SettingsFooterCaption("Camera mirror, themes, larger clipboard, and more require an active license.")
                 } else {
-                    Text("Okres beta — wszystkie funkcje Premium są odblokowane bez klucza.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    SettingsFooterCaption("Beta period — all Premium features are unlocked without a key.")
                 }
-                Button("Wprowadź klucz licencji…", action: onOpenLicense)
             }
         }
-        .padding()
     }
 
     private func removeHiddenApp(_ bundleID: String) {
@@ -121,7 +135,7 @@ struct GeneralSettingsTab: View {
         panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         panel.allowedContentTypes = [.application]
-        panel.prompt = "Dodaj"
+        panel.prompt = loc("Add")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let bundleID = Bundle(url: url)?.bundleIdentifier else { return }
         guard !settings.hiddenAppBundleIDs.contains(bundleID) else { return }
@@ -160,7 +174,7 @@ private struct HiddenAppRow: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.red.opacity(0.85))
-            .help("Usuń z listy")
+            .help(loc("Remove from list"))
         }
     }
 
@@ -181,3 +195,4 @@ private struct HiddenAppRow: View {
         return NSWorkspace.shared.icon(forFile: url.path)
     }
 }
+

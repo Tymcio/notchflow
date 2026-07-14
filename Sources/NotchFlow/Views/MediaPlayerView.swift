@@ -15,7 +15,7 @@ struct MediaPlayerView: View {
                 ArtworkView(artworkURL: state.artworkURL, artworkData: state.artworkData, trackKey: state.trackKey, size: 52)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(state.title)
+                    Text(state.displayTitle)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(IslandStyle.primaryText)
                         .lineLimit(1)
@@ -48,14 +48,14 @@ struct MediaPlayerView: View {
             }
 
             HStack(spacing: 28) {
-                transportButton("backward.fill", label: "Poprzedni utwór", action: onPrevious)
+                transportButton("backward.fill", label: loc("Previous track"), action: onPrevious)
                 transportButton(
                     state.isPlaying ? "pause.fill" : "play.fill",
-                    label: state.isPlaying ? "Wstrzymaj" : "Odtwórz",
+                    label: state.isPlaying ? loc("Pause playback") : loc("Play"),
                     action: onPlayPause,
                     large: true
                 )
-                transportButton("forward.fill", label: "Następny utwór", action: onNext)
+                transportButton("forward.fill", label: loc("Next track"), action: onNext)
             }
             .frame(maxWidth: .infinity)
         }

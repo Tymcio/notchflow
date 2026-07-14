@@ -79,7 +79,7 @@ enum NotesError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .limitReached: "W wersji darmowej możesz zapisać do \(NotchFlowConstants.freeNotesLimit) notatek."
+        case .limitReached: locFormat("Free plan allows up to %lld notes.", NotchFlowConstants.freeNotesLimit)
         }
     }
 }

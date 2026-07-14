@@ -5,35 +5,39 @@ struct AppearanceSettingsTab: View {
     let isPremium: Bool
 
     var body: some View {
-        Form {
-            Picker("Motyw", selection: $settings.selectedTheme) {
-                ForEach(IslandTheme.allCases) { theme in
-                    Text(theme.title).tag(theme)
+        SettingsFormContent {
+            Section {
+                Picker(loc("Theme"), selection: $settings.selectedTheme) {
+                    ForEach(IslandTheme.allCases) { theme in
+                        Text(theme.title).tag(theme)
+                    }
                 }
+                .disabled(!isPremium && settings.selectedTheme != .system)
             }
-            .disabled(!isPremium && settings.selectedTheme != .system)
 
-            if isPremium {
-                HStack {
-                    Text("Szerokość wyspy")
-                    Slider(value: $settings.customIslandWidth, in: 280...420)
+            Section {
+                if isPremium {
+                    LabeledContent(loc("Island width")) {
+                        Slider(value: $settings.customIslandWidth, in: 280...420)
+                            .frame(maxWidth: 220)
+                    }
+                    LabeledContent(loc("Clipboard height")) {
+                        Slider(
+                            value: $settings.customIslandHeight,
+                            in: NotchFlowConstants.minimumExpandedContentHeight...NotchFlowConstants.maximumExpandedContentHeight
+                        )
+                        .frame(maxWidth: 220)
+                    }
                 }
-                HStack {
-                    Text("Wysokość schowka")
-                    Slider(
-                        value: $settings.customIslandHeight,
-                        in: NotchFlowConstants.minimumExpandedContentHeight...NotchFlowConstants.maximumExpandedContentHeight
-                    )
+            } header: {
+                Text(loc("Island size"))
+            } footer: {
+                if isPremium {
+                    SettingsFooterCaption("Calendar and other tabs adjust height to content automatically.")
+                } else {
+                    SettingsFooterCaption("Premium unlocks custom island size and themes.")
                 }
-                Text("Kalendarz i pozostałe zakładki dopasowują wysokość do treści automatycznie.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Premium odblokowuje własny rozmiar wyspy i motywy.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
-        .padding()
     }
 }

@@ -27,6 +27,25 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" "$FRAMEWORKS_DIR"
 cp "$BIN_PATH" "$MACOS_DIR/${APP_NAME}"
 chmod +x "$MACOS_DIR/${APP_NAME}"
 
+# Copy SPM resource bundle (icons, String Catalog localizations)
+RESOURCE_BUNDLE=""
+for candidate in \
+  "$ROOT_DIR/.build/arm64-apple-macosx/release/NotchFlow_NotchFlow.bundle" \
+  "$ROOT_DIR/.build/release/NotchFlow_NotchFlow.bundle"; do
+  if [[ -d "$candidate" ]]; then
+    RESOURCE_BUNDLE="$candidate"
+    break
+  fi
+done
+
+if [[ -n "$RESOURCE_BUNDLE" ]]; then
+  rm -rf "$RESOURCES_DIR/NotchFlow_NotchFlow.bundle"
+  cp -R "$RESOURCE_BUNDLE" "$RESOURCES_DIR/"
+  echo "Bundled NotchFlow_NotchFlow.bundle"
+else
+  echo "WARNING: NotchFlow_NotchFlow.bundle not found — icons and localizations may be missing." >&2
+fi
+
 # Copy Sparkle framework — required at runtime (@rpath)
 SPARKLE_FW=""
 for candidate in \
@@ -92,6 +111,14 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <dict>
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>en</string>
+    <string>pl</string>
+    <string>de</string>
+    <string>it</string>
+    <string>es</string>
+  </array>
   <key>CFBundleExecutable</key>
   <string>${APP_NAME}</string>
   <key>CFBundleIdentifier</key>

@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "NotchFlow",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v14)
     ],

@@ -168,7 +168,7 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
         bundleID: String?
     ) {
         latestState = MediaPlaybackState(
-            title: title.isEmpty ? "Not Playing" : title,
+            title: title.isEmpty ? MediaPlaybackState.notPlayingPlaceholder : title,
             artist: artist,
             album: album,
             artworkURL: artworkURL,

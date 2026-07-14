@@ -14,7 +14,7 @@ struct IdleLiveActivityView: View {
         case .incomingCall(let call):
             IdleCallView(
                 callerName: call.callerName,
-                subtitle: "Połączenie przychodzące",
+                subtitle: loc("Incoming call"),
                 wingLayout: wingLayout,
                 showsActions: true,
                 onAnswer: onAnswerCall,
@@ -144,15 +144,7 @@ struct IdleNotificationView: View {
 
     @ViewBuilder
     private var appIcon: some View {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: notification.appBundleID) {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                .resizable()
-                .frame(width: 18, height: 18)
-        } else {
-            Image(systemName: "bell.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(IslandStyle.accentText)
-        }
+        CatalogAppIcon(bundleID: notification.appBundleID)
     }
 }
 
@@ -199,13 +191,13 @@ struct IdleCallView: View {
                             HStack(spacing: 4) {
                                 callButton(
                                     systemImage: "phone.down.fill",
-                                    label: "Odrzuć połączenie",
+                                    label: loc("Decline call"),
                                     tint: .red,
                                     action: onDecline
                                 )
                                 callButton(
                                     systemImage: "phone.fill",
-                                    label: "Odbierz połączenie",
+                                    label: loc("Answer call"),
                                     tint: .green,
                                     action: onAnswer
                                 )

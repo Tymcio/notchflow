@@ -39,22 +39,22 @@ struct ClipboardHistoryView: View {
 
     private var disabledState: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Schowek wyłączony")
+            LocText("Clipboard disabled")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(IslandStyle.primaryText)
 
-            Text("NotchFlow może lokalnie zapisywać ostatnie teksty i linki. Dane nie opuszczają Maca.")
+            LocText("NotchFlow can store recent text and links locally. Data never leaves your Mac.")
                 .font(.caption2)
                 .foregroundStyle(IslandStyle.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            monitoringToggleRow(title: "Włącz monitoring schowka")
+            monitoringToggleRow(title: loc("Enable clipboard monitoring"))
 
             Button {
                 appState.setClipboardMonitoringEnabled(true)
                 appState.clipboardManager.captureCurrentContents()
             } label: {
-                Text("Włącz i zapisz teraz")
+                LocText("Enable and save now")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.black.opacity(0.88))
                     .frame(maxWidth: .infinity)
@@ -75,11 +75,11 @@ struct ClipboardHistoryView: View {
     private var enabledState: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
-                monitoringToggleRow(title: "Monitoring włączony", compact: true)
+                monitoringToggleRow(title: loc("Monitoring enabled"), compact: true)
 
                 Spacer(minLength: 8)
 
-                Button("Zapisz teraz") {
+                Button(loc("Save now")) {
                     appState.clipboardManager.captureCurrentContents()
                 }
                 .font(.caption2.weight(.semibold))
@@ -95,7 +95,7 @@ struct ClipboardHistoryView: View {
 
             let items = filteredEntries
             if items.isEmpty {
-                Text("Skopiuj coś — pojawi się tutaj.")
+                LocText("Copy something — it will appear here.")
                     .font(.caption2)
                     .foregroundStyle(IslandStyle.tertiaryText)
             } else {
@@ -106,7 +106,7 @@ struct ClipboardHistoryView: View {
                 }
             }
 
-            Text("Limit: \(items.count)/\(appState.isPremium ? NotchFlowConstants.premiumClipboardLimit : NotchFlowConstants.freeClipboardLimit)")
+            Text(locFormat("Limit: %lld/%lld", items.count, appState.isPremium ? NotchFlowConstants.premiumClipboardLimit : NotchFlowConstants.freeClipboardLimit))
                 .font(.caption2)
                 .foregroundStyle(IslandStyle.tertiaryText)
 
@@ -127,7 +127,7 @@ struct ClipboardHistoryView: View {
 
             Toggle("", isOn: monitoringBinding)
                 .labelsHidden()
-                .accessibilityLabel("Monitoring schowka")
+                .accessibilityLabel(loc("Clipboard monitoring"))
                 .toggleStyle(.switch)
                 .tint(.white)
         }
@@ -140,7 +140,7 @@ struct ClipboardHistoryView: View {
                 .font(.caption2)
                 .foregroundStyle(IslandStyle.tertiaryText)
 
-            Text("Wyszukiwanie w Premium")
+            LocText("Search in Premium")
                 .font(.caption)
                 .foregroundStyle(IslandStyle.tertiaryText)
 
@@ -168,7 +168,7 @@ struct ClipboardHistoryView: View {
 
             ZStack(alignment: .leading) {
                 if query.isEmpty {
-                    Text("Szukaj w historii…")
+                    LocText("Search history…")
                         .font(.caption)
                         .foregroundStyle(Color.white.opacity(0.48))
                         .allowsHitTesting(false)
@@ -229,17 +229,17 @@ struct ClipboardHistoryView: View {
             }
         }
         .buttonStyle(.plain)
-        .help("Wklej ponownie")
+        .help(loc("Paste again"))
     }
 
     private var raycastSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Raycast (opcjonalnie)")
+            LocText("Raycast (optional)")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(IslandStyle.secondaryText)
 
             Toggle(isOn: localAPIBinding) {
-                Text("Lokalne API dla Raycast")
+                LocText("Local API for Raycast")
                     .font(.caption)
                     .foregroundStyle(IslandStyle.primaryText)
             }
@@ -248,7 +248,7 @@ struct ClipboardHistoryView: View {
 
             if appState.settings.localAPIEnabled {
                 if apiBaseURL.isEmpty {
-                    Text("Uruchamianie API…")
+                    LocText("Starting API…")
                         .font(.caption2)
                         .foregroundStyle(IslandStyle.tertiaryText)
                 } else {
@@ -260,7 +260,7 @@ struct ClipboardHistoryView: View {
                 }
 
                 HStack(spacing: 8) {
-                    Button(copiedAPIInfo ? "Skopiowano" : "Kopiuj konfigurację") {
+                    Button(copiedAPIInfo ? loc("Copied") : loc("Copy configuration")) {
                         copyAPIConfig()
                     }
                     .font(.caption2.weight(.semibold))
@@ -268,7 +268,7 @@ struct ClipboardHistoryView: View {
                     .foregroundStyle(IslandStyle.accentText)
                     .disabled(apiBaseURL.isEmpty)
 
-                    Button("Więcej…") {
+                    Button(loc("More…")) {
                         appState.openIntegrationsSettings()
                     }
                     .font(.caption2)
@@ -276,7 +276,7 @@ struct ClipboardHistoryView: View {
                     .foregroundStyle(IslandStyle.tertiaryText)
                 }
             } else {
-                Text("Włącz, aby rozszerzenie Raycast mogło czytać historię schowka NotchFlow.")
+                LocText("Enable so the Raycast extension can read NotchFlow clipboard history.")
                     .font(.caption2)
                     .foregroundStyle(IslandStyle.tertiaryText)
                     .fixedSize(horizontal: false, vertical: true)

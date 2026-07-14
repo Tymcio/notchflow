@@ -62,7 +62,7 @@ final class AppState {
     }
 
     var showsMediaIdle: Bool {
-        mediaState.isPlaying && mediaState.title != "Not Playing" && !mediaState.title.isEmpty
+        mediaState.isPlaying && mediaState.hasActiveTrack
     }
 
     var activeLiveActivity: LiveActivityKind? {

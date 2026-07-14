@@ -13,13 +13,13 @@ enum IslandModule: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .media: "Muzyka"
-        case .calendar: "Kalendarz"
-        case .shelf: "Półka"
-        case .focus: "Minutnik"
-        case .notes: "Notatki"
-        case .clipboard: "Schowek"
-        case .mirror: "Lustro"
+        case .media: loc("Music")
+        case .calendar: loc("Calendar")
+        case .shelf: loc("Shelf")
+        case .focus: loc("Timer")
+        case .notes: loc("Notes")
+        case .clipboard: loc("Clipboard")
+        case .mirror: loc("Mirror")
         }
     }
 

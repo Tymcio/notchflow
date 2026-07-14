@@ -54,7 +54,7 @@ struct ShelfTabView: View {
     private var shelfToolbar: some View {
         HStack(spacing: 10) {
             Label {
-                Text("Półka")
+                LocText("Shelf")
                     .font(.caption.weight(.semibold))
             } icon: {
                 Image(systemName: "tray.full.fill")
@@ -67,14 +67,14 @@ struct ShelfTabView: View {
             HStack(spacing: 8) {
                 quotaCapsule(
                     icon: "pin.fill",
-                    label: "Przypięte",
+                    label: loc("Pinned"),
                     count: pinned.count,
                     limit: pinnedLimit,
                     tint: accent
                 )
                 quotaCapsule(
                     icon: "clock.arrow.circlepath",
-                    label: "Tymczasowe",
+                    label: loc("Temporary"),
                     count: dropped.count,
                     limit: droppedLimit,
                     tint: IslandStyle.secondaryText
@@ -184,7 +184,7 @@ struct ShelfTabView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(accent)
                 }
-                Text("Dodaj")
+                LocText("Add")
                     .font(.system(size: 8, weight: .medium))
                     .foregroundStyle(IslandStyle.secondaryText)
             }
@@ -199,7 +199,7 @@ struct ShelfTabView: View {
             }
         }
         .buttonStyle(.plain)
-        .help("Dodaj przypięty skrót do pliku")
+        .help(loc("Add pinned file shortcut"))
     }
 
     private var dropPlaceholder: some View {
@@ -214,10 +214,10 @@ struct ShelfTabView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(isDropActive ? "Upuść tutaj" : "Tymczasowe pliki")
+                Text(isDropActive ? loc("Drop here") : loc("Temporary files"))
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(isDropActive ? accent : IslandStyle.secondaryText)
-                Text("Przeciągnij na wyspę")
+                LocText("Drag onto the island")
                     .font(.system(size: 8, weight: .medium))
                     .foregroundStyle(IslandStyle.tertiaryText)
             }
@@ -245,14 +245,14 @@ struct ShelfTabView: View {
             HStack(spacing: 6) {
                 Image(systemName: "hand.point.up.left.fill")
                     .font(.system(size: 8))
-                Text("Kliknij, aby otworzyć · prawy klik, aby przypiąć lub usunąć")
+                LocText("Click to open · right-click to pin or remove")
                     .font(.system(size: 9, weight: .medium))
             }
             .foregroundStyle(IslandStyle.tertiaryText)
             .frame(maxWidth: .infinity, alignment: .center)
 
             if !appState.isPremium {
-                Text("Free: \(NotchFlowConstants.freePinnedShelfLimit) przypięte, \(NotchFlowConstants.freeDroppedShelfLimit) tymczasowe")
+                Text(locFormat("Free: %lld pinned, %lld temporary", NotchFlowConstants.freePinnedShelfLimit, NotchFlowConstants.freeDroppedShelfLimit))
                     .font(.system(size: 8, weight: .medium))
                     .foregroundStyle(IslandStyle.tertiaryText.opacity(0.85))
             }
@@ -281,7 +281,7 @@ struct ShelfTabView: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = "Przypnij"
+        panel.prompt = loc("Pin")
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         let accessed = url.startAccessingSecurityScopedResource()
@@ -353,13 +353,13 @@ private struct ShelfItemCard: View {
         .animation(.easeOut(duration: 0.15), value: isHovered)
         .onHover { isHovered = $0 }
         .contextMenu {
-            Button("Otwórz", action: onOpen)
-            Button("Pokaż w Finderze", action: onReveal)
+            Button(loc("Open"), action: onOpen)
+            Button(loc("Reveal in Finder"), action: onReveal)
             if let onPin {
-                Button("Przypnij na stałe", action: onPin)
+                Button(loc("Pin permanently"), action: onPin)
             }
             Divider()
-            Button("Usuń", role: .destructive, action: onRemove)
+            Button(loc("Remove"), role: .destructive, action: onRemove)
         }
         .help(item.displayName)
     }

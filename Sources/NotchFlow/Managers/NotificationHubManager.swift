@@ -39,7 +39,7 @@ final class NotificationHubManager {
         guard matchesAllowlist(banner) else { return }
 
         let sender = banner.title
-        let body = hideMessageBody ? "Nowa wiadomość" : banner.body
+        let body = hideMessageBody ? loc("New message") : banner.body
         let openBundleID = preferredOpenBundleID(for: banner)
 
         let notification = HubNotification(
@@ -89,26 +89,27 @@ final class NotificationHubManager {
     }
 
     func openApp(for notification: HubNotification) {
-        if let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: notification.appBundleID) {
-            NSWorkspace.shared.openApplication(at: app, configuration: NSWorkspace.OpenConfiguration())
-        }
+        AppIconProvider.openApplication(bundleID: notification.appBundleID)
     }
 
     private func matchesAllowlist(_ banner: ParsedNotificationBanner) -> Bool {
         guard !allowedBundleIDs.isEmpty else { return false }
 
-        if allowedBundleIDs.contains(banner.deliveringBundleID) {
+        let delivering = NotificationAppCatalog.canonicalBundleID(for: banner.deliveringBundleID)
+        if isAllowed(delivering) {
             return true
         }
 
-        if banner.serviceBundleID != "unknown.app",
-           allowedBundleIDs.contains(banner.serviceBundleID) {
-            return true
+        if banner.serviceBundleID != "unknown.app" {
+            let service = NotificationAppCatalog.canonicalBundleID(for: banner.serviceBundleID)
+            if isAllowed(service) {
+                return true
+            }
         }
 
         // Rambox: wystarczy włączyć Rambox albo dowolną apkę messaging (WhatsApp, Telegram…)
         if NotificationAppCatalog.isAggregator(banner.deliveringBundleID) {
-            if allowedBundleIDs.contains(banner.deliveringBundleID) {
+            if isAllowed(delivering) {
                 return true
             }
             let allowsMessaging = !allowedBundleIDs.isDisjoint(with: NotificationAppCatalog.messagingBundleIDs)
@@ -127,6 +128,10 @@ final class NotificationHubManager {
         }
 
         return false
+    }
+
+    private func isAllowed(_ bundleID: String) -> Bool {
+        allowedBundleIDs.contains(NotificationAppCatalog.canonicalBundleID(for: bundleID))
     }
 
     private func preferredOpenBundleID(for banner: ParsedNotificationBanner) -> String {

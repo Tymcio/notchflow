@@ -19,7 +19,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
                 backing: .buffered,
                 defer: false
             )
-            newWindow.title = "Ustawienia NotchFlow"
+            newWindow.title = loc("NotchFlow Settings")
             newWindow.contentViewController = hosting
             newWindow.minSize = NSSize(width: 640, height: 480)
             newWindow.isReleasedWhenClosed = false
@@ -39,8 +39,14 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             window?.deminiaturize(nil)
         }
         window?.orderFrontRegardless()
-        window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        // Right after switching from .accessory to .regular, activation in the same runloop
+        // pass is often ignored (Sonoma cooperative activation) — retry on the next turn.
+        DispatchQueue.main.async { [weak self] in
+            NSRunningApplication.current.activate(options: [.activateAllWindows])
+            self?.window?.makeKeyAndOrderFront(nil)
+            self?.window?.orderFrontRegardless()
+        }
     }
 
     func windowWillClose(_ notification: Notification) {

@@ -89,7 +89,15 @@ git tag v1.0 && git push origin v1.0
 
 ## Language
 
-UI strings are currently in **Polish**. New user-facing strings should match existing conventions until i18n is added.
+User-facing strings use **English as the source language** in code via `loc("…")` / `LocText("…")` from [`Sources/NotchFlow/Core/L10n.swift`](Sources/NotchFlow/Core/L10n.swift).
+
+Translations live in [`Sources/NotchFlow/Resources/Localizable.xcstrings`](Sources/NotchFlow/Resources/Localizable.xcstrings). When adding or changing UI copy:
+
+1. Use an English key in Swift.
+2. Add or update entries for **pl**, **de**, **it**, and **es** (regenerate with `python3 Scripts/generate_localizations.py` after editing `Scripts/generate_localizations.py`, or edit the catalog directly).
+3. Run `swift test` — `LocalizationTests` fails if any language is missing.
+
+Supported app languages: English (source), Polish, German, Italian, Spanish. macOS picks the language from system or per-app settings.
 
 ## Questions
 

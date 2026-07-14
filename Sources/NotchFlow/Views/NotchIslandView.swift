@@ -96,7 +96,7 @@ struct NotchIslandView: View {
         }
         .overlay(alignment: .bottom) {
             if showsFileDropChrome {
-                Text("Upuść na półkę")
+                LocText("Drop onto shelf")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(appState.settings.selectedTheme.accent)
                     .padding(.bottom, 10)

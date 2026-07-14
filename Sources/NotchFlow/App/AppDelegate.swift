@@ -95,14 +95,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let button = item.button else { return }
 
         button.image = MenuBarIcon.makeTemplateImage()
-        button.toolTip = "NotchFlow — najedź na notch, aby otworzyć"
+        button.toolTip = loc("NotchFlow — hover the notch to open")
 
         let menu = NSMenu()
         menu.delegate = self
-        menu.addItem(withTitle: "Pokaż wyspę Notch", action: #selector(toggleIslandAction), keyEquivalent: "")
-        menu.addItem(withTitle: "Ustawienia…", action: #selector(openSettingsAction), keyEquivalent: ",")
+        menu.addItem(withTitle: loc("Show Notch Island"), action: #selector(toggleIslandAction), keyEquivalent: "")
+        menu.addItem(withTitle: loc("Settings…"), action: #selector(openSettingsAction), keyEquivalent: ",")
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Zakończ NotchFlow", action: #selector(quitAction), keyEquivalent: "q")
+        menu.addItem(withTitle: loc("Quit NotchFlow"), action: #selector(quitAction), keyEquivalent: "q")
 
         for menuEntry in menu.items {
             menuEntry.target = self
@@ -157,7 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         let visible = panelController?.isIslandVisible == true
-        menu.item(at: 0)?.title = visible ? "Ukryj wyspę Notch" : "Pokaż wyspę Notch"
+        menu.item(at: 0)?.title = visible ? loc("Hide Notch Island") : loc("Show Notch Island")
     }
 
     @objc private func toggleIslandAction() {
@@ -193,15 +193,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.activate(ignoringOtherApps: true)
 
         let alert = NSAlert()
-        alert.messageText = "NotchFlow wymaga MacBooka z notchem"
-        alert.informativeText = """
-        NotchFlow działa tylko na MacBookach z wycięciem (notch) w ekranie. \
-        Ten Mac nie ma notcha, więc aplikacja nie może się uruchomić.
-
-        Obsługiwane: MacBook Pro / Air z notchem (macOS 14+, Apple Silicon).
-        """
+        alert.messageText = loc("NotchFlow requires a MacBook with a notch")
+        alert.informativeText = loc("NotchFlow only works on MacBooks with a display notch. This Mac has no notch, so the app cannot start.\n\nSupported: MacBook Pro / Air with notch (macOS 14+, Apple Silicon).")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: loc("OK"))
         alert.runModal()
 
         NSApp.terminate(nil)
@@ -213,8 +208,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         UserDefaults.standard.set(true, forKey: key)
 
         NotificationService.post(
-            title: "NotchFlow działa",
-            body: "Najedź na środek górnej krawędzi ekranu (obszar notcha), aby otworzyć NotchFlow."
+            title: loc("NotchFlow is running"),
+            body: loc("Hover the top center of the screen (notch area) to open NotchFlow.")
         )
     }
 }

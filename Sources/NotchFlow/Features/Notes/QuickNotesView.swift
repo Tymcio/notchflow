@@ -26,7 +26,7 @@ struct QuickNotesView: View {
             }
 
             if !appState.isPremium {
-                Text("Notatki: \(visibleNotes.count)/\(NotchFlowConstants.freeNotesLimit)")
+                Text(locFormat("Notes: %lld/%lld", visibleNotes.count, NotchFlowConstants.freeNotesLimit))
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(IslandStyle.secondaryText)
             }
@@ -50,7 +50,7 @@ struct QuickNotesView: View {
         HStack(spacing: 10) {
             ZStack(alignment: .topLeading) {
                 if draft.isEmpty {
-                    Text("Szybka notatka…")
+                    LocText("Quick note…")
                         .font(.subheadline)
                         .foregroundStyle(Color.white.opacity(0.48))
                         .allowsHitTesting(false)
@@ -87,7 +87,7 @@ struct QuickNotesView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSave)
-            .accessibilityLabel("Dodaj notatkę")
+            .accessibilityLabel(loc("Add note"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -112,7 +112,7 @@ struct QuickNotesView: View {
             Image(systemName: "square.and.pencil")
                 .font(.title3)
                 .foregroundStyle(IslandStyle.secondaryText)
-            Text("Zapisuj pomysły, zanim znikną.")
+            LocText("Capture ideas before they disappear.")
                 .font(.caption)
                 .foregroundStyle(IslandStyle.secondaryText)
                 .multilineTextAlignment(.center)
@@ -157,7 +157,7 @@ struct QuickNotesView: View {
                     .background(Circle().fill(Color.white.opacity(0.12)))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Usuń notatkę")
+            .accessibilityLabel(loc("Delete note"))
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)

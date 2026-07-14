@@ -5,13 +5,13 @@ struct SettingsSidebarFooter: View {
         VStack(alignment: .leading, spacing: 8) {
             #if canImport(Sparkle)
             if SparkleUpdaterController.shared.isConfigured {
-                Button("Sprawdź aktualizacje") {
+                Button(loc("Check for updates")) {
                     SparkleUpdaterController.shared.checkForUpdates()
                 }
                 .buttonStyle(.borderless)
                 .controlSize(.small)
             } else {
-                Text("Aktualizacje wyłączone w lokalnym buildzie.")
+                LocText("Updates disabled in local build.")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }

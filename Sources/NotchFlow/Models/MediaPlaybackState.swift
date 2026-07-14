@@ -39,8 +39,10 @@ struct MediaPlaybackState: Equatable, Sendable {
         self.positionSampledAt = positionSampledAt
     }
 
+    static let notPlayingPlaceholder = "Not Playing"
+
     static let empty = MediaPlaybackState(
-        title: "Not Playing",
+        title: notPlayingPlaceholder,
         artist: "",
         album: "",
         artworkURL: nil,
@@ -57,8 +59,16 @@ struct MediaPlaybackState: Equatable, Sendable {
         "\(title)|\(artist)|\(album)"
     }
 
+    var hasActiveTrack: Bool {
+        !title.isEmpty && title != Self.notPlayingPlaceholder
+    }
+
+    var displayTitle: String {
+        hasActiveTrack ? title : loc("Not Playing")
+    }
+
     func isSameTrack(as other: MediaPlaybackState) -> Bool {
-        trackKey == other.trackKey && title != "Not Playing" && !title.isEmpty
+        trackKey == other.trackKey && hasActiveTrack
     }
 
     func interpolatedPosition(at date: Date = Date()) -> Double {

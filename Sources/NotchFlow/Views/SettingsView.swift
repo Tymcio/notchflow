@@ -28,12 +28,10 @@ struct SettingsView: View {
             }
             .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 220)
         } detail: {
-            ScrollView {
-                tabContent(for: selectedTab)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .background(Color(nsColor: .windowBackgroundColor))
-            .navigationTitle(selectedTab.title)
+            tabContent(for: selectedTab)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(Color(nsColor: .windowBackgroundColor))
+                .navigationTitle(selectedTab.title)
         }
         .frame(minWidth: 640, minHeight: 480)
         .onAppear {
@@ -83,7 +81,7 @@ struct SettingsView: View {
         Task {
             do {
                 try await appState.licenseManager.activate(key: licenseKey.trimmingCharacters(in: .whitespacesAndNewlines))
-                licenseMessage = "Licencja została aktywowana."
+                licenseMessage = loc("License activated.")
             } catch {
                 licenseMessage = error.localizedDescription
             }
@@ -93,7 +91,7 @@ struct SettingsView: View {
     private func deactivateLicense() {
         do {
             try appState.licenseManager.deactivate()
-            licenseMessage = "Licencja została usunięta z tego Maca."
+            licenseMessage = loc("License removed from this Mac.")
         } catch {
             licenseMessage = error.localizedDescription
         }
@@ -103,7 +101,7 @@ struct SettingsView: View {
         Task {
             do {
                 try await appState.licenseManager.deactivateInPolar()
-                licenseMessage = "Aktywacja została zwolniona w Polar. Możesz aktywować klucz na innym Macu."
+                licenseMessage = loc("Activation released in Polar. You can activate the key on another Mac.")
             } catch {
                 licenseMessage = error.localizedDescription
             }

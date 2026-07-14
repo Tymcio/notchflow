@@ -2,6 +2,22 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.15] - 2026-07-14
+
+### Added
+
+- Localization: English source UI with Polish, German, Italian, and Spanish translations (String Catalog + `loc()` helper)
+- Language picker in Settings → General (per-app override via `AppleLanguages`, relaunch on change)
+- App brand icons in notification settings when apps are not installed; fixed Rambox bundle ID (`com.rambox`)
+- `generate_localizations.py` script and localization completeness test
+
+### Changed
+
+- Settings detail panes use grouped form layout with section footers (cleaner spacing and hierarchy)
+- Settings window reliably comes to the foreground when opened from the menu bar
+- Media idle state label localized (“Not Playing” → e.g. “Brak odtwarzania” in Polish)
+- Call/notification banner keyword detection extended for de/it/es system languages
+
 ## [1.0.14] - 2026-07-14
 
 ### Changed

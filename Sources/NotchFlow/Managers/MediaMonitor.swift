@@ -106,7 +106,7 @@ final class MediaMonitor {
 
     private func mergeScriptingState(_ scriptState: MediaPlaybackState) async {
         if scriptState == .empty {
-            if currentState.title != "Not Playing", !currentState.title.isEmpty {
+            if currentState.hasActiveTrack {
                 await applyState(.empty)
             }
             return
@@ -123,7 +123,7 @@ final class MediaMonitor {
         var merged = currentState
         let sameTrack = scriptState.isSameTrack(as: merged)
 
-        if !scriptState.title.isEmpty, scriptState.title != "Not Playing" {
+        if scriptState.hasActiveTrack {
             merged = MediaPlaybackState(
                 title: scriptState.title,
                 artist: scriptState.artist,
@@ -242,7 +242,7 @@ final class MediaMonitor {
     }
 
     private func enrichArtworkIfNeeded(_ state: MediaPlaybackState) async -> MediaPlaybackState {
-        guard state.title != "Not Playing", !state.title.isEmpty else { return state }
+        guard state.hasActiveTrack else { return state }
 
         if lastFetchedArtworkTrackKey == state.trackKey, state.artworkData != nil {
             return state
