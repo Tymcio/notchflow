@@ -23,6 +23,8 @@ struct SettingsView: View {
                         .tag(tab)
                 }
                 .listStyle(.sidebar)
+                Spacer(minLength: 0)
+                SettingsSidebarFooter()
             }
             .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 220)
         } detail: {

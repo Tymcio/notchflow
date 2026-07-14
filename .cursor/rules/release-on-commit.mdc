@@ -1,0 +1,44 @@
+---
+description: Przed commitem podbij wersję, changelog i wrzuć GitHub Release
+alwaysApply: true
+---
+
+# Release przy każdym commicie
+
+Gdy użytkownik prosi o commit (lub commit + push), **przed** `git commit` wykonaj:
+
+## 1. Podbij wersję
+
+W `version.env`:
+
+- Zwiększ `BUILD_NUMBER` o 1 (wymagane dla Sparkle — `sparkle:version` musi rosnąć).
+- `MARKETING_VERSION` zmieniaj tylko przy większej premierze (np. 1.0 → 1.1); domyślnie zostaw bez zmian.
+
+## 2. Changelog
+
+Dodaj wpis na górze `CHANGELOG.md` pod nagłówkiem `## [1.0.X] - RRRR-MM-DD` z krótkim opisem zmian z bieżącej sesji (po polsku lub angielsku — jak reszta pliku).
+
+Numer `1.0.X` = kolejny tag release (ostatni tag `v1.0.N` → następny to `v1.0.(N+1)`).
+
+## 3. Commit i push
+
+Commituj tylko pliki związane ze zmianą (nie wrzucaj przypadkowych assetów/strony, chyba że użytkownik o to prosi).
+
+## 4. Release od razu
+
+Po pushu na `main`:
+
+```bash
+git tag v1.0.X
+git push origin v1.0.X
+```
+
+Tag `v*` odpala workflow `.github/workflows/release.yml` (podpis, notaryzacja, `NotchFlow.dmg`, `appcast.xml`).
+
+Sprawdź wynik: `gh run watch` dla ostatniego runu Release; potwierdź assety na https://github.com/Tymcio/notchflow/releases .
+
+## Wyjątki
+
+- Samo pytanie / review bez prośby o commit — nie rób release.
+- Użytkownik wyraźnie mówi „bez release” — pomiń tag.
+- Build lokalny po zmianach Swift: nadal `./Scripts/compile_and_run.sh` (reguła `swift-build.mdc`).

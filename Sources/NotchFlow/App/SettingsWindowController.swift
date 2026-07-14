@@ -34,6 +34,11 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         }
 
         window?.collectionBehavior.insert(.moveToActiveSpace)
+        window?.collectionBehavior.insert(.fullScreenAuxiliary)
+        if window?.isMiniaturized == true {
+            window?.deminiaturize(nil)
+        }
+        window?.orderFrontRegardless()
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

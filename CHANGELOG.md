@@ -2,6 +2,13 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.13] - 2026-07-14
+
+### Changed
+
+- Settings: version and “Check for updates” moved to the left sidebar footer
+- Settings window comes to the foreground when opened (including from full-screen apps)
+
 ## [1.0.12] - 2026-07-14
 
 ### Changed
