@@ -10,12 +10,21 @@ final class NotchGeometryTests: XCTestCase {
 
     func testVirtualCapsuleDefaultsWhenNoNotch() {
         let settings = NotchSettings.shared
-        if let screen = NSScreen.main {
-            let geometry = NotchGeometry.make(for: screen, settings: settings)
-            XCTAssertGreaterThan(geometry.expandedSize.width, 0)
-            XCTAssertGreaterThan(geometry.expandedSize.height, 0)
-            XCTAssertLessThanOrEqual(geometry.expandedSize.width, NotchFlowConstants.maxExpandedWidth)
-        }
+        guard let screen = NSScreen.main else { return }
+
+        let geometry = NotchGeometry.make(for: screen, settings: settings)
+        XCTAssertGreaterThan(geometry.expandedSize.width, 0)
+        XCTAssertGreaterThan(geometry.expandedSize.height, 0)
+
+        let configuredWidth = settings.isPremiumEnabled
+            ? min(settings.customIslandWidth, NotchFlowConstants.maxExpandedWidth)
+            : NotchFlowConstants.defaultExpandedWidth
+        let minimumWidth = max(
+            configuredWidth,
+            geometry.physicalNotchCutoutWidth + NotchFlowConstants.idleWingProtrusion * 2,
+            NotchGeometry.minimumExpandedWidthForTabBar(cutoutWidth: geometry.physicalNotchCutoutWidth)
+        ).rounded()
+        XCTAssertGreaterThanOrEqual(geometry.expandedSize.width, minimumWidth)
     }
 
     func testIdleLeftWingHidesWhenMenuUnderFullWing() {

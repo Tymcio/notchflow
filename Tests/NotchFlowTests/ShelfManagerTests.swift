@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 import XCTest
 @testable import NotchFlow
 
@@ -31,25 +32,31 @@ final class ShelfManagerTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
     }
 
-    func testPinDroppedItemKeepsFileOnDisk() async {
+    func testPinDroppedItemKeepsFileOnDisk() async throws {
         let source = tempDirectory.appendingPathComponent("drop-me.txt")
-        try? "drop".write(to: source, atomically: true, encoding: .utf8)
+        try "drop".write(to: source, atomically: true, encoding: .utf8)
 
         let manager = ShelfManager(directory: tempDirectory)
-        let provider = NSItemProvider(object: source as NSURL)
+        let provider = NSItemProvider()
+        provider.registerFileRepresentation(
+            forTypeIdentifier: UTType.fileURL.identifier,
+            fileOptions: [],
+            visibility: .all
+        ) { completion in
+            completion(source, true, nil)
+            return nil
+        }
         await manager.handleDrop(providers: [provider], isPremium: true)
 
-        let dropped = manager.droppedItems.first
-        XCTAssertNotNil(dropped)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: dropped!.url.path))
+        let dropped = try XCTUnwrap(manager.droppedItems.first)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: dropped.url.path))
 
-        manager.pinDroppedItem(dropped!, isPremium: true)
+        manager.pinDroppedItem(dropped, isPremium: true)
 
-        let pinned = manager.pinnedItems.first
-        XCTAssertNotNil(pinned)
+        let pinned = try XCTUnwrap(manager.pinnedItems.first)
         XCTAssertTrue(manager.droppedItems.isEmpty)
 
-        let pinnedPath = pinned!.originalPath ?? pinned!.resolvedURL.path
+        let pinnedPath = pinned.originalPath ?? pinned.resolvedURL.path
         XCTAssertTrue(FileManager.default.fileExists(atPath: pinnedPath))
     }
 

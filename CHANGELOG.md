@@ -2,6 +2,13 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.17] - 2026-07-14
+
+### Fixed
+
+- CI: geometry width assertion matches tab-bar minimum layout rules
+- CI: shelf drop test uses explicit `NSItemProvider` file representation (reliable on GitHub Actions)
+
 ## [1.0.16] - 2026-07-14
 
 ### Fixed
