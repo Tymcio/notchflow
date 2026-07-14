@@ -1,5 +1,4 @@
 import AppKit
-import UniformTypeIdentifiers
 import XCTest
 @testable import NotchFlow
 
@@ -28,25 +27,19 @@ final class ShelfManagerTests: XCTestCase {
         XCTAssertNotNil(item)
 
         let resolved = manager.resolvePinnedURL(for: item!)
-        XCTAssertEqual(resolved?.path, source.path)
+        XCTAssertEqual(
+            resolved?.standardizedFileURL.path,
+            source.standardizedFileURL.path
+        )
         XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
     }
 
-    func testPinDroppedItemKeepsFileOnDisk() async throws {
+    func testPinDroppedItemKeepsFileOnDisk() throws {
         let source = tempDirectory.appendingPathComponent("drop-me.txt")
         try "drop".write(to: source, atomically: true, encoding: .utf8)
 
         let manager = ShelfManager(directory: tempDirectory)
-        let provider = NSItemProvider()
-        provider.registerFileRepresentation(
-            forTypeIdentifier: UTType.fileURL.identifier,
-            fileOptions: [],
-            visibility: .all
-        ) { completion in
-            completion(source, true, nil)
-            return nil
-        }
-        await manager.handleDrop(providers: [provider], isPremium: true)
+        try manager.ingestDroppedFileForTesting(source, isPremium: true)
 
         let dropped = try XCTUnwrap(manager.droppedItems.first)
         XCTAssertTrue(FileManager.default.fileExists(atPath: dropped.url.path))

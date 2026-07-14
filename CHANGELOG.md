@@ -2,6 +2,13 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.18] - 2026-07-14
+
+### Fixed
+
+- CI: normalize temp file paths in shelf pin test (`/var` vs `/private/var`)
+- CI: shelf drop-to-pin test uses a debug ingest hook instead of flaky `NSItemProvider` on GitHub Actions
+
 ## [1.0.17] - 2026-07-14
 
 ### Fixed

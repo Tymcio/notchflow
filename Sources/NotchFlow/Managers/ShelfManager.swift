@@ -108,6 +108,19 @@ final class ShelfManager {
         persistIndex()
     }
 
+    #if DEBUG
+    /// Test hook for ingesting a dropped file without NSItemProvider drag-and-drop.
+    func ingestDroppedFileForTesting(_ url: URL, isPremium: Bool) throws {
+        let item = try linkOrCopy(url: url)
+        if isPremium {
+            items = pinnedItems + Array(([item] + droppedItems).prefix(NotchFlowConstants.premiumDroppedShelfLimit))
+        } else {
+            items = pinnedItems + Array([item].prefix(NotchFlowConstants.freeDroppedShelfLimit))
+        }
+        persistIndex()
+    }
+    #endif
+
     func pinURL(_ url: URL, isPremium: Bool) -> ShelfItem? {
         let limit = isPremium ? NotchFlowConstants.premiumPinnedShelfLimit : NotchFlowConstants.freePinnedShelfLimit
         guard pinnedItems.count < limit else { return nil }
