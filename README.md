@@ -7,6 +7,12 @@ Native macOS notch utility for Apple Silicon MacBooks. Transparent, lightweight,
 
 **[Download](https://github.com/Tymcio/notchflow/releases/latest)** · **[Website](https://notchflow.eu)** · **[Free vs Premium](docs/free-vs-premium.md)** · **[Contributing](CONTRIBUTING.md)**
 
+<p align="center">
+  <img src="website/assets/screenshots/01-music.png" alt="NotchFlow — music player in the notch island" width="900"/>
+</p>
+
+<p align="center"><em>Hover the top of your screen — the island expands into music, calendar, shelf, timers, notes, clipboard, and mirror.</em></p>
+
 ---
 
 ## What is NotchFlow?
@@ -33,6 +39,20 @@ NotchFlow turns the MacBook notch into a useful, non-intrusive island — a floa
 | **Hide mode** | — | Hide island for selected apps (settings panel) |
 
 Full breakdown: **[docs/free-vs-premium.md](docs/free-vs-premium.md)**
+
+## Screenshots
+
+| Music | Calendar | Shelf |
+|:---:|:---:|:---:|
+| ![Music player](website/assets/screenshots/01-music.png) | ![Calendar](website/assets/screenshots/02-calendar.png) | ![Shelf](website/assets/screenshots/03-shelf.png) |
+
+| Timer | Stopwatch | Pomodoro |
+|:---:|:---:|:---:|
+| ![Timer](website/assets/screenshots/04-timer.png) | ![Stopwatch](website/assets/screenshots/05-stopwatch.png) | ![Pomodoro](website/assets/screenshots/06-pomodoro.png) |
+
+| Notes | Clipboard | Mirror |
+|:---:|:---:|:---:|
+| ![Notes](website/assets/screenshots/07-notes.png) | ![Clipboard](website/assets/screenshots/08-clipboard.png) | ![Mirror](website/assets/screenshots/09-camera.png) |
 
 ## Requirements
 
