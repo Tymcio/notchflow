@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.16] - 2026-07-14
+
+### Fixed
+
+- CI: correct `ClipboardEntry` argument order in `ShelfManagerTests` so `swift test` compiles on GitHub Actions
+
 ## [1.0.15] - 2026-07-14
 
 ### Added

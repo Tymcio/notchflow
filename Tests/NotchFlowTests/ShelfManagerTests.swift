@@ -97,7 +97,7 @@ final class NotchFlowLimitsTests: XCTestCase {
     func testClipboardVisibleEntriesRespectPremiumLimit() {
         let manager = ClipboardManager()
         let entries = (0..<60).map { index in
-            ClipboardEntry(value: "entry-\(index)", kind: .text, createdAt: .now)
+            ClipboardEntry(kind: .text, value: "entry-\(index)", createdAt: .now)
         }
         manager.setEntriesForTesting(entries)
 
