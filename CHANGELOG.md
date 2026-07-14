@@ -2,6 +2,13 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.12] - 2026-07-14
+
+### Changed
+
+- Require a notched MacBook at launch; show an alert and exit on unsupported Macs
+- Clarify website FAQ and docs: external displays supported only with a notched MacBook host
+
 ## [1.0] - 2026-07-12
 
 ### Added
