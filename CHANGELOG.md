@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.19] - 2026-07-14
+
+### Fixed
+
+- CI: shelf drop test keeps source file outside the shelf directory so link/copy does not delete it
+
 ## [1.0.18] - 2026-07-14
 
 ### Fixed

@@ -35,7 +35,12 @@ final class ShelfManagerTests: XCTestCase {
     }
 
     func testPinDroppedItemKeepsFileOnDisk() throws {
-        let source = tempDirectory.appendingPathComponent("drop-me.txt")
+        let sourceDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NotchFlowShelfSource-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: sourceDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: sourceDirectory) }
+
+        let source = sourceDirectory.appendingPathComponent("drop-me.txt")
         try "drop".write(to: source, atomically: true, encoding: .utf8)
 
         let manager = ShelfManager(directory: tempDirectory)
