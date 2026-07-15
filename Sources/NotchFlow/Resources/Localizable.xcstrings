@@ -1373,6 +1373,34 @@
         }
       }
     },
+    "Close the system banner when shown in the island": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamykaj systemowy dymek, gdy powiadomienie jest w wyspie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System-Banner schließen, wenn in der Insel angezeigt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiudi il banner di sistema quando mostrato nell'isola"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrar el banner del sistema al mostrarse en la isla"
+          }
+        }
+      }
+    },
     "Copied": {
       "localizations": {
         "pl": {
@@ -5261,6 +5289,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "La clave de licencia no es válida."
+          }
+        }
+      }
+    },
+    "The macOS banner in the corner is closed automatically once the notification appears in the notch.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dymek macOS w rogu ekranu jest zamykany automatycznie, gdy tylko powiadomienie pojawi się w notchu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das macOS-Banner in der Ecke wird automatisch geschlossen, sobald die Mitteilung in der Notch erscheint."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il banner di macOS nell'angolo viene chiuso automaticamente non appena la notifica appare nel notch."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El banner de macOS en la esquina se cierra automáticamente en cuanto la notificación aparece en el notch."
           }
         }
       }

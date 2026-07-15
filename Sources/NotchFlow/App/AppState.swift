@@ -79,6 +79,12 @@ final class AppState {
         activeLiveActivity != nil
     }
 
+    /// Notification peeks widen the right wing so sender and body are readable.
+    var idleRightWingWidthOverride: CGFloat? {
+        guard case .notification(let peek) = activeLiveActivity else { return nil }
+        return IdleNotificationMetrics.preferredRightWingWidth(for: peek)
+    }
+
     var shelfBadgeCount: Int {
         shelfItems.count
     }
@@ -245,7 +251,10 @@ final class AppState {
         notificationCenterObserver.onBannerDetected = { [weak self] banner in
             guard let self else { return }
             self.callManager.handleBanner(banner)
-            self.notificationHub.handleBanner(banner)
+            let shownInNotch = self.notificationHub.handleBanner(banner)
+            if shownInNotch, self.settings.dismissSystemBanners {
+                self.notificationCenterObserver.dismissBanner(banner)
+            }
         }
 
         notificationCenterObserver.onScanComplete = { [weak self] banners in

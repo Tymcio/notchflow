@@ -5,7 +5,7 @@ Native macOS notch utility for Apple Silicon MacBooks. Transparent, lightweight,
 [![CI](https://github.com/Tymcio/notchflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Tymcio/notchflow/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-**[Download](https://github.com/Tymcio/notchflow/releases/latest)** · **[Website](https://notchflow.eu)** · **[Free vs Premium](docs/free-vs-premium.md)** · **[Contributing](CONTRIBUTING.md)**
+**[Download](https://github.com/Tymcio/notchflow/releases/latest)** · **[Website](https://notchflow.eu)** · **[Roadmap](docs/roadmap.md)** · **[Free vs Premium](docs/free-vs-premium.md)** · **[Contributing](CONTRIBUTING.md)**
 
 <p align="center">
   <img src="website/assets/screenshots/01-music.png" alt="NotchFlow — music player in the notch island" width="900"/>
@@ -36,9 +36,36 @@ NotchFlow turns the MacBook notch into a useful, non-intrusive island — a floa
 | **Calendar** | Month grid + upcoming preview | — |
 | **HUD** | Custom volume & brightness overlays | — |
 | **Integrations** | URL scheme, local API (media) | Local API (notes, clipboard, mirror) |
+| **Notifications** | — | App alerts in notch, hide body, close system banner |
 | **Hide mode** | — | Hide island for selected apps (settings panel) |
 
-Full breakdown: **[docs/free-vs-premium.md](docs/free-vs-premium.md)**
+Full breakdown: **[docs/free-vs-premium.md](docs/free-vs-premium.md)** · Full plan: **[docs/roadmap.md](docs/roadmap.md)**
+
+## Roadmap
+
+Planned releases **v1.1 → v1.3** and status of each item. ✅ = shipped today · 📋 = planned.
+
+| Release | Feature | Status |
+|---------|---------|--------|
+| **Shipped** | Hover island, media, calendar, shelf, focus timer, notes, clipboard, mirror | ✅ |
+| **Shipped** | Volume / brightness HUD, URL scheme, local API, Raycast | ✅ |
+| **Shipped** | Localization (en, pl, de, it, es) + in-app language picker | ✅ |
+| **Shipped** | Incoming calls & app notifications in the notch (Premium) | ✅ |
+| **Shipped** | Close system banner when notification appears in island (Premium) | ✅ |
+| **v1.1** | Album art colors (gradient from artwork) | 📋 |
+| **v1.1** | Spring animations (+ reduce motion setting) | 📋 |
+| **v1.1** | HUD redesign + keyboard backlight HUD | 📋 |
+| **v1.1** | Auto-hide island in fullscreen | 📋 |
+| **v1.1** | Screen capture privacy (hidden in screenshots / recordings) | 📋 |
+| **v1.2** | Energy budget & published idle CPU numbers | 📋 |
+| **v1.2** | Battery / charging idle live activity | 📋 |
+| **v1.2** | License enforcement + trial on stable builds | 📋 |
+| **v1.3** | AirDrop from shelf (Premium) | 📋 |
+| **v1.3** | Bluetooth connect / disconnect + device battery | 📋 |
+| **v1.3** | Caffeine toggle (prevent sleep) | 📋 |
+| **v1.3** | Audio output switch in media view | 📋 |
+
+Details, tier assignment, and non-goals: **[docs/roadmap.md](docs/roadmap.md)**
 
 ## Screenshots
 
@@ -122,7 +149,7 @@ Details: [website/privacy.html](website/privacy.html) · [website/security.html]
 Sources/NotchFlow/     App, features, licensing, views
 Tests/                 Swift Testing suite
 Scripts/               Build, package, release tooling
-docs/                  Performance, integrations, public-repo guide
+docs/                  Performance, integrations, roadmap, public-repo guide
 integrations/raycast/  Raycast extension (MIT)
 website/               Static marketing site (notchflow.eu)
 ```

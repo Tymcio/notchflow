@@ -33,10 +33,12 @@ final class NotificationHubManager {
     var hideMessageBody = false
     private let peekDuration: TimeInterval = 4
 
-    func handleBanner(_ banner: ParsedNotificationBanner) {
-        guard isEnabled else { return }
-        guard !banner.isCall else { return }
-        guard matchesAllowlist(banner) else { return }
+    /// Returns true when the banner was accepted and shown in the notch.
+    @discardableResult
+    func handleBanner(_ banner: ParsedNotificationBanner) -> Bool {
+        guard isEnabled else { return false }
+        guard !banner.isCall else { return false }
+        guard matchesAllowlist(banner) else { return false }
 
         let sender = banner.title
         let body = hideMessageBody ? loc("New message") : banner.body
@@ -78,6 +80,8 @@ final class NotificationHubManager {
                 }
             }
         }
+
+        return true
     }
 
     func dismiss(_ notification: HubNotification) {
@@ -96,7 +100,16 @@ final class NotificationHubManager {
         guard !allowedBundleIDs.isEmpty else { return false }
 
         let delivering = NotificationAppCatalog.canonicalBundleID(for: banner.deliveringBundleID)
-        if isAllowed(delivering) {
+        let bannerTexts = [banner.title, banner.body]
+
+        // Baner innej apki (Cursor itd.) — przepuść tylko gdy ta apka jest na liście.
+        if let foreign = NotificationAppCatalog.matchRunningApp(in: bannerTexts),
+           foreign != delivering {
+            return isAllowed(foreign)
+        }
+
+        // Natywna apka (nie agregator) włączona na liście.
+        if isAllowed(delivering), !NotificationAppCatalog.isAggregator(delivering) {
             return true
         }
 
@@ -107,18 +120,37 @@ final class NotificationHubManager {
             }
         }
 
-        // Rambox: wystarczy włączyć Rambox albo dowolną apkę messaging (WhatsApp, Telegram…)
+        // Rambox / agregator: sam fakt Rambox na liście NIE przepuszcza każdego banera.
         if NotificationAppCatalog.isAggregator(banner.deliveringBundleID) {
-            if isAllowed(delivering) {
+            let ramboxAllowed = isAllowed(delivering)
+            let messagingAllowed = !allowedBundleIDs.isDisjoint(with: NotificationAppCatalog.messagingBundleIDs)
+            guard ramboxAllowed || messagingAllowed else { return false }
+
+            if banner.serviceBundleID != "unknown.app" {
+                return isAllowed(banner.serviceBundleID) || messagingAllowed
+            }
+
+            let haystack = "\(banner.title) \(banner.body)".lowercased()
+            for bundleID in allowedBundleIDs {
+                if let keyword = NotificationAppCatalog.keyword(for: bundleID),
+                   haystack.contains(keyword) {
+                    return true
+                }
+            }
+
+            // Wiadomość bez nazwy serwisu (np. sam kontakt + treść) — tylko gdy Rambox jest włączony.
+            if ramboxAllowed,
+               NotificationAppCatalog.looksLikeGenericMessagingBanner(title: banner.title, body: banner.body) {
                 return true
             }
-            let allowsMessaging = !allowedBundleIDs.isDisjoint(with: NotificationAppCatalog.messagingBundleIDs)
-            if allowsMessaging {
-                return true
-            }
+
+            return false
         }
 
-        // Fallback: słowa kluczowe z włączonych aplikacji w treści bannera
+        if banner.hasTrustedSource {
+            return false
+        }
+
         let haystack = "\(banner.title) \(banner.body)".lowercased()
         for bundleID in allowedBundleIDs {
             if let keyword = NotificationAppCatalog.keyword(for: bundleID),
@@ -135,8 +167,9 @@ final class NotificationHubManager {
     }
 
     private func preferredOpenBundleID(for banner: ParsedNotificationBanner) -> String {
-        if NotificationAppCatalog.isAggregator(banner.deliveringBundleID) {
-            return banner.deliveringBundleID
+        if let foreign = NotificationAppCatalog.matchRunningApp(in: [banner.title, banner.body]),
+           !NotificationAppCatalog.isAggregator(foreign) {
+            return foreign
         }
         if banner.serviceBundleID != "unknown.app" {
             return banner.serviceBundleID

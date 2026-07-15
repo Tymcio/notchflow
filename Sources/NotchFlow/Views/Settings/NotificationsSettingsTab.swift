@@ -37,11 +37,19 @@ struct NotificationsSettingsTab: View {
                     .onChange(of: settings.hideNotificationBody) { _, _ in
                         AppController.appState?.applyNotificationSettings()
                     }
+
+                Toggle(loc("Close the system banner when shown in the island"), isOn: $settings.dismissSystemBanners)
+                    .disabled(!settings.appNotificationsEnabled || !isPremium)
             } header: {
                 Text(loc("App notifications"))
             } footer: {
-                if settings.appNotificationsEnabled && isPremium {
-                    SettingsFooterCaption("Using Rambox? Enable Rambox in the list — WhatsApp, Telegram, and MSN notifications go through Rambox, not native apps.")
+                VStack(alignment: .leading, spacing: 6) {
+                    if settings.appNotificationsEnabled && isPremium {
+                        if settings.dismissSystemBanners {
+                            SettingsFooterCaption("The macOS banner in the corner is closed automatically once the notification appears in the notch.")
+                        }
+                        SettingsFooterCaption("Using Rambox? Enable Rambox in the list — WhatsApp, Telegram, and MSN notifications go through Rambox, not native apps.")
+                    }
                 }
             }
 

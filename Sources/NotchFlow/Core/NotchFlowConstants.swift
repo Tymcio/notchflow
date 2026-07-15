@@ -49,6 +49,8 @@ enum NotchFlowConstants {
     static let expandedTabSlotWidth: CGFloat = 36
     static let idleWingProtrusion: CGFloat = 54
     static let idleWingInnerOverlap: CGFloat = 12
+    /// Upper bound for the widened right wing during a notification peek.
+    static let maxIdleNotificationWingWidth: CGFloat = 240
     /// Vertical adjustment of idle wings vs. the menu-bar notch band (0 = flush with notch bottom).
     static let idleWingVerticalTrim: CGFloat = 0
     static let notchWidthOverlapFudge: CGFloat = 4

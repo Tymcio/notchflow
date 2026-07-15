@@ -55,6 +55,35 @@ enum AXHelpers {
         return nil
     }
 
+    static func identifier(of element: AXUIElement) -> String? {
+        var valueRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXIdentifierAttribute as CFString, &valueRef) == .success else {
+            return nil
+        }
+        return valueRef as? String
+    }
+
+    static func parent(of element: AXUIElement) -> AXUIElement? {
+        var valueRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXParentAttribute as CFString, &valueRef) == .success,
+              let valueRef else {
+            return nil
+        }
+        let object = valueRef as CFTypeRef
+        guard CFGetTypeID(object) == AXUIElementGetTypeID() else { return nil }
+        return (object as! AXUIElement)
+    }
+
+    /// Notification Center banners carry the posting app's bundle ID in `AXStackingIdentifier`
+    /// (modern macOS). Returns nil on older systems or non-banner elements.
+    static func stackingIdentifier(of element: AXUIElement) -> String? {
+        var valueRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, "AXStackingIdentifier" as CFString, &valueRef) == .success else {
+            return nil
+        }
+        return valueRef as? String
+    }
+
     static func isHidden(_ element: AXUIElement) -> Bool {
         var hiddenRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(element, kAXHiddenAttribute as CFString, &hiddenRef) == .success,
@@ -76,6 +105,58 @@ enum AXHelpers {
     static func press(_ element: AXUIElement) -> Bool {
         AXUIElementPerformAction(element, kAXPressAction as CFString) == .success
     }
+
+    /// Performs the banner's "Close" accessibility action (localized), searching the element
+    /// and its descendants. Returns true when a close action was found and performed.
+    static func performCloseAction(on element: AXUIElement, depth: Int = 0) -> Bool {
+        guard depth < 5 else { return false }
+
+        if performMatchingAction(on: element, matching: closeActionKeywords) {
+            return true
+        }
+
+        for child in children(of: element) {
+            if performCloseAction(on: child, depth: depth + 1) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private static func performMatchingAction(on element: AXUIElement, matching keywords: [String]) -> Bool {
+        var namesRef: CFArray?
+        guard AXUIElementCopyActionNames(element, &namesRef) == .success,
+              let names = namesRef as? [String] else {
+            return false
+        }
+
+        for name in names {
+            let lowerName = name.lowercased()
+            var matches = keywords.contains { lowerName.contains($0) }
+
+            if !matches {
+                var descriptionRef: CFString?
+                if AXUIElementCopyActionDescription(element, name as CFString, &descriptionRef) == .success,
+                   let description = (descriptionRef as String?)?.lowercased() {
+                    matches = keywords.contains { description.contains($0) }
+                }
+            }
+
+            if matches {
+                return AXUIElementPerformAction(element, name as CFString) == .success
+            }
+        }
+        return false
+    }
+
+    /// Localized names/descriptions of the notification banner close action (en, pl, de, it, es).
+    private static let closeActionKeywords = [
+        "close", "clear",
+        "zamknij", "wyczyść", "usuń",
+        "schließen", "entfernen", "löschen",
+        "chiudi", "cancella", "rimuovi",
+        "cerrar", "borrar", "eliminar"
+    ]
 
     static func runningApplication(bundleID: String) -> NSRunningApplication? {
         NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first

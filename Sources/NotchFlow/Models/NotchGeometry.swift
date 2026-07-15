@@ -81,35 +81,49 @@ struct NotchGeometry: Equatable {
     }
 
     func idleRightSlotFrameWidth(
-        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap
+        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap,
+        rightWingWidth: CGFloat? = nil
     ) -> CGFloat {
-        guard idleRightWingWidth > 0 else { return 0 }
-        return idleRightWingWidth + innerOverlap
+        let wing = resolvedIdleRightWingWidth(override: rightWingWidth)
+        guard wing > 0 else { return 0 }
+        return wing + innerOverlap
+    }
+
+    /// Content (e.g. a notification peek) may request a wider right wing; never narrower than default.
+    func resolvedIdleRightWingWidth(override: CGFloat?) -> CGFloat {
+        guard idleRightWingWidth > 0, let override else { return idleRightWingWidth }
+        return max(idleRightWingWidth, override)
     }
 
     func idleWingLayout(
-        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap
+        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap,
+        rightWingWidth: CGFloat? = nil
     ) -> IdleWingLayout {
+        let resolvedRightWing = resolvedIdleRightWingWidth(override: rightWingWidth)
         let leftSlotWidth = idleLeftSlotFrameWidth(innerOverlap: innerOverlap)
         let centerClearWidth = idleCenterClearWidth(innerOverlap: innerOverlap)
-        let rightSlotWidth = idleRightSlotFrameWidth(innerOverlap: innerOverlap)
+        let rightSlotWidth = idleRightSlotFrameWidth(innerOverlap: innerOverlap, rightWingWidth: rightWingWidth)
         return IdleWingLayout(
             visibleLeftWidth: idleLeftWingWidth,
-            visibleRightWidth: idleRightWingWidth,
+            visibleRightWidth: resolvedRightWing,
             leftSlotWidth: leftSlotWidth,
             centerClearWidth: centerClearWidth,
             rightSlotWidth: rightSlotWidth,
-            panelWidth: idleSize.width,
+            panelWidth: idleSize.width - idleRightWingWidth + resolvedRightWing,
             panelHeight: idleSize.height
         )
     }
 
-    func frame(isExpanded: Bool, isIdle: Bool = false) -> CGRect {
+    func frame(isExpanded: Bool, isIdle: Bool = false, idleRightWingWidth rightWingOverride: CGFloat? = nil) -> CGRect {
         let size: CGSize
         if isExpanded {
             size = expandedSize
         } else if isIdle {
-            size = idleSize
+            let resolvedRightWing = resolvedIdleRightWingWidth(override: rightWingOverride)
+            size = CGSize(
+                width: idleSize.width - idleRightWingWidth + resolvedRightWing,
+                height: idleSize.height
+            )
         } else {
             return .zero
         }

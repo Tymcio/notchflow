@@ -130,14 +130,18 @@ struct IdleNotificationView: View {
             trailing: {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(notification.sender)
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: IdleNotificationMetrics.senderFontSize, weight: .semibold))
                         .lineLimit(1)
                     Text(notification.body)
-                        .font(.system(size: 9))
+                        .font(.system(size: IdleNotificationMetrics.bodyFontSize))
                         .foregroundStyle(IslandStyle.secondaryText)
                         .lineLimit(1)
                 }
                 .foregroundStyle(IslandStyle.primaryText)
+                // Keep text out of the hidden overlap strip under the notch cutout.
+                .padding(.leading, NotchFlowConstants.idleWingInnerOverlap + IdleNotificationMetrics.textLeadingPadding)
+                .padding(.trailing, IdleNotificationMetrics.textTrailingPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         )
     }
@@ -145,6 +149,30 @@ struct IdleNotificationView: View {
     @ViewBuilder
     private var appIcon: some View {
         CatalogAppIcon(bundleID: notification.appBundleID)
+    }
+}
+
+/// Sizes the right wing so a notification peek shows readable text instead of the fixed 54 pt ear.
+enum IdleNotificationMetrics {
+    static let senderFontSize: CGFloat = 10
+    static let bodyFontSize: CGFloat = 9
+    /// Gap between the notch edge and the first character.
+    static let textLeadingPadding: CGFloat = 10
+    static let textTrailingPadding: CGFloat = 14
+
+    @MainActor
+    static func preferredRightWingWidth(for notification: NotificationPeekActivity) -> CGFloat {
+        let senderWidth = width(of: notification.sender, font: .systemFont(ofSize: senderFontSize, weight: .semibold))
+        let bodyWidth = width(of: notification.body, font: .systemFont(ofSize: bodyFontSize))
+        let total = (max(senderWidth, bodyWidth) + textLeadingPadding + textTrailingPadding).rounded(.up)
+        return min(
+            max(NotchFlowConstants.idleWingProtrusion, total),
+            NotchFlowConstants.maxIdleNotificationWingWidth
+        )
+    }
+
+    private static func width(of text: String, font: NSFont) -> CGFloat {
+        (text as NSString).size(withAttributes: [.font: font]).width
     }
 }
 

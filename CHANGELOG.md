@@ -2,6 +2,25 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.20] - 2026-07-15
+
+### Added
+
+- Premium notifications: option to close the macOS corner banner once the alert appears in the notch
+- README roadmap table (v1.1–v1.3) with shipped vs planned status
+- Development roadmap document (`docs/roadmap.md`)
+
+### Changed
+
+- Notification peek: wider right wing sized to sender/body text for readable Messenger/Rambox alerts
+- Notification detection: AX event observer for faster banner pickup; slower idle polling when observer is active
+- Rambox allowlist: only messaging-like banners pass when Rambox is enabled (not every aggregator banner)
+
+### Fixed
+
+- App notifications no longer mis-attributed to Rambox (e.g. Cursor alerts)
+- Notification icon and open target use the real posting app when detected from banner content
+
 ## [1.0.19] - 2026-07-14
 
 ### Fixed

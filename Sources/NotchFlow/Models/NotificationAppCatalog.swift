@@ -135,24 +135,68 @@ enum NotificationAppCatalog {
         aggregators.contains { matches(bundleID: bundleID, entry: $0) }
     }
 
-    static func resolve(from texts: [String]) -> (delivering: String, service: String, displayName: String) {
+    struct Resolution {
+        let delivering: String
+        let service: String
+        let displayName: String
+        /// True when `delivering` came from the banner's AX stacking identifier, not text guessing.
+        let hasTrustedSource: Bool
+    }
+
+    static func resolve(from texts: [String], deliveringHint: String? = nil) -> Resolution {
         let haystack = texts.joined(separator: " ").lowercased()
 
         var delivering = "unknown.app"
-        for aggregator in aggregators where aggregator.keywords.contains(where: { haystack.contains($0) }) {
-            delivering = aggregator.bundleID
-            break
+        var isForeignTrustedApp = false
+        if let deliveringHint {
+            if let entry = entry(forAnyBundleID: deliveringHint) {
+                delivering = entry.bundleID
+            } else if deliveringHint.lowercased().contains("rambox") {
+                delivering = aggregators[0].bundleID
+            } else {
+                delivering = deliveringHint
+                isForeignTrustedApp = true
+            }
+
+            // Kontener (Rambox) w AXStackingIdentifier, ale baner jest z innej apki (np. Cursor).
+            if isAggregator(delivering),
+               let foreign = matchRunningApp(in: texts),
+               !isAggregator(foreign) {
+                delivering = foreign
+                isForeignTrustedApp = true
+            }
+        } else if let runningApp = matchRunningApp(in: texts) {
+            // Baner z tytułem/treścią innej działającej apki (np. Cursor) — nie przypisuj Ramboxowi.
+            delivering = runningApp
+            isForeignTrustedApp = true
+        } else {
+            for aggregator in aggregators where aggregator.keywords.contains(where: { haystack.contains($0) }) {
+                delivering = aggregator.bundleID
+                break
+            }
+
+            // Jeśli w tekście nie ma „Rambox”, sprawdź czy aplikacja jest uruchomiona i banner wygląda na webową.
+            if delivering == "unknown.app", isRamboxRunning, looksLikeRamboxNotification(texts) {
+                delivering = aggregators[0].bundleID
+            }
         }
 
-        // Jeśli w tekście nie ma „Rambox”, sprawdź czy aplikacja jest uruchomiona i banner wygląda na webową.
-        if delivering == "unknown.app", isRamboxRunning, looksLikeRamboxNotification(texts) {
-            delivering = aggregators[0].bundleID
+        // AX czasem zwraca Rambox jako nadawcę kontenera, choć baner jest z innej apki.
+        if let foreign = matchRunningApp(in: texts),
+           !isAggregator(foreign),
+           isAggregator(delivering) || delivering == "unknown.app" {
+            delivering = foreign
+            isForeignTrustedApp = true
         }
 
+        // Serwis (WhatsApp, Messenger…) zgaduj z tekstu tylko dla agregatorów i nieznanych nadawców —
+        // baner z Cursora wspominający „telegram” nie jest wiadomością z Telegrama.
         var service = "unknown.app"
-        for app in messagingApps where app.keywords.contains(where: { haystack.contains($0) }) {
-            service = app.bundleID
-            break
+        if !isForeignTrustedApp {
+            for app in messagingApps where app.keywords.contains(where: { haystack.contains($0) }) {
+                service = app.bundleID
+                break
+            }
         }
 
         // Natywna apka bez agregatora — delivering = service
@@ -161,17 +205,26 @@ enum NotificationAppCatalog {
         }
 
         let displayName: String
-        if delivering != "unknown.app", service != "unknown.app", delivering != service {
+        if service != "unknown.app" {
             displayName = name(for: service)
-        } else if service != "unknown.app" {
-            displayName = name(for: service)
+        } else if isForeignTrustedApp {
+            displayName = runningAppName(for: delivering) ?? delivering
         } else if delivering != "unknown.app" {
             displayName = name(for: delivering)
         } else {
             displayName = loc("Notification")
         }
 
-        return (delivering, service, displayName)
+        return Resolution(
+            delivering: delivering,
+            service: service,
+            displayName: displayName,
+            hasTrustedSource: deliveringHint != nil && isForeignTrustedApp
+        )
+    }
+
+    private static func runningAppName(for bundleID: String) -> String? {
+        NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first?.localizedName
     }
 
     static func name(for bundleID: String) -> String {
@@ -208,6 +261,49 @@ enum NotificationAppCatalog {
         let hasKnownService = messagingApps.contains { app in
             app.keywords.contains { joined.contains($0) }
         }
-        return !hasKnownService
+        guard !hasKnownService else { return false }
+        // Baner pasujący do innej działającej apki (np. Cursor) nie jest z Ramboxa.
+        return matchRunningApp(in: texts) == nil
+    }
+
+    /// Dopasowuje nazwę działającej apki (np. „Cursor”) w dowolnej linii banera.
+    static func matchRunningApp(in texts: [String]) -> String? {
+        let knownBundleIDs = Set(allEntries.flatMap(\.allBundleIDs))
+        let candidates = texts
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+            .filter { !$0.isEmpty }
+
+        guard !candidates.isEmpty else { return nil }
+        let haystack = candidates.joined(separator: " ")
+
+        for app in NSWorkspace.shared.runningApplications {
+            guard app.activationPolicy == .regular,
+                  let bundleID = app.bundleIdentifier,
+                  !knownBundleIDs.contains(bundleID),
+                  let name = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+                  name.count >= 3 else {
+                continue
+            }
+            if candidates.contains(name) {
+                return bundleID
+            }
+            if candidates.contains(where: { line in
+                line.hasPrefix(name + " ") || line.hasPrefix(name + "–") || line.hasPrefix(name + "-")
+            }) {
+                return bundleID
+            }
+            if haystack.contains(name) {
+                return bundleID
+            }
+        }
+        return nil
+    }
+
+    /// Baner wygląda na wiadomość z agregatora (nadawca + treść), a nie na powiadomienie innej apki.
+    static func looksLikeGenericMessagingBanner(title: String, body: String) -> Bool {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, !body.isEmpty else { return false }
+        return matchRunningApp(in: [title, body]) == nil
     }
 }

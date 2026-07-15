@@ -33,7 +33,7 @@ struct NotchIslandView: View {
             }
         }
         .frame(
-            width: isExpanded ? geometry?.expandedSize.width : geometry?.idleSize.width,
+            width: isExpanded ? geometry?.expandedSize.width : idlePanelWidth,
             height: isExpanded ? effectiveExpandedHeight : geometry?.idleSize.height,
             alignment: .topLeading
         )
@@ -51,17 +51,23 @@ struct NotchIslandView: View {
         }
     }
 
+    private var idlePanelWidth: CGFloat? {
+        guard let geometry else { return nil }
+        return geometry.idleWingLayout(rightWingWidth: appState.idleRightWingWidthOverride).panelWidth
+    }
+
     @ViewBuilder
     private func idleIsland(geometry: NotchGeometry, activity: LiveActivityKind) -> some View {
+        let wingLayout = geometry.idleWingLayout(rightWingWidth: appState.idleRightWingWidthOverride)
         IdleLiveActivityView(
             activity: activity,
             mediaState: appState.mediaState,
             accent: appState.settings.selectedTheme.accent,
-            wingLayout: geometry.idleWingLayout(),
+            wingLayout: wingLayout,
             onAnswerCall: { appState.answerIncomingCall() },
             onDeclineCall: { appState.declineIncomingCall() }
         )
-        .frame(width: geometry.idleSize.width, height: geometry.idleSize.height, alignment: .topLeading)
+        .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight, alignment: .topLeading)
         .clipShape(Rectangle())
     }
 

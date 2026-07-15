@@ -194,6 +194,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "it": "Nascondi testo messaggio (mostra solo mittente)",
         "es": "Ocultar cuerpo del mensaje (solo remitente)",
     },
+    "Close the system banner when shown in the island": {
+        "pl": "Zamykaj systemowy dymek, gdy powiadomienie jest w wyspie",
+        "de": "System-Banner schließen, wenn in der Insel angezeigt",
+        "it": "Chiudi il banner di sistema quando mostrato nell'isola",
+        "es": "Cerrar el banner del sistema al mostrarse en la isla",
+    },
+    "The macOS banner in the corner is closed automatically once the notification appears in the notch.": {
+        "pl": "Dymek macOS w rogu ekranu jest zamykany automatycznie, gdy tylko powiadomienie pojawi się w notchu.",
+        "de": "Das macOS-Banner in der Ecke wird automatisch geschlossen, sobald die Mitteilung in der Notch erscheint.",
+        "it": "Il banner di macOS nell'angolo viene chiuso automaticamente non appena la notifica appare nel notch.",
+        "es": "El banner de macOS en la esquina se cierra automáticamente en cuanto la notificación aparece en el notch.",
+    },
     "Using Rambox? Enable Rambox in the list — WhatsApp, Telegram, and MSN notifications go through Rambox, not native apps.": {
         "pl": "Używasz Rambox? Włącz Rambox na liście — powiadomienia z WhatsApp, Telegram i MSN idą przez Rambox, nie przez natywne apki.",
         "de": "Rambox nutzen? Aktiviere Rambox in der Liste — WhatsApp-, Telegram- und MSN-Mitteilungen laufen über Rambox, nicht native Apps.",

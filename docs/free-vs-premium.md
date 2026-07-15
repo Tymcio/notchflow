@@ -64,6 +64,7 @@ Purchase: [notchflow.eu](https://notchflow.eu) (checkout via [Polar](https://pol
 | Incoming calls in notch | — | ✓ |
 | App notifications in notch | — | ✓ |
 | Hide message body (privacy) | — | ✓ |
+| Close system banner when shown in island | — | ✓ |
 
 ### System & integrations
 
@@ -77,6 +78,40 @@ Purchase: [notchflow.eu](https://notchflow.eu) (checkout via [Polar](https://pol
 | Hide island for selected apps | — | ✓ |
 | Hide island settings panel | — | ✓ |
 | Sparkle auto-updates | Official builds | Official builds |
+
+## Planned features (roadmap)
+
+Upcoming releases **v1.1 → v1.3** are documented in **[docs/roadmap.md](roadmap.md)**. Summary of **planned** tier assignment for new work (not yet shipped):
+
+### v1.1 — Looks better (all free)
+
+| Feature | Free | Premium |
+|---------|------|---------|
+| Album art colors (gradient from artwork) | ✓ | ✓ |
+| Spring animations (+ reduce motion) | ✓ | ✓ |
+| HUD redesign + keyboard backlight HUD | ✓ | ✓ |
+| Auto-hide island in fullscreen | ✓ | ✓ |
+| Screen capture privacy (hidden in screenshots/recordings) | ✓ | ✓ |
+
+### v1.2 — Trust and reach
+
+| Feature | Free | Premium |
+|---------|------|---------|
+| Localization (en, pl, de, it, es) | ✓ | ✓ | *Shipped v1.0.15+* |
+| Energy budget / performance transparency | ✓ | ✓ |
+| Battery / charging idle live activity | ✓ | ✓ |
+| License enforcement + trial (stable) | Free tier unchanged | Premium as today |
+
+### v1.3 — Convenience
+
+| Feature | Free | Premium |
+|---------|------|---------|
+| AirDrop from shelf | — | ✓ |
+| Bluetooth connect/disconnect + battery | ✓ | ✓ |
+| Caffeine (prevent sleep) toggle | ✓ | ✓ |
+| Audio output switch in media view | ✓ | ✓ |
+
+See [roadmap.md](roadmap.md) for scope, non-goals, and competitor rationale.
 
 ## Implementation reference
 
@@ -107,6 +142,7 @@ When changing tier limits or adding gated features:
 
 1. Update this file
 2. Update `README.md` feature table
-3. Update `website/index.html` pricing section
-4. Update `docs/raycast-integration.md` if API tiers change
-5. Run `Scripts/publish-to-github.sh` to sync the public repo
+3. Update `docs/roadmap.md` if a planned item ships or scope changes
+4. Update `website/index.html` pricing section
+5. Update `docs/raycast-integration.md` if API tiers change
+6. Run `Scripts/publish-to-github.sh` to sync the public repo

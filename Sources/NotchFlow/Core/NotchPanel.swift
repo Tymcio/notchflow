@@ -270,6 +270,9 @@ final class NotchPanelController: ObservableObject {
                 } else {
                     dismissImmediately()
                 }
+            } else {
+                // Already idle-visible: the wing width may differ per activity (notification peek).
+                repositionIfVisible(animated: false)
             }
         } else if isVisible {
             dismissImmediately()
@@ -376,7 +379,11 @@ final class NotchPanelController: ObservableObject {
         if panel == nil {
             panel = NotchPanel(rootView: makeIslandView())
             if let geometry = displayManager.geometry {
-                let frame = geometry.frame(isExpanded: isExpanded, isIdle: !isExpanded)
+                let frame = geometry.frame(
+                    isExpanded: isExpanded,
+                    isIdle: !isExpanded,
+                    idleRightWingWidth: appState.idleRightWingWidthOverride
+                )
                 panel?.setFrame(frame, animated: false)
             }
         }
@@ -485,7 +492,11 @@ final class NotchPanelController: ObservableObject {
 
     private func repositionIfVisible(animated: Bool) {
         guard isVisible, let geometry = displayManager.geometry, let panel else { return }
-        let frame = geometry.frame(isExpanded: isExpanded, isIdle: !isExpanded)
+        let frame = geometry.frame(
+            isExpanded: isExpanded,
+            isIdle: !isExpanded,
+            idleRightWingWidth: appState.idleRightWingWidthOverride
+        )
         panel.setFrame(frame, animated: animated)
         displayManager.activePanelFrame = frame
     }

@@ -65,6 +65,10 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(hideNotificationBody, forKey: Keys.hideNotificationBody) }
     }
 
+    var dismissSystemBanners: Bool {
+        didSet { UserDefaults.standard.set(dismissSystemBanners, forKey: Keys.dismissSystemBanners) }
+    }
+
     var isPremiumEnabled: Bool = false {
         didSet {
             guard oldValue != isPremiumEnabled else { return }
@@ -91,6 +95,7 @@ final class NotchSettings {
         static let appNotificationsEnabled = "appNotificationsEnabled"
         static let allowedNotificationBundleIDs = "allowedNotificationBundleIDs"
         static let hideNotificationBody = "hideNotificationBody"
+        static let dismissSystemBanners = "dismissSystemBanners"
     }
 
     private init() {
@@ -121,6 +126,7 @@ final class NotchSettings {
             defaults.stringArray(forKey: Keys.allowedNotificationBundleIDs) ?? []
         )
         hideNotificationBody = defaults.bool(forKey: Keys.hideNotificationBody)
+        dismissSystemBanners = defaults.bool(forKey: Keys.dismissSystemBanners)
     }
 
     private func scheduleDimensionPersist() {
