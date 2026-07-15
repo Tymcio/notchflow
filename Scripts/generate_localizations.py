@@ -212,6 +212,43 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "it": "Usi Rambox? Abilita Rambox nell'elenco — le notifiche di WhatsApp, Telegram e MSN passano da Rambox, non dalle app native.",
         "es": "¿Usas Rambox? Activa Rambox en la lista — las notificaciones de WhatsApp, Telegram y MSN van por Rambox, no por apps nativas.",
     },
+    "Installed Mac apps": {
+        "pl": "Zainstalowane apki Mac",
+        "de": "Installierte Mac-Apps",
+        "it": "App Mac installate",
+        "es": "Apps de Mac instaladas",
+    },
+    "Installed Mac app": {
+        "pl": "Natywna aplikacja Mac",
+        "de": "Native Mac-App",
+        "it": "App Mac nativa",
+        "es": "App nativa de Mac",
+    },
+    "Notifications from native apps installed on your Mac. Separate from the same service running inside Rambox.": {
+        "pl": "Powiadomienia z natywnych aplikacji zainstalowanych na Macu. Osobno od tej samej usługi w Ramboxie.",
+        "de": "Mitteilungen von nativ installierten Mac-Apps — getrennt von derselben Dienst in Rambox.",
+        "it": "Notifiche dalle app native installate sul Mac, separate dallo stesso servizio in Rambox.",
+        "es": "Notificaciones de apps nativas instaladas en el Mac, separadas del mismo servicio en Rambox.",
+    },
+    "Rambox": {"pl": "Rambox", "de": "Rambox", "it": "Rambox", "es": "Rambox"},
+    "Web app container": {
+        "pl": "Kontener aplikacji webowych",
+        "de": "Web-App-Container",
+        "it": "Contenitore app web",
+        "es": "Contenedor de apps web",
+    },
+    "Inside Rambox": {
+        "pl": "W Ramboxie",
+        "de": "In Rambox",
+        "it": "In Rambox",
+        "es": "En Rambox",
+    },
+    "Enable Rambox first, then pick which web apps inside it should appear in the notch. WhatsApp in Rambox and native WhatsApp are controlled separately.": {
+        "pl": "Najpierw włącz Rambox, potem wybierz webowe apki w notchu. WhatsApp w Ramboxie i natywny WhatsApp to osobne przełączniki.",
+        "de": "Aktiviere zuerst Rambox, dann wähle Web-Apps für die Notch. WhatsApp in Rambox und native WhatsApp sind getrennt.",
+        "it": "Abilita prima Rambox, poi scegli le app web nel notch. WhatsApp in Rambox e WhatsApp nativo sono separati.",
+        "es": "Activa Rambox primero, luego elige apps web en el notch. WhatsApp en Rambox y WhatsApp nativo son independientes.",
+    },
     "Permissions": {"pl": "Uprawnienia", "de": "Berechtigungen", "it": "Permessi", "es": "Permisos"},
     "Accessibility is enabled — NotchFlow can read system notification banners.": {
         "pl": "Dostępność jest włączona — NotchFlow może odczytywać bannery powiadomień systemowych.",

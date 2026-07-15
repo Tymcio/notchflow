@@ -136,7 +136,9 @@ final class AppState {
 
         callManager.isEnabled = callsEnabled
         notificationHub.isEnabled = notificationsEnabled
-        notificationHub.allowedBundleIDs = Set(settings.allowedNotificationBundleIDs)
+        notificationHub.allowedNativeBundleIDs = Set(settings.allowedNativeNotificationBundleIDs)
+        notificationHub.allowedRamboxAggregatorBundleIDs = Set(settings.allowedRamboxAggregatorBundleIDs)
+        notificationHub.allowedRamboxServiceBundleIDs = Set(settings.allowedRamboxServiceBundleIDs)
         notificationHub.hideMessageBody = settings.hideNotificationBody
 
         notificationCenterObserver.setEnabled(callsEnabled || notificationsEnabled)

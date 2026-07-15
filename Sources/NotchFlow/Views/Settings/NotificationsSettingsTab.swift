@@ -6,6 +6,10 @@ struct NotificationsSettingsTab: View {
     let isPremium: Bool
     @ObservedObject var menuBarLayoutManager: MenuBarLayoutManager
 
+    private var ramboxEnabled: Bool {
+        !settings.allowedRamboxAggregatorBundleIDs.isEmpty
+    }
+
     var body: some View {
         SettingsFormContent {
             Section {
@@ -43,22 +47,14 @@ struct NotificationsSettingsTab: View {
             } header: {
                 Text(loc("App notifications"))
             } footer: {
-                VStack(alignment: .leading, spacing: 6) {
-                    if settings.appNotificationsEnabled && isPremium {
-                        if settings.dismissSystemBanners {
-                            SettingsFooterCaption("The macOS banner in the corner is closed automatically once the notification appears in the notch.")
-                        }
-                        SettingsFooterCaption("Using Rambox? Enable Rambox in the list — WhatsApp, Telegram, and MSN notifications go through Rambox, not native apps.")
-                    }
+                if settings.appNotificationsEnabled && isPremium, settings.dismissSystemBanners {
+                    SettingsFooterCaption("The macOS banner in the corner is closed automatically once the notification appears in the notch.")
                 }
             }
 
             if settings.appNotificationsEnabled && isPremium {
-                Section {
-                    appPicker
-                } header: {
-                    Text(loc("Apps"))
-                }
+                nativeAppsSection
+                ramboxSection
             }
 
             Section {
@@ -88,30 +84,99 @@ struct NotificationsSettingsTab: View {
     }
 
     @ViewBuilder
-    private var appPicker: some View {
-        ForEach(NotificationHubManager.suggestedApps, id: \.bundleID) { app in
-            Toggle(isOn: binding(for: app.bundleID)) {
-                HStack(spacing: 8) {
-                    CatalogAppIcon(bundleID: app.bundleID)
-                    Text(app.name)
+    private var nativeAppsSection: some View {
+        Section {
+            ForEach(NotificationAppCatalog.installedNativeMessagingApps, id: \.bundleID) { app in
+                Toggle(isOn: nativeBinding(for: app.bundleID)) {
+                    appRow(app: app, subtitle: loc("Installed Mac app"))
                 }
+            }
+        } header: {
+            Text(loc("Installed Mac apps"))
+        } footer: {
+            SettingsFooterCaption("Notifications from native apps installed on your Mac. Separate from the same service running inside Rambox.")
+        }
+    }
+
+    @ViewBuilder
+    private var ramboxSection: some View {
+        if !NotificationAppCatalog.installedAggregators.isEmpty {
+            Section {
+                ForEach(NotificationAppCatalog.installedAggregators, id: \.bundleID) { aggregator in
+                    Toggle(isOn: ramboxAggregatorBinding(for: aggregator.bundleID)) {
+                        appRow(app: aggregator, subtitle: loc("Web app container"))
+                    }
+                }
+
+                if ramboxEnabled {
+                    ForEach(NotificationAppCatalog.messagingApps, id: \.bundleID) { service in
+                        Toggle(isOn: ramboxServiceBinding(for: service.bundleID)) {
+                            appRow(app: service, subtitle: loc("Inside Rambox"))
+                        }
+                    }
+                }
+            } header: {
+                Text(loc("Rambox"))
+            } footer: {
+                SettingsFooterCaption("Enable Rambox first, then pick which web apps inside it should appear in the notch. WhatsApp in Rambox and native WhatsApp are controlled separately.")
             }
         }
     }
 
-    private func binding(for bundleID: String) -> Binding<Bool> {
+    @ViewBuilder
+    private func appRow(app: NotificationAppCatalog.Entry, subtitle: String) -> some View {
+        HStack(spacing: 8) {
+            CatalogAppIcon(bundleID: app.bundleID)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(app.localizedName)
+                Text(subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func nativeBinding(for bundleID: String) -> Binding<Bool> {
         Binding(
-            get: { settings.allowedNotificationBundleIDs.contains(bundleID) },
+            get: { settings.allowedNativeNotificationBundleIDs.contains(bundleID) },
             set: { enabled in
-                if enabled {
-                    if !settings.allowedNotificationBundleIDs.contains(bundleID) {
-                        settings.allowedNotificationBundleIDs.append(bundleID)
-                    }
-                } else {
-                    settings.allowedNotificationBundleIDs.removeAll { $0 == bundleID }
-                }
-                AppController.appState?.applyNotificationSettings()
+                updateList(\.allowedNativeNotificationBundleIDs, bundleID: bundleID, enabled: enabled)
             }
         )
+    }
+
+    private func ramboxAggregatorBinding(for bundleID: String) -> Binding<Bool> {
+        Binding(
+            get: { settings.allowedRamboxAggregatorBundleIDs.contains(bundleID) },
+            set: { enabled in
+                updateList(\.allowedRamboxAggregatorBundleIDs, bundleID: bundleID, enabled: enabled)
+            }
+        )
+    }
+
+    private func ramboxServiceBinding(for bundleID: String) -> Binding<Bool> {
+        Binding(
+            get: { settings.allowedRamboxServiceBundleIDs.contains(bundleID) },
+            set: { enabled in
+                updateList(\.allowedRamboxServiceBundleIDs, bundleID: bundleID, enabled: enabled)
+            }
+        )
+    }
+
+    private func updateList(
+        _ keyPath: ReferenceWritableKeyPath<NotchSettings, [String]>,
+        bundleID: String,
+        enabled: Bool
+    ) {
+        var list = settings[keyPath: keyPath]
+        if enabled {
+            if !list.contains(bundleID) {
+                list.append(bundleID)
+            }
+        } else {
+            list.removeAll { $0 == bundleID }
+        }
+        settings[keyPath: keyPath] = list
+        AppController.appState?.applyNotificationSettings()
     }
 }

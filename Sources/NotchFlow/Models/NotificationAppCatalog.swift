@@ -112,6 +112,20 @@ enum NotificationAppCatalog {
         allEntries.map { ($0.localizedName, $0.bundleID) }
     }
 
+    static var installedAggregators: [Entry] {
+        aggregators.filter { isInstalled($0.bundleID) }
+    }
+
+    static var installedNativeMessagingApps: [Entry] {
+        messagingApps.filter { isInstalled($0.bundleID) }
+    }
+
+    static func isInstalled(_ bundleID: String) -> Bool {
+        bundleIDCandidates(for: bundleID).contains { candidate in
+            NSWorkspace.shared.urlForApplication(withBundleIdentifier: candidate) != nil
+        }
+    }
+
     static var messagingBundleIDs: Set<String> {
         Set(messagingApps.map(\.bundleID))
     }
@@ -135,6 +149,36 @@ enum NotificationAppCatalog {
         aggregators.contains { matches(bundleID: bundleID, entry: $0) }
     }
 
+    static func isMessagingApp(_ bundleID: String) -> Bool {
+        messagingApps.contains { matches(bundleID: bundleID, entry: $0) }
+    }
+
+    /// True when a banner text line is exactly a catalog app name (icon label), not a message sender.
+    static func isExactAppName(_ text: String) -> Bool {
+        let lower = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !lower.isEmpty else { return false }
+        return allEntries.contains { entry in
+            entry.name.lowercased() == lower || entry.localizedName.lowercased() == lower
+        }
+    }
+
+    /// Matches messaging app from icon description (e.g. „Signal”) or keyword in banner text.
+    static func matchMessagingApp(in texts: [String]) -> Entry? {
+        for text in texts {
+            let lower = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !lower.isEmpty else { continue }
+            for app in messagingApps {
+                if app.name.lowercased() == lower || app.localizedName.lowercased() == lower {
+                    return app
+                }
+            }
+        }
+        let haystack = texts.joined(separator: " ").lowercased()
+        return messagingApps.first { app in
+            app.keywords.contains { haystack.contains($0) }
+        }
+    }
+
     struct Resolution {
         let delivering: String
         let service: String
@@ -147,10 +191,14 @@ enum NotificationAppCatalog {
         let haystack = texts.joined(separator: " ").lowercased()
 
         var delivering = "unknown.app"
+        var service = "unknown.app"
         var isForeignTrustedApp = false
         if let deliveringHint {
             if let entry = entry(forAnyBundleID: deliveringHint) {
                 delivering = entry.bundleID
+                if messagingApps.contains(where: { $0.bundleID == entry.bundleID }) {
+                    service = entry.bundleID
+                }
             } else if deliveringHint.lowercased().contains("rambox") {
                 delivering = aggregators[0].bundleID
             } else {
@@ -191,17 +239,24 @@ enum NotificationAppCatalog {
 
         // Serwis (WhatsApp, Messenger…) zgaduj z tekstu tylko dla agregatorów i nieznanych nadawców —
         // baner z Cursora wspominający „telegram” nie jest wiadomością z Telegrama.
-        var service = "unknown.app"
-        if !isForeignTrustedApp {
-            for app in messagingApps where app.keywords.contains(where: { haystack.contains($0) }) {
-                service = app.bundleID
-                break
+        if !isForeignTrustedApp, service == "unknown.app" {
+            if let matched = matchMessagingApp(in: texts) {
+                service = matched.bundleID
+            } else {
+                for app in messagingApps where app.keywords.contains(where: { haystack.contains($0) }) {
+                    service = app.bundleID
+                    break
+                }
             }
         }
 
-        // Natywna apka bez agregatora — delivering = service
+        // Ikona / tytuł banera mówi „Signal”, ale AX nie podał bundle ID.
         if delivering == "unknown.app", service != "unknown.app" {
             delivering = service
+        } else if delivering != "unknown.app",
+                  service == "unknown.app",
+                  isMessagingApp(delivering) {
+            service = delivering
         }
 
         let displayName: String

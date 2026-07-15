@@ -2,6 +2,24 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.21] - 2026-07-15
+
+### Added
+
+- Notification settings split into **Installed Mac apps** and **Rambox → web apps inside Rambox** (separate toggles for native Telegram vs Telegram in Rambox)
+- Settings show only installed native apps; Rambox services listed under the Rambox section with clear subtitles
+
+### Changed
+
+- Notification allowlist uses three independent lists (native, Rambox aggregator, Rambox services) instead of one flat picker
+- Clicking a Rambox-delivered notification opens Rambox, not the native app
+
+### Fixed
+
+- Signal and other native messaging apps detected from banner icon label when AX omits the bundle ID
+- Rambox web-app notifications pass when only the messaging service is enabled (Rambox toggle not strictly required)
+- Legacy notification settings migrated automatically into the new split lists
+
 ## [1.0.20] - 2026-07-15
 
 ### Added

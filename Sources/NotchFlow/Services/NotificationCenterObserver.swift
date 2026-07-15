@@ -285,7 +285,10 @@ final class NotificationCenterObserver {
         let resolved = NotificationAppCatalog.resolve(from: texts, deliveringHint: deliveringBundleHint)
         let contentTexts = texts.filter { text in
             let lower = text.lowercased()
-            return !lower.contains("rambox") && lower != "notification center"
+            if lower.contains("rambox") || lower == "notification center" { return false }
+            // Etykieta ikony apki (np. „Signal”) — nie traktuj jako nadawcy wiadomości.
+            if NotificationAppCatalog.isExactAppName(text) { return false }
+            return true
         }
         let title = contentTexts.first ?? resolved.displayName
         let body = contentTexts.dropFirst().joined(separator: " · ")
@@ -299,7 +302,10 @@ final class NotificationCenterObserver {
         let answerButton = buttons.first { isAnswerButton($0) }
         let declineButton = buttons.first { isDeclineButton($0) }
 
-        guard isCall || !body.isEmpty || contentTexts.count >= 2 else { return nil }
+        let isKnownMessaging = NotificationAppCatalog.isMessagingApp(resolved.delivering)
+            || NotificationAppCatalog.isMessagingApp(resolved.service)
+        guard isCall || !body.isEmpty || contentTexts.count >= 2
+            || (isKnownMessaging && !title.isEmpty) else { return nil }
 
         return ParsedNotificationBanner(
             deliveringBundleID: resolved.delivering,
