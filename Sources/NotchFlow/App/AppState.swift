@@ -95,6 +95,16 @@ final class AppState {
         activeLiveActivity != nil
     }
 
+    /// Agent peeks widen the left wing so names like "Cursor" stay clear of the notch.
+    var idleLeftWingWidthOverride: CGFloat? {
+        switch activeLiveActivity {
+        case .agentSession:
+            return IdleAgentMetrics.preferredLeftWingWidth
+        default:
+            return nil
+        }
+    }
+
     /// Active-call peeks widen the right wing so content is readable.
     var idleRightWingWidthOverride: CGFloat? {
         switch activeLiveActivity {
@@ -363,6 +373,11 @@ final class AppState {
             guard let self else { return }
             self.agentLiveActivityRevision += 1
             self.notifyLiveActivityChange()
+        }
+
+        // Vibe Island–style for Cursor: when consent appears, jump to the agent window.
+        agentSessionManager.onNeedsAttention = { [weak self] session in
+            self?.agentSessionManager.jumpIfNeeded(for: session)
         }
 
         notificationHub.onStateChange = { [weak self] in

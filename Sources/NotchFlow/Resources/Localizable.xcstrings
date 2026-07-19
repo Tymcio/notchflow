@@ -6745,12 +6745,12 @@
         }
       }
     },
-    "Allow / Deny in the notch only for real consent prompts (Claude Code). Cursor keeps its own Ask/Allow UI — NotchFlow does not approve every tool call.": {
+    "Claude Code: Allow / Deny in the notch. Cursor: keeps its own Skip/Run — NotchFlow jumps to Cursor when a consent-like prompt appears (same idea as Vibe Island).": {
       "localizations": {
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allow / Deny w notchu tylko przy prawdziwych prośbach o zgodę (Claude Code). Cursor zostawia własne Ask/Allow — NotchFlow nie zatwierdza każdego tool calla."
+            "value": "Claude Code: Allow / Deny w notchu. Cursor: własne Skip/Run — NotchFlow skacze do Cursora przy prośbie o zgodę (jak Vibe Island)."
           }
         }
       }

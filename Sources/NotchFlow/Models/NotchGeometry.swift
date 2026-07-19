@@ -65,18 +65,30 @@ struct NotchGeometry: Equatable {
         hasPhysicalNotch ? NotchFlowConstants.idleWingProtrusion : idleLeftWingWidth
     }
 
+    func resolvedIdleLeftWingWidth(override: CGFloat?) -> CGFloat {
+        let base = idleLeftSlotWidth
+        guard base > 0, let override else { return base }
+        return max(base, override)
+    }
+
     func idleLeftSlotFrameWidth(
-        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap
+        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap,
+        leftWingWidth: CGFloat? = nil
     ) -> CGFloat {
-        guard idleLeftSlotWidth > 0 else { return 0 }
-        return idleLeftSlotWidth + innerOverlap
+        let wing = resolvedIdleLeftWingWidth(override: leftWingWidth)
+        guard wing > 0 else { return 0 }
+        return wing + innerOverlap
     }
 
     func idleCenterClearWidth(
-        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap
+        innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap,
+        leftWingWidth: CGFloat? = nil,
+        rightWingWidth: CGFloat? = nil
     ) -> CGFloat {
-        let leftOverlap = idleLeftSlotWidth > 0 ? innerOverlap : 0
-        let rightOverlap = idleRightWingWidth > 0 ? innerOverlap : 0
+        let left = resolvedIdleLeftWingWidth(override: leftWingWidth)
+        let right = resolvedIdleRightWingWidth(override: rightWingWidth)
+        let leftOverlap = left > 0 ? innerOverlap : 0
+        let rightOverlap = right > 0 ? innerOverlap : 0
         return max(0, physicalNotchCutoutWidth - leftOverlap - rightOverlap)
     }
 
@@ -97,19 +109,25 @@ struct NotchGeometry: Equatable {
 
     func idleWingLayout(
         innerOverlap: CGFloat = NotchFlowConstants.idleWingInnerOverlap,
+        leftWingWidth: CGFloat? = nil,
         rightWingWidth: CGFloat? = nil
     ) -> IdleWingLayout {
+        let resolvedLeftWing = resolvedIdleLeftWingWidth(override: leftWingWidth)
         let resolvedRightWing = resolvedIdleRightWingWidth(override: rightWingWidth)
-        let leftSlotWidth = idleLeftSlotFrameWidth(innerOverlap: innerOverlap)
-        let centerClearWidth = idleCenterClearWidth(innerOverlap: innerOverlap)
+        let leftSlotWidth = idleLeftSlotFrameWidth(innerOverlap: innerOverlap, leftWingWidth: leftWingWidth)
+        let centerClearWidth = idleCenterClearWidth(
+            innerOverlap: innerOverlap,
+            leftWingWidth: leftWingWidth,
+            rightWingWidth: rightWingWidth
+        )
         let rightSlotWidth = idleRightSlotFrameWidth(innerOverlap: innerOverlap, rightWingWidth: rightWingWidth)
         return IdleWingLayout(
-            visibleLeftWidth: idleLeftWingWidth,
+            visibleLeftWidth: resolvedLeftWing,
             visibleRightWidth: resolvedRightWing,
             leftSlotWidth: leftSlotWidth,
             centerClearWidth: centerClearWidth,
             rightSlotWidth: rightSlotWidth,
-            panelWidth: idleSize.width - idleRightWingWidth + resolvedRightWing,
+            panelWidth: idleSize.width - idleLeftSlotWidth - idleRightWingWidth + resolvedLeftWing + resolvedRightWing,
             panelHeight: idleSize.height
         )
     }
@@ -117,6 +135,7 @@ struct NotchGeometry: Equatable {
     func frame(
         isExpanded: Bool,
         isIdle: Bool = false,
+        idleLeftWingWidth leftWingOverride: CGFloat? = nil,
         idleRightWingWidth rightWingOverride: CGFloat? = nil,
         idleBannerWidth bannerWidthOverride: CGFloat? = nil
     ) -> CGRect {
@@ -135,9 +154,10 @@ struct NotchGeometry: Equatable {
                 )
             )
         } else if isIdle {
+            let resolvedLeftWing = resolvedIdleLeftWingWidth(override: leftWingOverride)
             let resolvedRightWing = resolvedIdleRightWingWidth(override: rightWingOverride)
             size = CGSize(
-                width: idleSize.width - idleRightWingWidth + resolvedRightWing,
+                width: idleSize.width - idleLeftSlotWidth - idleRightWingWidth + resolvedLeftWing + resolvedRightWing,
                 height: idleSize.height
             )
         } else {
@@ -160,8 +180,9 @@ struct NotchGeometry: Equatable {
             }
         } else if isIdle, let notchLeftX {
             // Keep the notch cutout at a fixed screen position; only toggle wing visibility.
+            let resolvedLeftWing = resolvedIdleLeftWingWidth(override: leftWingOverride)
             y = screenTopY - size.height
-            x = notchLeftX - idleLeftSlotWidth
+            x = notchLeftX - resolvedLeftWing
         } else {
             y = screenTopY - size.height
             x = screenMidX - size.width / 2

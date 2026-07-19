@@ -56,7 +56,10 @@ struct NotchIslandView: View {
         if let bannerWidth = appState.idleDropBannerWidth {
             return bannerWidth
         }
-        return geometry.idleWingLayout(rightWingWidth: appState.idleRightWingWidthOverride).panelWidth
+        return geometry.idleWingLayout(
+            leftWingWidth: appState.idleLeftWingWidthOverride,
+            rightWingWidth: appState.idleRightWingWidthOverride
+        ).panelWidth
     }
 
     private var idlePanelHeight: CGFloat? {
@@ -93,7 +96,10 @@ struct NotchIslandView: View {
             )
             .frame(width: bannerWidth, height: bannerHeight, alignment: .top)
         } else {
-            let wingLayout = geometry.idleWingLayout(rightWingWidth: appState.idleRightWingWidthOverride)
+            let wingLayout = geometry.idleWingLayout(
+                leftWingWidth: appState.idleLeftWingWidthOverride,
+                rightWingWidth: appState.idleRightWingWidthOverride
+            )
             IdleLiveActivityView(
                 activity: activity,
                 mediaState: appState.mediaState,

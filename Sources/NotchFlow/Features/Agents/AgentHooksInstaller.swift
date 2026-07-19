@@ -139,18 +139,20 @@ enum AgentHooksInstaller {
         }
 
         var hooks = root["hooks"] as? [String: Any] ?? [:]
-        // Monitor-only for Cursor — never block beforeShellExecution/preToolUse
-        // (Cursor then hangs with no in-app permission UI while NotchFlow waits).
+        // Cursor: observe + jump-on-attention. beforeShell/MCP never wait for NotchFlow
+        // Allow/Deny (Cursor keeps its own Skip/Run UI — same model as Vibe Island).
         let events = [
             "sessionStart",
             "sessionEnd",
             "stop",
+            "beforeShellExecution",
+            "beforeMCPExecution",
             "afterShellExecution",
             "postToolUse",
             "afterFileEdit",
         ]
-        // Remove any previously installed blocking hooks from older NotchFlow versions.
-        for stale in ["beforeShellExecution", "preToolUse", "beforeMCPExecution"] {
+        // Scrub old preToolUse blockers that used to hang Cursor.
+        for stale in ["preToolUse"] {
             if let scrubbed = scrubNotchFlowHooks(from: hooks[stale]) as? [Any], scrubbed.isEmpty {
                 hooks.removeValue(forKey: stale)
             } else if let scrubbed = scrubNotchFlowHooks(from: hooks[stale]) {

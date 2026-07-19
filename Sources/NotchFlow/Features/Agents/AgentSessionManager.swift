@@ -4,16 +4,21 @@ import Foundation
 @MainActor
 final class AgentSessionManager {
     var onStateChange: (() -> Void)?
+    /// Fired when a session newly needs the user (notch approval or jump-to-agent).
+    var onNeedsAttention: ((AgentSession) -> Void)?
 
     private(set) var sessions: [AgentSession] = []
     private var permissionDecisions: [String: AgentPermissionDecision] = [:]
     private var questionAnswers: [String: String] = [:]
     private var finishClearTasks: [String: Task<Void, Never>] = [:]
     private var staleWatchdogTask: Task<Void, Never>?
+    private var lastAutoJumpSessionID: String?
 
     /// After this quiet period, a "running" session is treated as finished.
     /// Covers Cursor `stop` payloads that omit conversation_id.
-    private let staleRunningInterval: TimeInterval = 45
+    private let staleRunningInterval: TimeInterval = 20
+    /// Placeholder "Working…" rows (after jump-only attention) go away faster.
+    private let stalePlaceholderInterval: TimeInterval = 8
 
     init() {
         startStaleWatchdog()
@@ -90,6 +95,8 @@ final class AgentSessionManager {
 
         cancelFinishClear(for: sessionID)
 
+        let previousNeedsAttention = sessions.first(where: { $0.id == sessionID })?.needsAttention ?? false
+
         var session = sessions.first(where: { $0.id == sessionID }) ?? AgentSession(
             id: sessionID,
             agent: agent,
@@ -127,8 +134,16 @@ final class AgentSessionManager {
             session.phase = .running
             session.permission = nil
             session.question = nil
+        case "attention", "needs.input", "needs_input":
+            // Cursor-style: consent stays in the agent UI — notch pulses and we jump.
+            session.phase = .waitingPermission
+            session.permission = nil
+            session.question = nil
+            if session.detail.isEmpty {
+                session.detail = loc("Needs approval")
+            }
         case "permission", "permission.request":
-            // Real consent prompts only (e.g. Claude PermissionRequest). Never from routine Cursor tools.
+            // Real consent prompts only (e.g. Claude PermissionRequest).
             let permissionID = stringValue(payload["permissionId"] ?? payload["permission_id"]) ?? UUID().uuidString
             let toolName = stringValue(payload["toolName"] ?? payload["tool_name"]) ?? "Tool"
             let summary = stringValue(payload["summary"])
@@ -162,6 +177,13 @@ final class AgentSessionManager {
         }
 
         upsert(session)
+        if session.needsAttention {
+            if !previousNeedsAttention {
+                onNeedsAttention?(session)
+            }
+        } else if lastAutoJumpSessionID == session.id {
+            lastAutoJumpSessionID = nil
+        }
     }
 
     func decidePermission(id: String, decision: AgentPermissionDecision) {
@@ -211,19 +233,86 @@ final class AgentSessionManager {
     }
 
     func jump(to session: AgentSession) {
+        // Prefer bringing an already-running agent/IDE forward.
         let candidates = ([session.terminalBundleID].compactMap { $0 } + session.agent.preferredBundleIDs)
+        var didActivate = false
         for bundleID in candidates {
             let apps = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
             if let app = apps.first {
                 app.activate()
-                return
+                didActivate = true
+                break
             }
         }
-        // Fall back to opening Cursor / Terminal by bundle if installed.
-        for bundleID in session.agent.preferredBundleIDs {
-            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-                NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
-                return
+        if !didActivate {
+            // Cursor: reopen workspace when we know the cwd.
+            if session.agent == .cursor, let cwd = session.cwd, !cwd.isEmpty {
+                let url = URL(fileURLWithPath: cwd, isDirectory: true)
+                let config = NSWorkspace.OpenConfiguration()
+                if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.todesktop.230313mzl4w4u92")
+                    ?? NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.cursorapp.Cursor") {
+                    NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: config)
+                    didActivate = true
+                }
+            }
+        }
+        if !didActivate {
+            // Fall back to opening Cursor / Terminal by bundle if installed.
+            for bundleID in session.agent.preferredBundleIDs {
+                if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+                    NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+                    break
+                }
+            }
+        }
+        // After jump, jump-only attention is informational — clear soon so it doesn't stick.
+        if session.needsAttention, !session.showsNotchApproval {
+            scheduleJumpOnlyAttentionClear(id: session.id)
+        }
+    }
+
+    /// Jump only when the agent app is not already frontmost (avoids focus thrash).
+    func jumpIfNeeded(for session: AgentSession) {
+        if lastAutoJumpSessionID == session.id, session.needsAttention {
+            return
+        }
+        let frontID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let targets = Set(([session.terminalBundleID].compactMap { $0 } + session.agent.preferredBundleIDs))
+        if let frontID, targets.contains(frontID) {
+            // Already in Cursor — still soften jump-only attention so it doesn't stick forever.
+            if !session.showsNotchApproval {
+                scheduleJumpOnlyAttentionClear(id: session.id)
+            }
+            return
+        }
+        lastAutoJumpSessionID = session.id
+        jump(to: session)
+    }
+
+    /// Jump-only Cursor prompts: after jump, dismiss the row — don't leave a fake "Working…".
+    /// Real follow-up tool/stop events will create a fresh running session if needed.
+    private func scheduleJumpOnlyAttentionClear(id: String) {
+        cancelFinishClear(for: id)
+        finishClearTasks[id] = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard let self,
+                      let index = self.sessions.firstIndex(where: { $0.id == id }) else { return }
+                let session = self.sessions[index]
+                guard session.phase == .waitingPermission,
+                      session.permission == nil,
+                      session.question == nil else { return }
+                if self.lastAutoJumpSessionID == id {
+                    self.lastAutoJumpSessionID = nil
+                }
+                self.finishClearTasks[id] = nil
+                self.finishSessions(
+                    agent: session.agent,
+                    sessionID: session.id,
+                    finishAll: false,
+                    detail: loc("Done")
+                )
             }
         }
     }
@@ -307,9 +396,23 @@ final class AgentSessionManager {
     }
 
     private func finishStaleRunningSessions() {
-        let cutoff = Date().addingTimeInterval(-staleRunningInterval)
+        let now = Date()
+        let runningCutoff = now.addingTimeInterval(-staleRunningInterval)
+        let placeholderCutoff = now.addingTimeInterval(-stalePlaceholderInterval)
+        let placeholderDetails = Set([loc("Working…"), "Working…", "Pracuje…"])
+
         let stale = sessions.filter { session in
-            session.phase == .running && session.updatedAt < cutoff
+            if session.phase == .waitingPermission,
+               session.permission == nil,
+               session.question == nil,
+               session.updatedAt < placeholderCutoff {
+                return true
+            }
+            guard session.phase == .running else { return false }
+            if placeholderDetails.contains(session.detail), session.updatedAt < placeholderCutoff {
+                return true
+            }
+            return session.updatedAt < runningCutoff
         }
         for session in stale {
             finishSessions(

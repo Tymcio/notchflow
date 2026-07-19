@@ -438,6 +438,7 @@ final class NotchPanelController: ObservableObject {
                 let frame = geometry.frame(
                     isExpanded: isExpanded,
                     isIdle: !isExpanded,
+                    idleLeftWingWidth: appState.idleLeftWingWidthOverride,
                     idleRightWingWidth: appState.idleRightWingWidthOverride,
                     idleBannerWidth: appState.idleDropBannerWidth
                 )
@@ -559,6 +560,7 @@ final class NotchPanelController: ObservableObject {
         let frame = geometry.frame(
             isExpanded: isExpanded,
             isIdle: !isExpanded,
+            idleLeftWingWidth: appState.idleLeftWingWidthOverride,
             idleRightWingWidth: appState.idleRightWingWidthOverride,
             idleBannerWidth: appState.idleDropBannerWidth
         )

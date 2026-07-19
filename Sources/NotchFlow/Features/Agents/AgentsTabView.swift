@@ -97,12 +97,12 @@ struct AgentsTabView: View {
 
     @ViewBuilder
     private func sessionRow(_ session: AgentSession) -> some View {
-        let needsPermission = session.permission != nil
+        let needsAttention = session.needsAttention
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: session.agent.systemImage)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(needsPermission ? Color.orange : IslandStyle.primaryText)
+                    .foregroundStyle(needsAttention ? Color.orange : IslandStyle.primaryText)
                     .frame(width: 20, height: 20)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -112,7 +112,7 @@ struct AgentsTabView: View {
                         .lineLimit(1)
                     Text(phaseLabel(session.phase))
                         .font(.caption2.weight(.medium))
-                        .foregroundStyle(needsPermission ? Color.orange : IslandStyle.secondaryText)
+                        .foregroundStyle(needsAttention ? Color.orange : IslandStyle.secondaryText)
                 }
 
                 Spacer(minLength: 0)
@@ -179,11 +179,11 @@ struct AgentsTabView: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(needsPermission ? 0.09 : 0.06))
+                .fill(Color.white.opacity(needsAttention ? 0.09 : 0.06))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(needsPermission ? Color.orange.opacity(0.35) : Color.clear, lineWidth: 1)
+                .stroke(needsAttention ? Color.orange.opacity(0.35) : Color.clear, lineWidth: 1)
         )
     }
 

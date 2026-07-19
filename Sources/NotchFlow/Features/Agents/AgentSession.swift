@@ -39,6 +39,15 @@ struct AgentSession: Equatable, Identifiable, Sendable {
     var permission: AgentPermissionRequest?
     var question: AgentQuestionRequest?
 
+    /// Claude-style consent answered in the notch (Allow/Deny or question chips).
+    var showsNotchApproval: Bool {
+        permission != nil || question != nil
+    }
+
+    var needsAttention: Bool {
+        phase == .waitingPermission || phase == .waitingQuestion
+    }
+
     var activity: AgentSessionActivity {
         AgentSessionActivity(
             id: id,
@@ -47,7 +56,8 @@ struct AgentSession: Equatable, Identifiable, Sendable {
             detail: detail,
             phase: phase,
             updatedAt: updatedAt,
-            needsAttention: phase == .waitingPermission || phase == .waitingQuestion
+            needsAttention: needsAttention,
+            showsNotchApproval: showsNotchApproval
         )
     }
 }
@@ -60,6 +70,8 @@ struct AgentSessionActivity: Equatable, Sendable {
     let phase: AgentSessionPhase
     let updatedAt: Date
     let needsAttention: Bool
+    /// When false, approval happens in the agent app — notch only pulses + jump.
+    let showsNotchApproval: Bool
 }
 
 enum AgentPermissionDecision: String, Codable, Sendable {

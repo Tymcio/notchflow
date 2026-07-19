@@ -74,11 +74,33 @@ if isinstance(ti, dict):
 if not summary:
     summary = d.get("command") or d.get("prompt") or d.get("text") or ""
 
+# Cursor often keeps its own Skip/Run UI. Flag likely consent moments so NotchFlow can jump.
+# Only inspect a short head statement — long agent wrappers often embed "curl" and must not alert.
+cmd = str(d.get("command") or summary or "").lower()
+sandbox = d.get("sandbox")
+needles = (
+    "git push", "git commit", "git reset", "git rebase", "sudo ", "rm -",
+    "curl ", "wget ", "ssh ", "kubectl ", "npm publish", "pnpm publish",
+    "docker ", "chmod ", "chown ", "security ", "xcrun notary",
+)
+wants_attention = False
+if ev_l == "beforemcpexecution":
+    wants_attention = True
+elif ev_l == "beforeshellexecution":
+    if sandbox is False:
+        wants_attention = True
+    else:
+        head = cmd.strip().split("\n")[0]
+        # Ignore huge multi-line agent shell blobs (false positives on embedded curl/git).
+        if len(cmd) <= 280:
+            wants_attention = any(n in head for n in needles)
+
 print(json.dumps({
     "agent": str(agent),
     "event": str(event),
     "session": str(session),
     "finishAll": bool(finish_all),
+    "wantsAttention": bool(wants_attention),
     "tool": str(tool or ""),
     "cwd": str(cwd or ""),
     "summary": str(summary or ""),
@@ -90,6 +112,7 @@ AGENT="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(jso
 EVENT_NAME="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["event"])')"
 SESSION_ID="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("session") or "")')"
 FINISH_ALL="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print("1" if json.load(sys.stdin).get("finishAll") else "0")')"
+WANTS_ATTENTION="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print("1" if json.load(sys.stdin).get("wantsAttention") else "0")')"
 TOOL_NAME="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["tool"])')"
 CWD="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["cwd"])')"
 SUMMARY="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["summary"])')"
@@ -110,8 +133,12 @@ case "$EVENT_NAME" in
     fi
     ;;
   beforeShellExecution|beforeMCPExecution|preToolUse)
-    # Observe only for Cursor (and similar). Never wait for NotchFlow Allow/Deny.
-    NF_EVENT="tool"
+    # Cursor: never wait for NotchFlow. Jump-only attention for likely consent prompts.
+    if [[ "$AGENT" == "cursor" && "$WANTS_ATTENTION" == "1" ]]; then
+      NF_EVENT="attention"
+    else
+      NF_EVENT="tool"
+    fi
     if [[ -z "$TOOL_NAME" ]]; then
       case "$EVENT_NAME" in
         beforeShellExecution) TOOL_NAME="Shell" ;;
@@ -143,6 +170,12 @@ DETAIL="$SUMMARY"
 if [[ "$NF_EVENT" == "done" ]]; then
   DETAIL="Done"
   TOOL_NAME=""
+elif [[ "$NF_EVENT" == "attention" ]]; then
+  if [[ -n "$SUMMARY" ]]; then
+    DETAIL="$SUMMARY"
+  else
+    DETAIL="Needs approval"
+  fi
 elif [[ -n "$TOOL_NAME" && -n "$SUMMARY" ]]; then
   DETAIL="${TOOL_NAME}: ${SUMMARY}"
 elif [[ -n "$TOOL_NAME" ]]; then

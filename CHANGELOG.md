@@ -2,6 +2,17 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.32] - 2026-07-19
+
+### Added
+
+- Cursor consent-like prompts: auto-jump to Cursor (Vibe Island–style); notch shows jump control instead of Allow/Deny
+
+### Fixed
+
+- Agent left wing no longer clips names like “Cursor” under the notch
+- Finished / post-jump Cursor sessions no longer stick on “Working…”
+
 ## [1.0.31] - 2026-07-19
 
 ### Changed

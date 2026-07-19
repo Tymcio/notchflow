@@ -12,34 +12,40 @@ struct IdleAgentSessionView: View {
     @State private var pulse = false
 
     private var needsAttention: Bool { activity.needsAttention }
+    private var showsNotchApproval: Bool { activity.showsNotchApproval }
 
     var body: some View {
         IdleWingContainer(
             wingLayout: wingLayout,
             leading: {
-                // Left petal: icon + agent name only.
-                HStack(spacing: 4) {
+                // Keep label in the visible petal — slot includes notch overlap on the trailing edge.
+                HStack(spacing: 3) {
                     ZStack {
                         if needsAttention {
                             Circle()
                                 .fill(Color.orange.opacity(0.32))
-                                .frame(width: pulse ? 20 : 14, height: pulse ? 20 : 14)
+                                .frame(width: pulse ? 18 : 13, height: pulse ? 18 : 13)
                                 .animation(
                                     .easeInOut(duration: 0.7).repeatForever(autoreverses: true),
                                     value: pulse
                                 )
                         }
                         Image(systemName: activity.agent.systemImage)
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(needsAttention ? Color.orange : accent)
                     }
+                    .frame(width: 13, height: 13)
+
                     Text(activity.agent.compactDisplayName)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(IslandStyle.primaryText)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .minimumScaleFactor(0.7)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
-                .padding(.horizontal, 6)
+                .padding(.leading, 5)
+                .padding(.trailing, NotchFlowConstants.idleWingInnerOverlap)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture { onJump?() }
                 .onAppear { pulse = needsAttention }
@@ -50,7 +56,7 @@ struct IdleAgentSessionView: View {
             },
             trailing: {
                 Group {
-                    if needsAttention {
+                    if needsAttention, showsNotchApproval {
                         HStack(spacing: 4) {
                             agentButton(
                                 systemImage: "xmark",
@@ -68,6 +74,20 @@ struct IdleAgentSessionView: View {
                             )
                         }
                         .padding(.trailing, 8)
+                    } else if needsAttention {
+                        // Cursor-style: approve in the agent — offer an obvious jump control.
+                        Button {
+                            onJump?()
+                        } label: {
+                            Image(systemName: "arrow.up.forward.app")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Color.orange)
+                                .frame(width: 26, height: 26)
+                                .background(Circle().fill(Color.orange.opacity(0.18)))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.trailing, 10)
+                        .accessibilityLabel(loc("Jump to agent"))
                     } else {
                         AgentTypingIndicator(color: accent)
                             .padding(.trailing, 10)
@@ -133,7 +153,11 @@ private struct AgentTypingIndicator: View {
 }
 
 enum IdleAgentMetrics {
-    /// Right petal only widens for Allow/Deny; typing dots fit the default wing.
+    /// Room for icon + "Cursor" / "Claude" without sliding under the cutout.
+    @MainActor
+    static var preferredLeftWingWidth: CGFloat { 72 }
+
+    /// Right petal widens for Allow/Deny or the jump control.
     @MainActor
     static func preferredRightWingWidth(needsAttention: Bool) -> CGFloat? {
         guard needsAttention else { return nil }
