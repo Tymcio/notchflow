@@ -43,11 +43,8 @@ codesign --force --options runtime --timestamp \
   --sign "$DEVELOPER_ID_APPLICATION" \
   "$APP_PATH"
 
-echo "Creating DMG..."
-hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
-
-# Convenience filename for Sparkle updates via GitHub Releases "latest".
-cp -f "$DMG_PATH" "$ROOT_DIR/build/${APP_NAME}.dmg"
+echo "Creating drag-to-Applications DMG..."
+"$ROOT_DIR/Scripts/create_dmg.sh" "$APP_PATH" "$DMG_PATH"
 
 echo "Notarizing..."
 NOTARY_JSON="$(mktemp -t notchflow-notary.XXXXXX.json)"
