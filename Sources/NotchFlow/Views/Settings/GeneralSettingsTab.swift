@@ -34,6 +34,39 @@ struct GeneralSettingsTab: View {
             }
 
             Section {
+                HStack(spacing: 10) {
+                    Picker(loc("Alert sound"), selection: $settings.timerAlertSoundName) {
+                        Text(loc("None")).tag(TimerAlertSound.none)
+                        Section(loc("Ringtones")) {
+                            ForEach(TimerAlertSound.ringtoneOptions) { option in
+                                Text(option.title).tag(option.id)
+                            }
+                        }
+                        Section(loc("System sounds")) {
+                            ForEach(TimerAlertSound.systemOptions) { option in
+                                Text(option.title).tag(option.id)
+                            }
+                        }
+                    }
+                    .onChange(of: settings.timerAlertSoundName) { _, id in
+                        TimerAlertSound.play(id)
+                    }
+
+                    Button {
+                        TimerAlertSound.play(settings.timerAlertSoundName)
+                    } label: {
+                        Image(systemName: "speaker.wave.2.fill")
+                    }
+                    .help(loc("Preview"))
+                    .disabled(settings.timerAlertSoundName.isEmpty)
+                }
+            } header: {
+                Text(loc("Timer"))
+            } footer: {
+                SettingsFooterCaption("Same tones as the Clock app. Plays until you dismiss the finished timer.")
+            }
+
+            Section {
                 if !menuBarLayoutManager.isAccessibilityTrusted {
                     HStack {
                         Button(loc("Grant permission")) {

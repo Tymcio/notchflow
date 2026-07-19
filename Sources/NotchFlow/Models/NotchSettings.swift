@@ -57,19 +57,9 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(appNotificationsEnabled, forKey: Keys.appNotificationsEnabled) }
     }
 
-    /// Natywne apki zainstalowane na Macu (osobny Telegram od Telegrama w Ramboxie).
+    /// Official installed Mac apps allowed in the notification hub.
     var allowedNativeNotificationBundleIDs: [String] {
         didSet { UserDefaults.standard.set(allowedNativeNotificationBundleIDs, forKey: Keys.allowedNativeNotificationBundleIDs) }
-    }
-
-    /// Rambox / Rambox CE — kontener webowych komunikatorów.
-    var allowedRamboxAggregatorBundleIDs: [String] {
-        didSet { UserDefaults.standard.set(allowedRamboxAggregatorBundleIDs, forKey: Keys.allowedRamboxAggregatorBundleIDs) }
-    }
-
-    /// Komunikatory obsługiwane przez włączony Rambox (WhatsApp w Ramboxie ≠ natywny WhatsApp).
-    var allowedRamboxServiceBundleIDs: [String] {
-        didSet { UserDefaults.standard.set(allowedRamboxServiceBundleIDs, forKey: Keys.allowedRamboxServiceBundleIDs) }
     }
 
     var hideNotificationBody: Bool {
@@ -78,6 +68,11 @@ final class NotchSettings {
 
     var dismissSystemBanners: Bool {
         didSet { UserDefaults.standard.set(dismissSystemBanners, forKey: Keys.dismissSystemBanners) }
+    }
+
+    /// System sound name from `/System/Library/Sounds` (without extension). Empty = silent.
+    var timerAlertSoundName: String {
+        didSet { UserDefaults.standard.set(timerAlertSoundName, forKey: Keys.timerAlertSoundName) }
     }
 
     var isPremiumEnabled: Bool = false {
@@ -110,6 +105,8 @@ final class NotchSettings {
         static let allowedRamboxServiceBundleIDs = "allowedRamboxServiceBundleIDs"
         static let hideNotificationBody = "hideNotificationBody"
         static let dismissSystemBanners = "dismissSystemBanners"
+        static let timerAlertSoundName = "timerAlertSoundName"
+        static let ramboxAllowlistMigrated = "notificationAllowlistRamboxRemoved"
     }
 
     private init() {
@@ -136,27 +133,11 @@ final class NotchSettings {
         lyricsSharingEnabled = defaults.bool(forKey: Keys.lyricsSharingEnabled)
         callsInNotchEnabled = defaults.bool(forKey: Keys.callsInNotchEnabled)
         appNotificationsEnabled = defaults.bool(forKey: Keys.appNotificationsEnabled)
-        let legacyAllowed = Self.migratedAllowedNotificationBundleIDs(
-            defaults.stringArray(forKey: Keys.allowedNotificationBundleIDs) ?? []
-        )
-        if defaults.object(forKey: Keys.allowedNativeNotificationBundleIDs) != nil {
-            allowedNativeNotificationBundleIDs = Self.migratedAllowedNotificationBundleIDs(
-                defaults.stringArray(forKey: Keys.allowedNativeNotificationBundleIDs) ?? []
-            )
-            allowedRamboxAggregatorBundleIDs = Self.migratedAllowedNotificationBundleIDs(
-                defaults.stringArray(forKey: Keys.allowedRamboxAggregatorBundleIDs) ?? []
-            )
-            allowedRamboxServiceBundleIDs = Self.migratedAllowedNotificationBundleIDs(
-                defaults.stringArray(forKey: Keys.allowedRamboxServiceBundleIDs) ?? []
-            )
-        } else {
-            let split = Self.splitLegacyNotificationAllowlist(legacyAllowed)
-            allowedNativeNotificationBundleIDs = split.native
-            allowedRamboxAggregatorBundleIDs = split.aggregators
-            allowedRamboxServiceBundleIDs = split.ramboxServices
-        }
+        allowedNativeNotificationBundleIDs = Self.loadMigratedAllowlist(from: defaults)
         hideNotificationBody = defaults.bool(forKey: Keys.hideNotificationBody)
         dismissSystemBanners = defaults.bool(forKey: Keys.dismissSystemBanners)
+        let savedTimerSound = defaults.string(forKey: Keys.timerAlertSoundName) ?? TimerAlertSound.defaultID
+        timerAlertSoundName = TimerAlertSound.migratedID(savedTimerSound)
     }
 
     private func scheduleDimensionPersist() {
@@ -170,26 +151,37 @@ final class NotchSettings {
         }
     }
 
-    private static func migratedAllowedNotificationBundleIDs(_ ids: [String]) -> [String] {
+    private static func loadMigratedAllowlist(from defaults: UserDefaults) -> [String] {
+        var ids: [String] = []
+
+        if defaults.object(forKey: Keys.allowedNativeNotificationBundleIDs) != nil {
+            ids.append(contentsOf: defaults.stringArray(forKey: Keys.allowedNativeNotificationBundleIDs) ?? [])
+        } else if let legacy = defaults.stringArray(forKey: Keys.allowedNotificationBundleIDs) {
+            ids.append(contentsOf: legacy)
+        }
+
+        // One-time: fold previously enabled Rambox *native* service IDs into the single allowlist.
+        if !defaults.bool(forKey: Keys.ramboxAllowlistMigrated) {
+            let ramboxServices = defaults.stringArray(forKey: Keys.allowedRamboxServiceBundleIDs) ?? []
+            ids.append(contentsOf: ramboxServices)
+            defaults.set(true, forKey: Keys.ramboxAllowlistMigrated)
+            defaults.removeObject(forKey: Keys.allowedRamboxAggregatorBundleIDs)
+            defaults.removeObject(forKey: Keys.allowedRamboxServiceBundleIDs)
+        }
+
+        return migratedAllowedNotificationBundleIDs(ids)
+    }
+
+    nonisolated static func migratedAllowedNotificationBundleIDs(_ ids: [String]) -> [String] {
         var seen = Set<String>()
         var result: [String] = []
         for id in ids {
             let canonical = NotificationAppCatalog.canonicalBundleID(for: id)
+            guard NotificationAppCatalog.isSupportedNotificationApp(canonical) else { continue }
             guard seen.insert(canonical).inserted else { continue }
             result.append(canonical)
         }
         return result
-    }
-
-    private static func splitLegacyNotificationAllowlist(_ ids: [String]) -> (
-        native: [String],
-        aggregators: [String],
-        ramboxServices: [String]
-    ) {
-        let aggregators = ids.filter { NotificationAppCatalog.isAggregator($0) }
-        let messaging = ids.filter { NotificationAppCatalog.isMessagingApp($0) }
-        let ramboxServices = aggregators.isEmpty ? [] : messaging
-        return (messaging, aggregators, ramboxServices)
     }
 }
 

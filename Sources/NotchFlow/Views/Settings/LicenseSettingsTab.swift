@@ -42,38 +42,47 @@ struct LicenseSettingsTab: View {
                 Text(loc("License status"))
             }
 
-            Section {
-                TextField(loc("License key"), text: $licenseKey)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.body.monospaced())
+            if status.isPremium {
+                Section {
+                    Button(loc("Remove from this Mac"), role: .destructive, action: onDeactivate)
 
-                HStack(spacing: 10) {
+                    Button(loc("Release activation (Polar)"), action: onDeactivateInPolar)
+                        .buttonStyle(.bordered)
+
+                    if !licenseMessage.isEmpty {
+                        Text(licenseMessage)
+                            .font(.caption)
+                            .foregroundStyle(licenseMessageIsSuccess ? .green : .secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } header: {
+                    Text(loc("Manage license"))
+                }
+            } else {
+                Section {
+                    TextField(loc("License key"), text: $licenseKey)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.body.monospaced())
+
                     Button(loc("Activate license"), action: onActivate)
                         .buttonStyle(.borderedProminent)
                         .disabled(licenseKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                    Button(loc("Remove from this Mac"), role: .destructive, action: onDeactivate)
-                        .disabled(!status.isPremium && licenseKey.isEmpty)
+                    if !licenseMessage.isEmpty {
+                        Text(licenseMessage)
+                            .font(.caption)
+                            .foregroundStyle(licenseMessageIsSuccess ? .green : .secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } header: {
+                    Text(loc("License key"))
+                } footer: {
+                    SettingsFooterCaption("Paste the key from your purchase at notchflow.eu (e.g. NOTCHFLOW_… or UUID from Polar email).")
                 }
 
-                Button(loc("Release activation (Polar)"), action: onDeactivateInPolar)
-                    .buttonStyle(.bordered)
-                    .disabled(!status.isPremium)
-
-                if !licenseMessage.isEmpty {
-                    Text(licenseMessage)
-                        .font(.caption)
-                        .foregroundStyle(licenseMessageIsSuccess ? .green : .secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                Section {
+                    Link(loc("Buy Premium at notchflow.eu"), destination: NotchFlowConstants.websiteURL.appending(path: "pricing"))
                 }
-            } header: {
-                Text(loc("License key"))
-            } footer: {
-                SettingsFooterCaption("Paste the key from your purchase at notchflow.eu (e.g. NOTCHFLOW_… or UUID from Polar email).")
-            }
-
-            Section {
-                Link(loc("Buy Premium at notchflow.eu"), destination: NotchFlowConstants.websiteURL.appending(path: "pricing"))
             }
         }
     }

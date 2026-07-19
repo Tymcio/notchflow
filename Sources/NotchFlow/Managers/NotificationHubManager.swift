@@ -9,47 +9,54 @@ struct HubNotification: Identifiable, Equatable, Sendable {
     let sender: String
     let body: String
     let receivedAt: Date
+    let supportsQuickReply: Bool
 }
 
 @MainActor
 final class NotificationHubManager {
-    static let callBundleIDs: Set<String> = [
-        "com.apple.FaceTime",
-        "com.apple.mobilephone",
-        "com.apple.TelephonyUtilities"
-    ]
+    static let callBundleIDs: Set<String> = NotificationAppCatalog.callBundleIDs
 
     var onStateChange: (() -> Void)?
 
     private(set) var recentNotifications: [HubNotification] = []
     private(set) var peek: NotificationPeekActivity?
+    /// Banner retained for best-effort AX quick reply while the peek is visible.
+    private(set) var activeReplyBanner: ParsedNotificationBanner?
+    private(set) var supportsQuickReply = false
 
     var isEnabled = false
     var allowedNativeBundleIDs: Set<String> = []
-    var allowedRamboxAggregatorBundleIDs: Set<String> = []
-    var allowedRamboxServiceBundleIDs: Set<String> = []
     var hideMessageBody = false
-    private let peekDuration: TimeInterval = 4
+    private let peekDuration: TimeInterval = 8
 
     /// Returns true when the banner was accepted and shown in the notch.
     @discardableResult
     func handleBanner(_ banner: ParsedNotificationBanner) -> Bool {
         guard isEnabled else { return false }
-        guard !banner.isCall else { return false }
-        guard matchesAllowlist(banner) else { return false }
+        guard !banner.isCall, !banner.isLikelyCall else { return false }
+        guard !NotificationAppCatalog.looksLikeCallNotification(
+            title: banner.title,
+            body: banner.body,
+            iconLabels: banner.iconLabels
+        ) else { return false }
+        // Match allowlisted app first — privacy banners may have no readable preview.
+        guard let matchedBundleID = matchedAllowedApp(for: banner) else { return false }
 
-        let sender = banner.title
-        let body = hideMessageBody ? loc("New message") : banner.body
-        let openBundleID = preferredOpenBundleID(for: banner)
+        let appName = NotificationAppCatalog.name(for: matchedBundleID)
+        // Presence-only drip for every allowlisted app — no message body in the island.
+        let presenceBody = loc("Notification")
+        let isMail = NotificationAppCatalog.isEmailApp(matchedBundleID)
+        let canReply = banner.supportsQuickReply && !isMail
 
         let notification = HubNotification(
             id: UUID(),
-            appName: banner.appName,
-            appBundleID: openBundleID,
-            serviceBundleID: banner.serviceBundleID,
-            sender: sender,
-            body: body,
-            receivedAt: .now
+            appName: appName,
+            appBundleID: matchedBundleID,
+            serviceBundleID: matchedBundleID,
+            sender: appName,
+            body: presenceBody,
+            receivedAt: .now,
+            supportsQuickReply: canReply
         )
 
         recentNotifications.insert(notification, at: 0)
@@ -57,14 +64,19 @@ final class NotificationHubManager {
             recentNotifications = Array(recentNotifications.prefix(20))
         }
 
+        activeReplyBanner = canReply ? banner : nil
+        supportsQuickReply = canReply
+
         peek = NotificationPeekActivity(
             id: notification.id,
             appName: notification.appName,
-            appBundleID: openBundleID,
-            sender: notification.sender,
-            body: notification.body,
+            appBundleID: matchedBundleID,
+            openBundleID: matchedBundleID,
+            sender: appName,
+            body: presenceBody,
             receivedAt: notification.receivedAt,
-            expiresAt: Date().addingTimeInterval(peekDuration)
+            expiresAt: Date().addingTimeInterval(peekDuration),
+            supportsQuickReply: false
         )
 
         onStateChange?()
@@ -73,8 +85,7 @@ final class NotificationHubManager {
             try? await Task.sleep(for: .seconds(peekDuration))
             await MainActor.run {
                 if self.peek?.id == notification.id {
-                    self.peek = nil
-                    self.onStateChange?()
+                    self.clearPeek()
                 }
             }
         }
@@ -85,101 +96,162 @@ final class NotificationHubManager {
     func dismiss(_ notification: HubNotification) {
         recentNotifications.removeAll { $0.id == notification.id }
         if peek?.id == notification.id {
-            peek = nil
+            clearPeek()
+        } else {
+            onStateChange?()
         }
-        onStateChange?()
     }
 
     func openApp(for notification: HubNotification) {
         AppIconProvider.openApplication(bundleID: notification.appBundleID)
     }
 
-    private var hasAnyAllowlist: Bool {
-        !allowedNativeBundleIDs.isEmpty
-            || (!allowedRamboxAggregatorBundleIDs.isEmpty && !allowedRamboxServiceBundleIDs.isEmpty)
+    func openActivePeekApp() {
+        guard let peek else { return }
+        AppIconProvider.openApplication(bundleID: peek.openBundleID)
+        clearPeek()
     }
 
-    private func matchesAllowlist(_ banner: ParsedNotificationBanner) -> Bool {
-        guard hasAnyAllowlist else { return false }
-
-        let delivering = NotificationAppCatalog.canonicalBundleID(for: banner.deliveringBundleID)
-        let bannerTexts = [banner.title, banner.body]
-
-        if let foreign = NotificationAppCatalog.matchRunningApp(in: bannerTexts),
-           foreign != delivering {
-            return allowedNativeBundleIDs.contains(foreign)
-        }
-
-        if NotificationAppCatalog.isAggregator(delivering) {
-            return matchesRamboxAllowlist(banner, delivering: delivering)
-        }
-
-        if allowedNativeBundleIDs.contains(delivering) {
-            return true
-        }
-
-        if banner.serviceBundleID != "unknown.app" {
-            let service = NotificationAppCatalog.canonicalBundleID(for: banner.serviceBundleID)
-            if allowedNativeBundleIDs.contains(service) {
-                return true
-            }
-        }
-
-        if banner.hasTrustedSource {
+    /// Attempts AX quick reply on the retained banner. Returns false when unavailable.
+    @discardableResult
+    func replyToActivePeek(text: String, using observer: NotificationCenterObserver) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, supportsQuickReply, let banner = activeReplyBanner else {
             return false
         }
-
-        let haystack = "\(banner.title) \(banner.body)".lowercased()
-        for bundleID in allowedNativeBundleIDs {
-            if let keyword = NotificationAppCatalog.keyword(for: bundleID),
-               haystack.contains(keyword) {
-                return true
-            }
+        let ok = observer.sendReply(on: banner, text: trimmed)
+        if ok {
+            clearPeek()
         }
-
-        return false
+        return ok
     }
 
-    private func matchesRamboxAllowlist(_ banner: ParsedNotificationBanner, delivering: String) -> Bool {
-        guard allowedRamboxAggregatorBundleIDs.contains(delivering) else { return false }
-        guard !allowedRamboxServiceBundleIDs.isEmpty else { return false }
-
-        if banner.serviceBundleID != "unknown.app" {
-            let service = NotificationAppCatalog.canonicalBundleID(for: banner.serviceBundleID)
-            return allowedRamboxServiceBundleIDs.contains(service)
-        }
-
-        let haystack = "\(banner.title) \(banner.body)".lowercased()
-        for bundleID in allowedRamboxServiceBundleIDs {
-            if let keyword = NotificationAppCatalog.keyword(for: bundleID),
-               haystack.contains(keyword) {
-                return true
-            }
-        }
-
-        if NotificationAppCatalog.looksLikeGenericMessagingBanner(title: banner.title, body: banner.body) {
-            return true
-        }
-
-        return false
+    private func clearPeek() {
+        peek = nil
+        activeReplyBanner = nil
+        supportsQuickReply = false
+        onStateChange?()
     }
 
-    private func preferredOpenBundleID(for banner: ParsedNotificationBanner) -> String {
+    /// Exact trusted bundle or exact icon-label match for an allowlisted supported app.
+    private func matchedAllowedApp(for banner: ParsedNotificationBanner) -> String? {
+        guard !allowedNativeBundleIDs.isEmpty else { return nil }
+
+        // Icon / catalog identity wins over a foreign Electron helper deliverer.
+        if let matched = NotificationAppCatalog.matchMessagingAppFromIconLabels(in: banner.iconLabels),
+           NotificationAppCatalog.isSupportedNotificationApp(matched.bundleID),
+           allowedNativeBundleIDs.contains(matched.bundleID) {
+            return matched.bundleID
+        }
+
         let delivering = NotificationAppCatalog.canonicalBundleID(for: banner.deliveringBundleID)
+        if isNonSupportedPoster(banner, delivering: delivering) {
+            return matchAllowlistedByExactAppName(banner)
+        }
 
-        if NotificationAppCatalog.isAggregator(delivering) {
+        if NotificationAppCatalog.isSupportedNotificationApp(delivering),
+           allowedNativeBundleIDs.contains(delivering) {
             return delivering
         }
 
-        if let foreign = NotificationAppCatalog.matchRunningApp(in: [banner.title, banner.body]),
-           !NotificationAppCatalog.isAggregator(foreign) {
-            return foreign
+        if isNativeSMSAllowlisted(banner) {
+            return Self.mobileSMSBundleID
+        }
+
+        if let axHint = banner.axDeliveringBundleID {
+            let hinted = NotificationAppCatalog.canonicalBundleID(for: axHint)
+            if NotificationAppCatalog.isSupportedNotificationApp(hinted),
+               allowedNativeBundleIDs.contains(hinted) {
+                return hinted
+            }
         }
 
         if banner.serviceBundleID != "unknown.app" {
-            return banner.serviceBundleID
+            let service = NotificationAppCatalog.canonicalBundleID(for: banner.serviceBundleID)
+            if NotificationAppCatalog.isSupportedNotificationApp(service),
+               allowedNativeBundleIDs.contains(service) {
+                return service
+            }
         }
 
-        return delivering
+        return matchAllowlistedByExactAppName(banner)
+    }
+
+    /// Fallback when AX only exposes the app title (e.g. „Signal”) without a bundle hint.
+    private func matchAllowlistedByExactAppName(_ banner: ParsedNotificationBanner) -> String? {
+        let labels = ([banner.appName, banner.title] + banner.iconLabels)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard let matched = NotificationAppCatalog.matchMessagingAppByExactName(in: labels),
+              NotificationAppCatalog.isSupportedNotificationApp(matched.bundleID),
+              allowedNativeBundleIDs.contains(matched.bundleID) else {
+            return nil
+        }
+        return matched.bundleID
+    }
+
+    private func isNonSupportedPoster(
+        _ banner: ParsedNotificationBanner,
+        delivering: String
+    ) -> Bool {
+        if NotificationAppCatalog.isNativeMessagesSource(banner.axDeliveringBundleID) {
+            return false
+        }
+
+        // Catalog icon/service already identifies a supported app — keep it.
+        if NotificationAppCatalog.matchMessagingAppFromIconLabels(in: banner.iconLabels) != nil {
+            return false
+        }
+        if NotificationAppCatalog.isSupportedNotificationApp(
+            NotificationAppCatalog.canonicalBundleID(for: banner.serviceBundleID)
+        ) {
+            return false
+        }
+
+        if let foreign = NotificationAppCatalog.matchRunningApp(in: banner.iconLabels),
+           !NotificationAppCatalog.isSupportedNotificationApp(foreign) {
+            return true
+        }
+
+        guard delivering != "unknown.app" else { return false }
+        return !NotificationAppCatalog.isSupportedNotificationApp(delivering)
+    }
+
+    private static let mobileSMSBundleID = "com.apple.MobileSMS"
+
+    private var nativeSMSEnabled: Bool {
+        allowedNativeBundleIDs.contains(Self.mobileSMSBundleID)
+    }
+
+    private func hasNativeSMSIconProof(_ banner: ParsedNotificationBanner) -> Bool {
+        guard nativeSMSEnabled else { return false }
+
+        if NotificationAppCatalog.isNativeMessagesSource(banner.axDeliveringBundleID) {
+            return true
+        }
+
+        for label in banner.iconLabels where NotificationAppCatalog.isNativeMessagesSource(label) {
+            return true
+        }
+
+        if NotificationAppCatalog.matchMessagingAppFromIconLabels(in: banner.iconLabels)?.bundleID
+            == Self.mobileSMSBundleID {
+            return true
+        }
+
+        for candidate in [banner.serviceBundleID, banner.deliveringBundleID] {
+            let canonical = NotificationAppCatalog.canonicalBundleID(for: candidate)
+            if canonical == Self.mobileSMSBundleID { return true }
+        }
+
+        return false
+    }
+
+    private func isNativeSMSAllowlisted(_ banner: ParsedNotificationBanner) -> Bool {
+        guard nativeSMSEnabled else { return false }
+        if NotificationAppCatalog.isBlockedNotificationContent(title: banner.title, body: banner.body) {
+            return false
+        }
+        return hasNativeSMSIconProof(banner)
     }
 }

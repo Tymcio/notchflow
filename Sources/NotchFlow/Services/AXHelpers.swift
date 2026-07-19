@@ -41,6 +41,23 @@ enum AXHelpers {
         return valueRef as? String
     }
 
+    /// Sequoia/Tahoe banners expose the full toast as `AXAttributedDescription`
+    /// (often "App, Title, Body") even when child static texts are sparse.
+    static func attributedDescription(of element: AXUIElement) -> String? {
+        var valueRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, "AXAttributedDescription" as CFString, &valueRef) == .success,
+              let valueRef else {
+            return nil
+        }
+        if let string = valueRef as? String {
+            return string
+        }
+        if let attributed = valueRef as? NSAttributedString {
+            return attributed.string
+        }
+        return nil
+    }
+
     static func value(of element: AXUIElement) -> String? {
         var valueRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef) == .success else {
@@ -58,6 +75,40 @@ enum AXHelpers {
     static func identifier(of element: AXUIElement) -> String? {
         var valueRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXIdentifierAttribute as CFString, &valueRef) == .success else {
+            return nil
+        }
+        return valueRef as? String
+    }
+
+    static func subrole(of element: AXUIElement) -> String? {
+        stringAttribute(kAXSubroleAttribute as String, of: element)
+    }
+
+    static func roleDescription(of element: AXUIElement) -> String? {
+        stringAttribute(kAXRoleDescriptionAttribute as String, of: element)
+    }
+
+    static func label(of element: AXUIElement) -> String? {
+        stringAttribute("AXLabel", of: element)
+    }
+
+    static func help(of element: AXUIElement) -> String? {
+        stringAttribute("AXHelp", of: element)
+    }
+
+    /// True for modern NC toast / alert groups (macOS Sequoia+).
+    static func isNotificationCenterBanner(_ element: AXUIElement) -> Bool {
+        let sub = subrole(of: element) ?? ""
+        if sub == "AXNotificationCenterBanner" || sub == "AXNotificationCenterAlert" {
+            return true
+        }
+        let roleDesc = (roleDescription(of: element) ?? "").lowercased()
+        return roleDesc.contains("notification") && (roleDesc.contains("banner") || roleDesc.contains("alert"))
+    }
+
+    private static func stringAttribute(_ name: String, of element: AXUIElement) -> String? {
+        var valueRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, name as CFString, &valueRef) == .success else {
             return nil
         }
         return valueRef as? String
@@ -104,6 +155,17 @@ enum AXHelpers {
 
     static func press(_ element: AXUIElement) -> Bool {
         AXUIElementPerformAction(element, kAXPressAction as CFString) == .success
+    }
+
+    /// Sets AXValue on a text field / text area. Returns false when the attribute is not settable.
+    @discardableResult
+    static func setValue(_ text: String, on element: AXUIElement) -> Bool {
+        let value = text as CFTypeRef
+        return AXUIElementSetAttributeValue(element, kAXValueAttribute as CFString, value) == .success
+    }
+
+    static func focused(_ element: AXUIElement) -> Bool {
+        AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue) == .success
     }
 
     /// Performs the banner's "Close" accessibility action (localized), searching the element
@@ -163,17 +225,32 @@ enum AXHelpers {
     }
 
     static func notificationCenterPID() -> pid_t? {
-        let bundleIDs = [
-            "com.apple.notificationcenterui",
-            "com.apple.notificationcenter"
-        ]
+        accessibilityBannerPIDs(callsPriority: false).first
+    }
 
-        for bundleID in bundleIDs {
-            if let app = runningApplication(bundleID: bundleID) {
-                return app.processIdentifier
-            }
+    /// Banery NC/połączeń bywają w Notification Center UI albo Control Center (Continuity/iPhone).
+    static func accessibilityBannerPIDs(callsPriority: Bool) -> [pid_t] {
+        var bundleIDs = [
+            "com.apple.notificationcenterui",
+            "com.apple.notificationcenter",
+        ]
+        if callsPriority {
+            bundleIDs.append(contentsOf: [
+                "com.apple.controlcenter",
+                "com.apple.CallKitUI",
+                "com.apple.TelephonyUtilities",
+            ])
         }
-        return nil
+
+        var seen = Set<pid_t>()
+        var pids: [pid_t] = []
+        for bundleID in bundleIDs {
+            guard let app = runningApplication(bundleID: bundleID) else { continue }
+            let pid = app.processIdentifier
+            guard seen.insert(pid).inserted else { continue }
+            pids.append(pid)
+        }
+        return pids
     }
 
     private static func point(for element: AXUIElement, attribute: CFString) -> CGPoint? {

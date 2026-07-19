@@ -5,8 +5,11 @@ enum IslandStyle {
     static let secondaryText = Color.white.opacity(0.55)
     static let tertiaryText = Color.white.opacity(0.45)
     static let accentText = Color.white.opacity(0.82)
-    static let surfaceFill = NotchFlowBrand.graphite.opacity(0.72)
-    static let surfaceStroke = Color.white.opacity(0.08)
+    /// Outer island / wing / banner fill — same black as the hardware notch.
+    static let islandFill = NotchFlowBrand.spaceBlack
+    static let surfaceFill = Color.black
+    /// Near-invisible edge so chrome does not outline against the notch.
+    static let surfaceStroke = Color.white.opacity(0.03)
 }
 
 enum IslandRadius {

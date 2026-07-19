@@ -477,6 +477,34 @@
         }
       }
     },
+    "Alert sound": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dźwięk alertu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warnton"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suono di avviso"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonido de alerta"
+          }
+        }
+      }
+    },
     "Allow URL scheme automation (notchflow://)": {
       "localizations": {
         "pl": {
@@ -1597,6 +1625,34 @@
         }
       }
     },
+    "Dismiss": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zamknij"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiudi"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrar"
+          }
+        }
+      }
+    },
     "Drag onto the island": {
       "localizations": {
         "pl": {
@@ -1737,34 +1793,6 @@
         }
       }
     },
-    "Enable Rambox first, then pick which web apps inside it should appear in the notch. WhatsApp in Rambox and native WhatsApp are controlled separately.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Najpierw włącz Rambox, potem wybierz webowe apki w notchu. WhatsApp w Ramboxie i natywny WhatsApp to osobne przełączniki."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aktiviere zuerst Rambox, dann wähle Web-Apps für die Notch. WhatsApp in Rambox und native WhatsApp sind getrennt."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abilita prima Rambox, poi scegli le app web nel notch. WhatsApp in Rambox e WhatsApp nativo sono separati."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Activa Rambox primero, luego elige apps web en el notch. WhatsApp en Rambox y WhatsApp nativo son independientes."
-          }
-        }
-      }
-    },
     "Enable and save now": {
       "localizations": {
         "pl": {
@@ -1901,6 +1929,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Activa para que la extensión Raycast pueda leer el historial del portapapeles NotchFlow."
+          }
+        }
+      }
+    },
+    "End call": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zakończ połączenie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anruf beenden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termina chiamata"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finalizar llamada"
           }
         }
       }
@@ -2377,34 +2433,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Llamada entrante"
-          }
-        }
-      }
-    },
-    "Inside Rambox": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "W Ramboxie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In Rambox"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In Rambox"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En Rambox"
           }
         }
       }
@@ -2913,6 +2941,62 @@
         }
       }
     },
+    "Mail": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail"
+          }
+        }
+      }
+    },
+    "Manage license": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zarządzaj licencją"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lizenz verwalten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestisci licenza"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionar licencia"
+          }
+        }
+      }
+    },
     "Messages": {
       "localizations": {
         "pl": {
@@ -3273,6 +3357,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sin eventos este día"
+          }
+        }
+      }
+    },
+    "None": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brak"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keiner"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuno"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ninguno"
           }
         }
       }
@@ -3753,34 +3865,6 @@
         }
       }
     },
-    "Notifications from native apps installed on your Mac. Separate from the same service running inside Rambox.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Powiadomienia z natywnych aplikacji zainstalowanych na Macu. Osobno od tej samej usługi w Ramboxie."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mitteilungen von nativ installierten Mac-Apps — getrennt von derselben Dienst in Rambox."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notifiche dalle app native installate sul Mac, separate dallo stesso servizio in Rambox."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notificaciones de apps nativas instaladas en el Mac, separadas del mismo servicio en Rambox."
-          }
-        }
-      }
-    },
     "OK": {
       "localizations": {
         "pl": {
@@ -3837,6 +3921,34 @@
         }
       }
     },
+    "Only official messaging and Mail apps installed on your Mac. Quick reply works when the system banner exposes a Reply field.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tylko oficjalne komunikatory i Mail zainstalowane na Macu. Szybka odpowiedź działa, gdy baner systemowy udostępnia pole Odpowiedz."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur offizielle Messaging- und Mail-Apps auf dem Mac. Schnellantwort funktioniert, wenn das Systembanner ein Antwortfeld anbietet."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo app di messaggistica e Mail ufficiali installate sul Mac. La risposta rapida funziona quando il banner di sistema espone un campo Rispondi."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo apps oficiales de mensajería y Mail instaladas en el Mac. La respuesta rápida funciona cuando el banner del sistema muestra un campo Responder."
+          }
+        }
+      }
+    },
     "Open": {
       "localizations": {
         "pl": {
@@ -3889,6 +4001,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abrir Ajustes del Sistema"
+          }
+        }
+      }
+    },
+    "Open app": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otwórz aplikację"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App öffnen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri app"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir app"
           }
         }
       }
@@ -4285,6 +4425,34 @@
         }
       }
     },
+    "Played when the timer finishes.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odtwarzany po zakończeniu minutnika."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird abgespielt, wenn der Timer endet."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprodotto al termine del timer."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se reproduce al finalizar el temporizador."
+          }
+        }
+      }
+    },
     "Pomodoro": {
       "localizations": {
         "pl": {
@@ -4365,6 +4533,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Premium desbloquea tamaño de isla y temas personalizados."
+          }
+        }
+      }
+    },
+    "Preview": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podgląd"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschau"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteprima"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vista previa"
           }
         }
       }
@@ -4505,34 +4701,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Salir de NotchFlow"
-          }
-        }
-      }
-    },
-    "Rambox": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rambox"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rambox"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rambox"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rambox"
           }
         }
       }
@@ -4705,6 +4873,62 @@
         }
       }
     },
+    "Reply": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpowiedz"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antworten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rispondi"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Responder"
+          }
+        }
+      }
+    },
+    "Reply…": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpowiedź…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antwort…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rispondi…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Responder…"
+          }
+        }
+      }
+    },
     "Resume": {
       "localizations": {
         "pl": {
@@ -4757,6 +4981,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mostrar en Finder"
+          }
+        }
+      }
+    },
+    "Ringtones": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dzwonki"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klingeltöne"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suonerie"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonos"
+          }
+        }
+      }
+    },
+    "Same tones as the Clock app. Plays until you dismiss the finished timer.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Te same dźwięki co w aplikacji Zegar. Gra, aż zamkniesz zakończony minutnik."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieselben Töne wie in der Uhr-App. Spielt, bis du den beendeten Timer schließt."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stessi toni dell’app Orologio. Continua finché non chiudi il timer terminato."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los mismos tonos que en la app Reloj. Suena hasta que cierres el temporizador finalizado."
           }
         }
       }
@@ -4869,6 +5149,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Política de seguridad y privacidad"
+          }
+        }
+      }
+    },
+    "Send": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyślij"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar"
           }
         }
       }
@@ -5097,6 +5405,62 @@
         }
       }
     },
+    "Sound is muted — turn up volume to hear the alert.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dźwięk jest wyciszony — podgłośnij, żeby usłyszeć alarm."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton ist stumm — Lautstärke erhöhen, um den Alarm zu hören."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’audio è disattivato — alza il volume per sentire l’avviso."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El sonido está silenciado — sube el volumen para oír la alerta."
+          }
+        }
+      }
+    },
+    "Sound muted": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dźwięk wyciszony"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton stumm"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio disattivato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonido silenciado"
+          }
+        }
+      }
+    },
     "Start": {
       "localizations": {
         "pl": {
@@ -5289,6 +5653,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "Predeterminado del sistema"
+          }
+        }
+      }
+    },
+    "System sounds": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dźwięki systemowe"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systemtöne"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suoni di sistema"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonidos del sistema"
           }
         }
       }
@@ -5685,34 +6077,6 @@
         }
       }
     },
-    "Using Rambox? Enable Rambox in the list — WhatsApp, Telegram, and MSN notifications go through Rambox, not native apps.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Używasz Rambox? Włącz Rambox na liście — powiadomienia z WhatsApp, Telegram i MSN idą przez Rambox, nie przez natywne apki."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rambox nutzen? Aktiviere Rambox in der Liste — WhatsApp-, Telegram- und MSN-Mitteilungen laufen über Rambox, nicht native Apps."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Usi Rambox? Abilita Rambox nell'elenco — le notifiche di WhatsApp, Telegram e MSN passano da Rambox, non dalle app native."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Usas Rambox? Activa Rambox en la lista — las notificaciones de WhatsApp, Telegram y MSN van por Rambox, no por apps nativas."
-          }
-        }
-      }
-    },
     "Violet": {
       "localizations": {
         "pl": {
@@ -5793,34 +6157,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "S"
-          }
-        }
-      }
-    },
-    "Web app container": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kontener aplikacji webowych"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Web-App-Container"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Contenitore app web"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Contenedor de apps web"
           }
         }
       }

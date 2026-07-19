@@ -2,6 +2,25 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.22] - 2026-07-19
+
+### Added
+
+- Timer alert sounds: Clock-app ringtones and system tones, with preview in Settings
+- Mute-aware timer alerts: Dock bounce, stronger notch visuals, and Focus banner when output is muted; alert resumes when volume returns
+- Mute warning while setting a timer in the Focus tab
+- Incoming-call and notification drop banners under the notch
+- Notification catalog tests
+
+### Changed
+
+- Stronger finished-timer idle state (pulse until dismissed)
+- Call and notification detection / matching improvements
+
+### Fixed
+
+- Timer finish no longer feels silent when the Mac is muted — clear visual + notification fallback
+
 ## [1.0.21] - 2026-07-15
 
 ### Added

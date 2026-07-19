@@ -114,10 +114,26 @@ struct NotchGeometry: Equatable {
         )
     }
 
-    func frame(isExpanded: Bool, isIdle: Bool = false, idleRightWingWidth rightWingOverride: CGFloat? = nil) -> CGRect {
+    func frame(
+        isExpanded: Bool,
+        isIdle: Bool = false,
+        idleRightWingWidth rightWingOverride: CGFloat? = nil,
+        idleBannerWidth bannerWidthOverride: CGFloat? = nil
+    ) -> CGRect {
         let size: CGSize
         if isExpanded {
             size = expandedSize
+        } else if isIdle, let bannerWidth = bannerWidthOverride {
+            size = CGSize(
+                width: bannerWidth,
+                height: NotchFlowConstants.dropBannerHeight(
+                    topInset: max(notchTopInset, idleSize.height),
+                    contentHeight: max(
+                        NotchFlowConstants.dropBannerContentHeight,
+                        NotchFlowConstants.incomingCallDropContentHeight
+                    )
+                )
+            )
         } else if isIdle {
             let resolvedRightWing = resolvedIdleRightWingWidth(override: rightWingOverride)
             size = CGSize(
@@ -134,6 +150,14 @@ struct NotchGeometry: Equatable {
         if isExpanded, hasPhysicalNotch, let notchLeftX {
             y = screenTopY - size.height
             x = notchLeftX + physicalNotchCutoutWidth / 2 - size.width / 2
+        } else if isIdle, bannerWidthOverride != nil {
+            // Center-attached incoming-call banner under the hardware cutout.
+            y = screenTopY - size.height
+            if let notchLeftX {
+                x = notchLeftX + physicalNotchCutoutWidth / 2 - size.width / 2
+            } else {
+                x = screenMidX - size.width / 2
+            }
         } else if isIdle, let notchLeftX {
             // Keep the notch cutout at a fixed screen position; only toggle wing visibility.
             y = screenTopY - size.height

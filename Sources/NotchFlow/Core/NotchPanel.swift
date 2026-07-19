@@ -163,15 +163,18 @@ final class NotchPanelController: ObservableObject {
 
         displayManager.$shouldHideIsland
             .sink { [weak self] hidden in
-                hidden
-                    ? self?.dismissImmediately()
-                    : self?.updateVisibility(hovering: self?.displayManager.isNotchInteractionActive ?? false)
+                guard let self else { return }
+                if hidden, !self.hasPriorityLiveActivity {
+                    self.dismissImmediately()
+                } else if !hidden {
+                    self.updateVisibility(hovering: self.displayManager.isNotchInteractionActive)
+                }
             }
             .store(in: &cancellables)
     }
 
     private func updateVisibility(hovering: Bool) {
-        guard !displayManager.shouldHideIsland else {
+        guard !displayManager.shouldHideIsland || hasPriorityLiveActivity else {
             dismissImmediately()
             return
         }
@@ -226,7 +229,7 @@ final class NotchPanelController: ObservableObject {
             return
         }
 
-        if appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap {
+        if appState.shouldShowIdleNotch, !shouldSuppressIdleForMenuOverlap {
             if displayManager.geometry != nil {
                 presentIdle()
             } else {
@@ -242,13 +245,39 @@ final class NotchPanelController: ObservableObject {
         displayManager.geometry?.shouldHideIdleForMenuOverlap == true
     }
 
+    /// Połączenia i krótkie peeki powiadomień omijają chowanie wyspy przez overlap menu bara.
+    private var hasPriorityLiveActivity: Bool {
+        switch appState.activeLiveActivity {
+        case .incomingCall, .activeCall, .notification:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private var shouldSuppressIdleForMenuOverlap: Bool {
+        shouldHideIdleForMenuOverlap && !hasPriorityLiveActivity
+    }
+
     private func handleLiveActivityChange() {
-        guard !displayManager.shouldHideIsland else {
-            dismissImmediately()
+        // Połączenie / powiadomienie — zawsze pokaż idle, nawet gdy wyspa była rozwinięta
+        // albo minutnik zajmuje skrzydła.
+        if hasPriorityLiveActivity {
+            suppressAutoShow = false
+            hideTask?.cancel()
+            if displayManager.geometry != nil {
+                presentIdle()
+                refreshView()
+            }
             return
         }
 
         if isExpanded {
+            return
+        }
+
+        guard !displayManager.shouldHideIsland else {
+            dismissImmediately()
             return
         }
 
@@ -263,7 +292,7 @@ final class NotchPanelController: ObservableObject {
             return
         }
 
-        if appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap {
+        if appState.shouldShowIdleNotch, !shouldSuppressIdleForMenuOverlap {
             if !isVisible || isExpanded {
                 if displayManager.geometry != nil {
                     presentIdle()
@@ -280,6 +309,7 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func shouldKeepVisible() -> Bool {
+        if appState.shouldShowIdleNotch { return true }
         if displayManager.isNotchInteractionActive { return true }
         if appState.isIslandInputFocused { return true }
         if let panel, panel.isVisible, panel.frame.insetBy(dx: -8, dy: -8).contains(NSEvent.mouseLocation) {
@@ -310,7 +340,7 @@ final class NotchPanelController: ObservableObject {
             return
         }
         displayManager.refreshMenuLayoutNow()
-        guard !shouldHideIdleForMenuOverlap else {
+        guard !shouldSuppressIdleForMenuOverlap else {
             if isVisible, !isExpanded {
                 dismissImmediately()
             }
@@ -351,10 +381,16 @@ final class NotchPanelController: ObservableObject {
     }
 
     private var idleAcceptsMouseEvents: Bool {
-        if case .incomingCall = appState.activeLiveActivity {
+        switch appState.activeLiveActivity {
+        case .incomingCall, .activeCall:
             return true
+        case .notification:
+            return true
+        case .timer(let timer):
+            return timer.isFinished
+        default:
+            return false
         }
-        return false
     }
 
     private func installEscapeMonitorIfNeeded() {
@@ -382,7 +418,8 @@ final class NotchPanelController: ObservableObject {
                 let frame = geometry.frame(
                     isExpanded: isExpanded,
                     isIdle: !isExpanded,
-                    idleRightWingWidth: appState.idleRightWingWidthOverride
+                    idleRightWingWidth: appState.idleRightWingWidthOverride,
+                    idleBannerWidth: appState.idleDropBannerWidth
                 )
                 panel?.setFrame(frame, animated: false)
             }
@@ -390,7 +427,7 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func keepIdleVisibleIfNeeded() {
-        guard appState.shouldShowIdleNotch, !shouldHideIdleForMenuOverlap else { return }
+        guard appState.shouldShowIdleNotch, !shouldSuppressIdleForMenuOverlap else { return }
         if !isVisible || isExpanded {
             presentIdle()
         }
@@ -458,9 +495,16 @@ final class NotchPanelController: ObservableObject {
             try? await Task.sleep(for: .milliseconds(280))
             await MainActor.run {
                 guard !self.shouldKeepVisible() else { return }
+                if self.hasPriorityLiveActivity {
+                    self.suppressAutoShow = false
+                    if self.displayManager.geometry != nil {
+                        self.presentIdle()
+                    }
+                    return
+                }
                 if self.suppressAutoShow {
                     self.dismissImmediately()
-                } else if self.appState.shouldShowIdleNotch, !self.shouldHideIdleForMenuOverlap {
+                } else if self.appState.shouldShowIdleNotch, !self.shouldSuppressIdleForMenuOverlap {
                     if self.displayManager.geometry != nil {
                         self.presentIdle()
                     } else {
@@ -495,7 +539,8 @@ final class NotchPanelController: ObservableObject {
         let frame = geometry.frame(
             isExpanded: isExpanded,
             isIdle: !isExpanded,
-            idleRightWingWidth: appState.idleRightWingWidthOverride
+            idleRightWingWidth: appState.idleRightWingWidthOverride,
+            idleBannerWidth: appState.idleDropBannerWidth
         )
         panel.setFrame(frame, animated: animated)
         displayManager.activePanelFrame = frame

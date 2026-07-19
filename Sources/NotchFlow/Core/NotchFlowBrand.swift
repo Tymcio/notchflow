@@ -2,7 +2,8 @@ import SwiftUI
 
 /// NotchFlow brand palette — quiet, premium, Apple-adjacent.
 enum NotchFlowBrand {
-    static let spaceBlack = Color(red: 17 / 255, green: 17 / 255, blue: 17 / 255)
+    /// Pure black — matches the hardware notch so the island does not stand out.
+    static let spaceBlack = Color.black
     static let graphite = Color(red: 38 / 255, green: 38 / 255, blue: 38 / 255)
     static let electricBlue = Color(red: 79 / 255, green: 124 / 255, blue: 255 / 255)
     static let aurora = Color(red: 90 / 255, green: 200 / 255, blue: 250 / 255)

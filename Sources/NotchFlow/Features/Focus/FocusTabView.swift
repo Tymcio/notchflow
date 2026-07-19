@@ -20,21 +20,30 @@ struct FocusTabView: View {
         VStack(spacing: 8) {
             modeStrip
 
-            FocusTimerArcDisplay(
+            FocusTimerTimeDisplay(
                 time: displayedTime,
-                progress: displayedProgress,
                 modeLabel: state.mode == .idle ? pickerMode.title : state.modeLabel,
                 isRunning: state.isRunning,
+                isFinishedMuted: state.isFinished && state.isAlertMuted,
                 accent: accent,
                 pulse: pulse
             )
-            .frame(height: 68)
+            .frame(height: 52)
+
+            if wantsAlertSound {
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    if SystemOutputAudio.isSilent {
+                        mutedAlertBanner
+                    }
+                }
+            }
 
             if showsRuler {
                 FocusTimeRuler(
                     minutes: $draftMinutes,
                     accent: accent,
-                    isEnabled: canEditDuration
+                    isEnabled: canEditDuration,
+                    progressMinutes: rulerProgressMinutes
                 )
             } else if pickerMode == .pomodoro {
                 pomodoroPhaseRow
@@ -45,6 +54,7 @@ struct FocusTabView: View {
         .onAppear {
             syncDraftFromState()
             syncPickerMode()
+            pulse = state.isRunning || (state.isFinished && state.isAlertMuted)
         }
         .onChange(of: state.mode) { _, _ in
             syncDraftFromState()
@@ -61,13 +71,42 @@ struct FocusTabView: View {
             }
         }
         .onChange(of: state.isRunning) { _, running in
-            pulse = running
+            pulse = running || (state.isFinished && state.isAlertMuted)
+        }
+        .onChange(of: state.isAlertMuted) { _, muted in
+            if state.isFinished {
+                pulse = muted
+            }
         }
         .onChange(of: draftMinutes) { _, minutes in
             if canEditDuration {
                 appState.focusTimerManager.selectDuration(minutes: minutes)
             }
         }
+    }
+
+    private var wantsAlertSound: Bool {
+        !appState.settings.timerAlertSoundName.isEmpty
+    }
+
+    private var mutedAlertBanner: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "speaker.slash.fill")
+                .font(.system(size: 10, weight: .bold))
+            Text(loc("Sound is muted — turn up volume to hear the alert."))
+                .font(.system(size: 10, weight: .medium))
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+        }
+        .foregroundStyle(Color.orange)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.orange.opacity(0.14))
+        }
+        .accessibilityLabel(loc("Sound muted"))
     }
 
     private var canEditDuration: Bool {
@@ -92,8 +131,10 @@ struct FocusTabView: View {
         return state.formattedTime
     }
 
-    private var displayedProgress: Double {
-        state.mode == .idle ? 0 : state.progress
+    /// Remaining time as fractional minutes — drives the ruler marker during countdown.
+    private var rulerProgressMinutes: CGFloat? {
+        guard state.mode == .countdown else { return nil }
+        return CGFloat(state.remainingSeconds) / 60
     }
 
     private func formatMinutes(_ minutes: Int) -> String {
@@ -303,69 +344,41 @@ private enum FocusPickerMode: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Arc display
+// MARK: - Time display
 
-private struct FocusTimerArcDisplay: View {
+private struct FocusTimerTimeDisplay: View {
     let time: String
-    let progress: Double
     let modeLabel: String
     let isRunning: Bool
+    let isFinishedMuted: Bool
     let accent: Color
     let pulse: Bool
 
-    var body: some View {
-        GeometryReader { geo in
-            let size = min(geo.size.width, geo.size.height + 12)
-            let lineWidth: CGFloat = 4
-
-            ZStack {
-                ArcShape(start: 0.12, end: 0.88)
-                    .stroke(Color.white.opacity(0.07), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-
-                ArcShape(start: 0.12, end: 0.12 + 0.76 * progress)
-                    .stroke(
-                        accent,
-                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                    )
-                    .shadow(color: accent.opacity(isRunning ? 0.4 : 0.15), radius: isRunning ? 5 : 2)
-
-                VStack(spacing: 1) {
-                    Text(time)
-                        .font(.system(size: 28, weight: .light, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(IslandStyle.primaryText)
-                        .scaleEffect(pulse && isRunning ? 1.02 : 1)
-                        .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulse && isRunning)
-
-                    Text(modeLabel.uppercased())
-                        .font(.system(size: 8, weight: .semibold, design: .rounded))
-                        .tracking(1.1)
-                        .foregroundStyle(accent.opacity(0.85))
-                }
-                .offset(y: 2)
-            }
-            .frame(width: size, height: size * 0.68)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
+    private var shouldPulse: Bool {
+        (pulse && isRunning) || isFinishedMuted
     }
-}
 
-private struct ArcShape: Shape {
-    var start: Double
-    var end: Double
+    private var labelTint: Color {
+        isFinishedMuted ? .orange : accent.opacity(0.85)
+    }
 
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let w = min(rect.width, rect.height)
-        let center = CGPoint(x: rect.midX, y: w * 0.50)
-        let radius = w / 2 - 6
-        path.addArc(
-            center: center,
-            radius: radius,
-            startAngle: .radians(.pi + start * .pi),
-            endAngle: .radians(.pi + end * .pi),
-            clockwise: false
-        )
-        return path
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(time)
+                .font(.system(size: 34, weight: .light, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(isFinishedMuted ? Color.orange : IslandStyle.primaryText)
+                .scaleEffect(shouldPulse ? 1.02 : 1)
+                .animation(
+                    .easeInOut(duration: isFinishedMuted ? 0.55 : 1.2).repeatForever(autoreverses: true),
+                    value: shouldPulse
+                )
+
+            Text((isFinishedMuted ? loc("Sound muted") : modeLabel).uppercased())
+                .font(.system(size: 8, weight: .semibold, design: .rounded))
+                .tracking(1.1)
+                .foregroundStyle(labelTint)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

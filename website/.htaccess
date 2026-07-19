@@ -1,0 +1,22 @@
+<IfModule mod_headers.c>
+  # Always revalidate HTML so users get the latest asset URLs.
+  <FilesMatch "\.(html?)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+
+  # Cache static assets aggressively (safe with cache-busting query params).
+  <FilesMatch "\.(css|js|png|jpg|jpeg|webp|svg|gif|ico|mp4)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+</IfModule>

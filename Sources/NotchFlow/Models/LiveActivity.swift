@@ -27,6 +27,8 @@ struct FocusTimerActivity: Equatable, Sendable {
     let formattedTime: String
     let progress: Double
     let isRunning: Bool
+    let isFinished: Bool
+    let isAlertMuted: Bool
     let modeLabel: String
     let phaseEndDate: Date?
     let stopwatchStartDate: Date?
@@ -37,6 +39,8 @@ struct FocusTimerActivity: Equatable, Sendable {
         formattedTime: String,
         progress: Double,
         isRunning: Bool,
+        isFinished: Bool = false,
+        isAlertMuted: Bool = false,
         modeLabel: String,
         phaseEndDate: Date? = nil,
         stopwatchStartDate: Date? = nil,
@@ -46,6 +50,8 @@ struct FocusTimerActivity: Equatable, Sendable {
         self.formattedTime = formattedTime
         self.progress = progress
         self.isRunning = isRunning
+        self.isFinished = isFinished
+        self.isAlertMuted = isAlertMuted
         self.modeLabel = modeLabel
         self.phaseEndDate = phaseEndDate
         self.stopwatchStartDate = stopwatchStartDate
@@ -58,10 +64,12 @@ struct NotificationPeekActivity: Equatable, Sendable {
     let id: UUID
     let appName: String
     let appBundleID: String
+    let openBundleID: String
     let sender: String
     let body: String
     let receivedAt: Date
     let expiresAt: Date
+    let supportsQuickReply: Bool
 
     var isExpired: Bool {
         Date() >= expiresAt
@@ -79,8 +87,8 @@ enum LiveActivityKind: Equatable, Sendable {
         switch self {
         case .incomingCall: 0
         case .activeCall: 1
-        case .timer: 2
-        case .notification: 3
+        case .notification: 2
+        case .timer: 3
         case .media: 4
         }
     }
@@ -100,11 +108,12 @@ enum LiveActivityResolver {
         if let activeCall {
             return .activeCall(activeCall)
         }
-        if let timer {
-            return .timer(timer)
-        }
+        // Transient notification peeks temporarily replace the focus timer in the island.
         if let notification, !notification.isExpired {
             return .notification(notification)
+        }
+        if let timer {
+            return .timer(timer)
         }
         if showsMedia {
             return .media

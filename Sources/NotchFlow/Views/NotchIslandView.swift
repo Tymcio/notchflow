@@ -6,7 +6,7 @@ struct NotchIslandView: View {
     @ObservedObject var displayManager: DisplayManager
     @Bindable var appState: AppState
 
-    private let islandFill = NotchFlowBrand.spaceBlack
+    private let islandFill = IslandStyle.islandFill
 
     private var geometry: NotchGeometry? {
         displayManager.geometry
@@ -34,7 +34,7 @@ struct NotchIslandView: View {
         }
         .frame(
             width: isExpanded ? geometry?.expandedSize.width : idlePanelWidth,
-            height: isExpanded ? effectiveExpandedHeight : geometry?.idleSize.height,
+            height: isExpanded ? effectiveExpandedHeight : idlePanelHeight,
             alignment: .topLeading
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -53,22 +53,63 @@ struct NotchIslandView: View {
 
     private var idlePanelWidth: CGFloat? {
         guard let geometry else { return nil }
+        if let bannerWidth = appState.idleDropBannerWidth {
+            return bannerWidth
+        }
         return geometry.idleWingLayout(rightWingWidth: appState.idleRightWingWidthOverride).panelWidth
+    }
+
+    private var idlePanelHeight: CGFloat? {
+        guard let geometry else { return nil }
+        if let bannerHeight = appState.idleDropBannerHeight {
+            return bannerHeight
+        }
+        return geometry.idleSize.height
     }
 
     @ViewBuilder
     private func idleIsland(geometry: NotchGeometry, activity: LiveActivityKind) -> some View {
-        let wingLayout = geometry.idleWingLayout(rightWingWidth: appState.idleRightWingWidthOverride)
-        IdleLiveActivityView(
-            activity: activity,
-            mediaState: appState.mediaState,
-            accent: appState.settings.selectedTheme.accent,
-            wingLayout: wingLayout,
-            onAnswerCall: { appState.answerIncomingCall() },
-            onDeclineCall: { appState.declineIncomingCall() }
-        )
-        .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight, alignment: .topLeading)
-        .clipShape(Rectangle())
+        if case .incomingCall(let call) = activity,
+           let bannerWidth = appState.idleDropBannerWidth,
+           let bannerHeight = appState.idleDropBannerHeight {
+            IncomingCallBannerView(
+                call: call,
+                bannerWidth: bannerWidth,
+                bannerHeight: bannerHeight,
+                topInset: appState.idleDropBannerTopInset,
+                onAnswer: { appState.answerIncomingCall() },
+                onDecline: { appState.declineIncomingCall() }
+            )
+            .frame(width: bannerWidth, height: bannerHeight, alignment: .top)
+        } else if case .notification(let peek) = activity,
+                  let bannerWidth = appState.idleDropBannerWidth,
+                  let bannerHeight = appState.idleDropBannerHeight {
+            NotificationBannerView(
+                notification: peek,
+                bannerWidth: bannerWidth,
+                bannerHeight: bannerHeight,
+                topInset: appState.idleDropBannerTopInset,
+                onOpen: { appState.openHubNotificationApp() }
+            )
+            .frame(width: bannerWidth, height: bannerHeight, alignment: .top)
+        } else {
+            let wingLayout = geometry.idleWingLayout(rightWingWidth: appState.idleRightWingWidthOverride)
+            IdleLiveActivityView(
+                activity: activity,
+                mediaState: appState.mediaState,
+                accent: appState.settings.selectedTheme.accent,
+                wingLayout: wingLayout,
+                onAnswerCall: { appState.answerIncomingCall() },
+                onDeclineCall: { appState.declineIncomingCall() },
+                onEndCall: { appState.endActiveCall() },
+                onOpenNotification: { appState.openHubNotificationApp() },
+                onReplyNotification: { text in appState.replyToHubNotification(text) },
+                onDismissFinishedTimer: { appState.focusTimerManager.reset() },
+                supportsQuickReply: appState.notificationHub.supportsQuickReply
+            )
+            .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight, alignment: .topLeading)
+            .clipShape(Rectangle())
+        }
     }
 
     @ViewBuilder

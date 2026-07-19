@@ -28,16 +28,23 @@ struct CatalogAppIcon: View {
     var size: CGFloat = 18
 
     var body: some View {
-        if let image = AppIconProvider.image(for: bundleID) {
+        let safeBundleID = NotificationAppCatalog.sanitizedIconBundleID(bundleID)
+
+        // Prefer the real macOS app icon (Signal, WhatsApp, …) over brand SF-symbol badges.
+        if NotificationAppCatalog.isRecognizedNotificationIcon(safeBundleID),
+           let image = AppIconProvider.image(for: safeBundleID) {
             Image(nsImage: image)
                 .resizable()
+                .interpolation(.high)
                 .frame(width: size, height: size)
-        } else if let badge = NotificationAppCatalog.brandBadge(for: bundleID) {
+                .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+        } else if let badge = NotificationAppCatalog.brandBadge(for: safeBundleID) {
             BrandBadgeIcon(badge: badge, size: size)
         } else {
-            Image(systemName: "app.fill")
-                .foregroundStyle(.secondary)
-                .frame(width: size, height: size)
+            BrandBadgeIcon(
+                badge: NotificationAppCatalog.genericNotificationBadge,
+                size: size
+            )
         }
     }
 }

@@ -48,7 +48,7 @@ struct IdleWingRow<Leading: View, Trailing: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             .background {
                 NotchWingShape(isLeading: isLeading)
-                    .fill(.black)
+                    .fill(IslandStyle.islandFill)
             }
             .clipShape(NotchWingShape(isLeading: isLeading))
     }

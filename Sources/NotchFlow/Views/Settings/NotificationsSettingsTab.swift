@@ -6,10 +6,6 @@ struct NotificationsSettingsTab: View {
     let isPremium: Bool
     @ObservedObject var menuBarLayoutManager: MenuBarLayoutManager
 
-    private var ramboxEnabled: Bool {
-        !settings.allowedRamboxAggregatorBundleIDs.isEmpty
-    }
-
     var body: some View {
         SettingsFormContent {
             Section {
@@ -53,8 +49,7 @@ struct NotificationsSettingsTab: View {
             }
 
             if settings.appNotificationsEnabled && isPremium {
-                nativeAppsSection
-                ramboxSection
+                supportedAppsSection
             }
 
             Section {
@@ -84,9 +79,9 @@ struct NotificationsSettingsTab: View {
     }
 
     @ViewBuilder
-    private var nativeAppsSection: some View {
+    private var supportedAppsSection: some View {
         Section {
-            ForEach(NotificationAppCatalog.installedNativeMessagingApps, id: \.bundleID) { app in
+            ForEach(NotificationAppCatalog.installedSupportedApps, id: \.bundleID) { app in
                 Toggle(isOn: nativeBinding(for: app.bundleID)) {
                     appRow(app: app, subtitle: loc("Installed Mac app"))
                 }
@@ -94,32 +89,7 @@ struct NotificationsSettingsTab: View {
         } header: {
             Text(loc("Installed Mac apps"))
         } footer: {
-            SettingsFooterCaption("Notifications from native apps installed on your Mac. Separate from the same service running inside Rambox.")
-        }
-    }
-
-    @ViewBuilder
-    private var ramboxSection: some View {
-        if !NotificationAppCatalog.installedAggregators.isEmpty {
-            Section {
-                ForEach(NotificationAppCatalog.installedAggregators, id: \.bundleID) { aggregator in
-                    Toggle(isOn: ramboxAggregatorBinding(for: aggregator.bundleID)) {
-                        appRow(app: aggregator, subtitle: loc("Web app container"))
-                    }
-                }
-
-                if ramboxEnabled {
-                    ForEach(NotificationAppCatalog.messagingApps, id: \.bundleID) { service in
-                        Toggle(isOn: ramboxServiceBinding(for: service.bundleID)) {
-                            appRow(app: service, subtitle: loc("Inside Rambox"))
-                        }
-                    }
-                }
-            } header: {
-                Text(loc("Rambox"))
-            } footer: {
-                SettingsFooterCaption("Enable Rambox first, then pick which web apps inside it should appear in the notch. WhatsApp in Rambox and native WhatsApp are controlled separately.")
-            }
+            SettingsFooterCaption("Only official messaging and Mail apps installed on your Mac. Quick reply works when the system banner exposes a Reply field.")
         }
     }
 
@@ -140,43 +110,17 @@ struct NotificationsSettingsTab: View {
         Binding(
             get: { settings.allowedNativeNotificationBundleIDs.contains(bundleID) },
             set: { enabled in
-                updateList(\.allowedNativeNotificationBundleIDs, bundleID: bundleID, enabled: enabled)
+                var list = settings.allowedNativeNotificationBundleIDs
+                if enabled {
+                    if !list.contains(bundleID) {
+                        list.append(bundleID)
+                    }
+                } else {
+                    list.removeAll { $0 == bundleID }
+                }
+                settings.allowedNativeNotificationBundleIDs = list
+                AppController.appState?.applyNotificationSettings()
             }
         )
-    }
-
-    private func ramboxAggregatorBinding(for bundleID: String) -> Binding<Bool> {
-        Binding(
-            get: { settings.allowedRamboxAggregatorBundleIDs.contains(bundleID) },
-            set: { enabled in
-                updateList(\.allowedRamboxAggregatorBundleIDs, bundleID: bundleID, enabled: enabled)
-            }
-        )
-    }
-
-    private func ramboxServiceBinding(for bundleID: String) -> Binding<Bool> {
-        Binding(
-            get: { settings.allowedRamboxServiceBundleIDs.contains(bundleID) },
-            set: { enabled in
-                updateList(\.allowedRamboxServiceBundleIDs, bundleID: bundleID, enabled: enabled)
-            }
-        )
-    }
-
-    private func updateList(
-        _ keyPath: ReferenceWritableKeyPath<NotchSettings, [String]>,
-        bundleID: String,
-        enabled: Bool
-    ) {
-        var list = settings[keyPath: keyPath]
-        if enabled {
-            if !list.contains(bundleID) {
-                list.append(bundleID)
-            }
-        } else {
-            list.removeAll { $0 == bundleID }
-        }
-        settings[keyPath: keyPath] = list
-        AppController.appState?.applyNotificationSettings()
     }
 }

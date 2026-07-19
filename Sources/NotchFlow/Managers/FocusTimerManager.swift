@@ -19,6 +19,8 @@ struct FocusTimerState: Equatable, Sendable {
     var selectedPresetMinutes = 25
     var phaseEndDate: Date?
     var stopwatchStartDate: Date?
+    /// True when the finish alert could not be heard (system mute / volume 0).
+    var isAlertMuted = false
 
     var formattedTime: String {
         switch mode {
@@ -101,11 +103,18 @@ struct FocusTimerState: Equatable, Sendable {
         mode != .idle && (isRunning || remainingSeconds != totalSeconds || elapsedSeconds > 0)
     }
 
+    /// Countdown finished and waiting to be dismissed (stays at 00:00 in the idle notch).
+    var isFinished: Bool {
+        !isRunning && remainingSeconds == 0 && mode == .countdown
+    }
+
     var activity: FocusTimerActivity {
         FocusTimerActivity(
             formattedTime: formattedTime,
             progress: progress,
             isRunning: isRunning,
+            isFinished: isFinished,
+            isAlertMuted: isAlertMuted,
             modeLabel: modeLabel,
             phaseEndDate: phaseEndDate,
             stopwatchStartDate: stopwatchStartDate,
@@ -124,6 +133,8 @@ final class FocusTimerManager {
     }
 
     private var timer: Timer?
+    private var muteWatchTimer: Timer?
+    private var attentionRequestID: Int?
     private var wakeObserver: NSObjectProtocol?
 
     var workDurationSeconds = 25 * 60
@@ -228,6 +239,9 @@ final class FocusTimerManager {
     func reset() {
         timer?.invalidate()
         timer = nil
+        stopMuteWatch()
+        cancelUserAttention()
+        TimerAlertSound.stop()
         state = FocusTimerState(selectedPresetMinutes: state.selectedPresetMinutes)
     }
 
@@ -279,9 +293,10 @@ final class FocusTimerManager {
             state.remainingSeconds = state.totalSeconds
             state.isRunning = true
             state.phaseEndDate = Date().addingTimeInterval(TimeInterval(state.remainingSeconds))
-            NotificationService.post(
+            postTimerAlert(
                 title: loc("Break"),
-                body: useLongBreak ? loc("Long break.") : loc("Short break.")
+                body: useLongBreak ? loc("Long break.") : loc("Short break."),
+                loops: false
             )
         case .pomodoroBreak:
             state.mode = .pomodoroWork
@@ -289,7 +304,7 @@ final class FocusTimerManager {
             state.remainingSeconds = workDurationSeconds
             state.isRunning = true
             state.phaseEndDate = Date().addingTimeInterval(TimeInterval(state.remainingSeconds))
-            NotificationService.post(title: loc("Focus"), body: loc("Next Pomodoro session."))
+            postTimerAlert(title: loc("Focus"), body: loc("Next Pomodoro session."), loops: false)
         case .stopwatch, .idle:
             break
         }
@@ -299,7 +314,75 @@ final class FocusTimerManager {
         state.isRunning = false
         timer?.invalidate()
         timer = nil
-        NotificationService.post(title: title, body: body)
+        // Loop until the user dismisses the finished 00:00 state.
+        postTimerAlert(title: title, body: body, loops: true)
+    }
+
+    private func postTimerAlert(title: String, body: String, loops: Bool) {
+        let soundID = NotchSettings.shared.timerAlertSoundName
+        let wantsSound = !soundID.isEmpty
+        let muted = wantsSound && SystemOutputAudio.isSilent
+
+        if muted {
+            // Inaudible over mute — bounce Dock / flash; finished countdown also waits for unmute.
+            TimerAlertSound.stop()
+            state.isAlertMuted = loops // Persist for finished-countdown idle UI.
+            requestUserAttention()
+            if loops {
+                startMuteWatch(soundID: soundID, loops: true)
+            }
+            NotificationService.post(
+                title: title,
+                body: loc("Sound is muted — turn up volume to hear the alert."),
+                sound: false
+            )
+        } else {
+            state.isAlertMuted = false
+            stopMuteWatch()
+            cancelUserAttention()
+            TimerAlertSound.play(soundID, loops: loops)
+            NotificationService.post(title: title, body: body, sound: false)
+        }
+    }
+
+    private func startMuteWatch(soundID: String, loops: Bool) {
+        muteWatchTimer?.invalidate()
+        muteWatchTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                self.pollMuteState(soundID: soundID, loops: loops)
+            }
+        }
+    }
+
+    private func pollMuteState(soundID: String, loops: Bool) {
+        // Dismissed / reset while waiting.
+        guard state.isFinished, state.isAlertMuted else {
+            stopMuteWatch()
+            return
+        }
+        guard !SystemOutputAudio.isSilent else { return }
+        state.isAlertMuted = false
+        stopMuteWatch()
+        cancelUserAttention()
+        TimerAlertSound.play(soundID, loops: loops)
+    }
+
+    private func stopMuteWatch() {
+        muteWatchTimer?.invalidate()
+        muteWatchTimer = nil
+    }
+
+    private func requestUserAttention() {
+        cancelUserAttention()
+        attentionRequestID = NSApp.requestUserAttention(.criticalRequest)
+    }
+
+    private func cancelUserAttention() {
+        if let attentionRequestID {
+            NSApp.cancelUserAttentionRequest(attentionRequestID)
+            self.attentionRequestID = nil
+        }
     }
 
     private func requestNotificationPermission() {

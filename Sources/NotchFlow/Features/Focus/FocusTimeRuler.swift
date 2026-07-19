@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// Pozioma taśma czasu — płynne przesuwanie, minuty blisko siebie.
+/// Pozioma taśma czasu — ustawianie minut albo wizualny postęp odliczania.
 struct FocusTimeRuler: View {
     @Binding var minutes: Int
     let accent: Color
     let isEnabled: Bool
+    /// When set (active countdown), the ruler tracks remaining minutes instead of the draft binding.
+    var progressMinutes: CGFloat? = nil
 
     private let minMinutes = 1
     private let maxMinutes = 90
@@ -14,7 +16,12 @@ struct FocusTimeRuler: View {
     @State private var dragAnchorMinute: CGFloat?
     @State private var liveCenterMinute: CGFloat?
 
+    private var isTrackingProgress: Bool { progressMinutes != nil }
+
     private var displayCenter: CGFloat {
+        if let progressMinutes {
+            return min(CGFloat(maxMinutes), max(0, progressMinutes))
+        }
         let center = liveCenterMinute ?? CGFloat(minutes)
         return min(CGFloat(maxMinutes), max(CGFloat(minMinutes), center))
     }
@@ -25,10 +32,13 @@ struct FocusTimeRuler: View {
 
             ZStack {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.04))
+                    .fill(Color.white.opacity(isTrackingProgress ? 0.06 : 0.04))
                     .overlay {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                            .stroke(
+                                accent.opacity(isTrackingProgress ? 0.22 : 0.06),
+                                lineWidth: 0.5
+                            )
                     }
 
                 rulerCanvas(midX: midX, width: geo.size.width)
@@ -42,7 +52,7 @@ struct FocusTimeRuler: View {
                         .frame(width: 1.5, height: 20)
                 }
                 .position(x: midX, y: geo.size.height * 0.58)
-                .shadow(color: accent.opacity(0.4), radius: 3, y: 1)
+                .shadow(color: accent.opacity(isTrackingProgress ? 0.55 : 0.4), radius: isTrackingProgress ? 5 : 3, y: 1)
                 .allowsHitTesting(false)
 
                 Color.clear
@@ -51,8 +61,9 @@ struct FocusTimeRuler: View {
             }
         }
         .frame(height: 44)
-        .opacity(isEnabled ? 1 : 0.45)
+        .opacity(isEnabled || isTrackingProgress ? 1 : 0.45)
         .allowsHitTesting(isEnabled)
+        .animation(.easeInOut(duration: 0.35), value: progressMinutes)
     }
 
     @ViewBuilder
@@ -60,8 +71,10 @@ struct FocusTimeRuler: View {
         Canvas { context, size in
             let center = displayCenter
             let centerY = size.height * 0.58
-            let first = max(minMinutes, Int(floor(center)) - 28)
+            let floorMin = isTrackingProgress ? 0 : minMinutes
+            let first = max(floorMin, Int(floor(center)) - 28)
             let last = min(maxMinutes, Int(ceil(center)) + 28)
+            guard first <= last else { return }
 
             for minute in first...last {
                 let offset = CGFloat(minute) - center
@@ -70,7 +83,7 @@ struct FocusTimeRuler: View {
 
                 let distance = abs(offset)
                 let isCenter = distance < 0.35
-                let isMajor = minute.isMultiple(of: 5)
+                let isMajor = minute == 0 || minute.isMultiple(of: 5)
                 let fade = max(0.1, 1 - distance * 0.04)
 
                 let tickHeight: CGFloat = isCenter ? 15 : (isMajor ? 10 : 4)

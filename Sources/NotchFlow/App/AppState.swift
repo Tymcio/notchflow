@@ -17,6 +17,8 @@ final class AppState {
     var licenseStatus: LicenseStatus = .free
     var isIslandInputFocused = false
     var hubNotifications: [HubNotification] = []
+    /// Wymusza odświeżenie widoku idle po zmianie połączenia (CallManager nie jest @Observable).
+    private(set) var callLiveActivityRevision = 0
 
     let mediaMonitor: MediaMonitor
     let shelfManager: ShelfManager
@@ -66,7 +68,8 @@ final class AppState {
     }
 
     var activeLiveActivity: LiveActivityKind? {
-        LiveActivityResolver.resolve(
+        _ = callLiveActivityRevision
+        return LiveActivityResolver.resolve(
             incomingCall: callManager.incomingCall,
             activeCall: callManager.activeCall,
             timer: focusTimerState.showsInIdleNotch ? focusTimerState.activity : nil,
@@ -79,10 +82,63 @@ final class AppState {
         activeLiveActivity != nil
     }
 
-    /// Notification peeks widen the right wing so sender and body are readable.
+    /// Active-call peeks widen the right wing so content is readable.
     var idleRightWingWidthOverride: CGFloat? {
-        guard case .notification(let peek) = activeLiveActivity else { return nil }
-        return IdleNotificationMetrics.preferredRightWingWidth(for: peek)
+        switch activeLiveActivity {
+        case .activeCall(let call):
+            let displayName = NotificationAppCatalog.isSystemCallUILabel(call.callerName)
+                ? loc("Incoming call")
+                : call.callerName
+            return IdleCallMetrics.preferredRightWingWidth(
+                callerName: displayName,
+                actionButtonCount: 1,
+                showsSubtitle: true
+            )
+        case .timer(let timer) where timer.isFinished && timer.isAlertMuted:
+            return IdleTimerMetrics.preferredMutedRightWingWidth()
+        default:
+            return nil
+        }
+    }
+
+    /// Incoming calls and app notifications hang below the cutout (not wing peeks).
+    var idleDropBannerWidth: CGFloat? {
+        let cutout = displayManager.geometry?.physicalNotchCutoutWidth
+            ?? NotchFlowConstants.defaultNotchCutoutWidth
+        switch activeLiveActivity {
+        case .incomingCall(let call):
+            return IncomingCallBannerMetrics.preferredWidth(for: call, cutoutWidth: cutout)
+        case .notification(let peek):
+            return NotificationBannerMetrics.preferredWidth(for: peek, cutoutWidth: cutout)
+        default:
+            return nil
+        }
+    }
+
+    var idleDropBannerHeight: CGFloat? {
+        guard idleDropBannerWidth != nil else { return nil }
+        let topInset = displayManager.geometry?.notchTopInset
+            ?? displayManager.geometry?.idleSize.height
+            ?? 32
+        let content: CGFloat
+        switch activeLiveActivity {
+        case .incomingCall:
+            content = NotchFlowConstants.incomingCallDropContentHeight
+        default:
+            content = NotchFlowConstants.dropBannerContentHeight
+        }
+        return NotchFlowConstants.dropBannerHeight(topInset: topInset, contentHeight: content)
+    }
+
+    var idleDropBannerTopInset: CGFloat {
+        displayManager.geometry?.notchTopInset
+            ?? displayManager.geometry?.idleSize.height
+            ?? 32
+    }
+
+    /// Kept for call sites that still name the call banner specifically.
+    var idleIncomingCallBannerWidth: CGFloat? {
+        idleDropBannerWidth
     }
 
     var shelfBadgeCount: Int {
@@ -137,11 +193,15 @@ final class AppState {
         callManager.isEnabled = callsEnabled
         notificationHub.isEnabled = notificationsEnabled
         notificationHub.allowedNativeBundleIDs = Set(settings.allowedNativeNotificationBundleIDs)
-        notificationHub.allowedRamboxAggregatorBundleIDs = Set(settings.allowedRamboxAggregatorBundleIDs)
-        notificationHub.allowedRamboxServiceBundleIDs = Set(settings.allowedRamboxServiceBundleIDs)
         notificationHub.hideMessageBody = settings.hideNotificationBody
 
-        notificationCenterObserver.setEnabled(callsEnabled || notificationsEnabled)
+        notificationCenterObserver.setEnabled(
+            callsEnabled || notificationsEnabled,
+            callsPriority: callsEnabled
+        )
+        notificationCenterObserver.callSessionActiveProvider = { [weak self] in
+            self?.callManager.needsFrequentScan == true
+        }
         notifyLiveActivityChange()
     }
 
@@ -152,6 +212,23 @@ final class AppState {
 
     func declineIncomingCall() {
         callManager.declineCall(using: notificationCenterObserver)
+        notifyLiveActivityChange()
+    }
+
+    func endActiveCall() {
+        callManager.endCall(using: notificationCenterObserver)
+        notifyLiveActivityChange()
+    }
+
+    func openHubNotificationApp() {
+        notificationHub.openActivePeekApp()
+        notifyLiveActivityChange()
+    }
+
+    func replyToHubNotification(_ text: String) {
+        if !notificationHub.replyToActivePeek(text: text, using: notificationCenterObserver) {
+            notificationHub.openActivePeekApp()
+        }
         notifyLiveActivityChange()
     }
 
@@ -207,8 +284,12 @@ final class AppState {
         focusTimerManager.onStateChange = { [weak self] state in
             guard let self else { return }
             let previousShowsInIdle = self.focusTimerState.showsInIdleNotch
+            let previousFinished = self.focusTimerState.isFinished
+            let previousMuted = self.focusTimerState.isAlertMuted
             self.focusTimerState = state
-            if state.showsInIdleNotch != previousShowsInIdle {
+            if state.showsInIdleNotch != previousShowsInIdle
+                || state.isFinished != previousFinished
+                || state.isAlertMuted != previousMuted {
                 self.notifyLiveActivityChange()
             }
         }
@@ -241,7 +322,9 @@ final class AppState {
         }
 
         callManager.onStateChange = { [weak self] in
-            self?.notifyLiveActivityChange()
+            guard let self else { return }
+            self.callLiveActivityRevision += 1
+            self.notifyLiveActivityChange()
         }
 
         notificationHub.onStateChange = { [weak self] in
@@ -252,7 +335,12 @@ final class AppState {
 
         notificationCenterObserver.onBannerDetected = { [weak self] banner in
             guard let self else { return }
-            self.callManager.handleBanner(banner)
+            if banner.isLikelyCall {
+                guard self.isPremium, self.settings.callsInNotchEnabled else { return }
+                self.callManager.handleBanner(banner)
+                return
+            }
+
             let shownInNotch = self.notificationHub.handleBanner(banner)
             if shownInNotch, self.settings.dismissSystemBanners {
                 self.notificationCenterObserver.dismissBanner(banner)
