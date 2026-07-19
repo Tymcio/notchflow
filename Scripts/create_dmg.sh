@@ -36,39 +36,13 @@ cp -R "$APP_PATH" "$CONTENT/${APP_NAME}.app"
 # Applications drop target is created as a Finder alias after mount (symlinks
 # often refuse icon positioning in AppleScript).
 
-# Optional brand background with a subtle arrow between the two drop zones.
+# Light background so Finder's dark icon labels stay readable.
 BG_SRC="$ROOT_DIR/assets/dmg-background.png"
 if [[ ! -f "$BG_SRC" ]]; then
   BG_SRC="$ROOT_DIR/Assets/dmg-background.png"
 fi
 if [[ ! -f "$BG_SRC" ]]; then
-  python3 - "$STAGE/dmg-background.png" <<'PY' || true
-from pathlib import Path
-import sys
-out = Path(sys.argv[1])
-try:
-    from PIL import Image, ImageDraw
-except ImportError:
-    raise SystemExit(0)
-
-# Finder background coordinates are in points; 2x retina bitmap looks crisp.
-w, h = 1200, 700
-img = Image.new("RGB", (w, h), (18, 20, 28))
-draw = ImageDraw.Draw(img)
-# Soft panels behind the two icons
-draw.rounded_rectangle((140, 150, 420, 520), radius=36, fill=(28, 32, 44))
-draw.rounded_rectangle((780, 150, 1060, 520), radius=36, fill=(28, 32, 44))
-# Arrow
-ax0, ax1, ay = 460, 740, 340
-draw.line([(ax0, ay), (ax1 - 40, ay)], fill=(90, 140, 255), width=14)
-draw.polygon([(ax1 - 50, ay - 36), (ax1, ay), (ax1 - 50, ay + 36)], fill=(90, 140, 255))
-# Accent wave under arrow (brand hint)
-for i, color in enumerate([(56, 200, 255), (90, 120, 255), (170, 80, 255)]):
-    y = 410 + i * 10
-    draw.arc((480, y - 30, 720, y + 30), 200, 340, fill=color, width=4)
-img.save(out, "PNG")
-print(out)
-PY
+  python3 "$ROOT_DIR/Scripts/generate_dmg_background.py" "$STAGE/dmg-background.png" || true
   if [[ -f "$STAGE/dmg-background.png" ]]; then
     BG_SRC="$STAGE/dmg-background.png"
   fi
@@ -126,10 +100,14 @@ tell application "Finder"
     try
       set sidebar width of container window to 0
     end try
-    set the bounds of container window to {200, 120, 800, 470}
+    -- 600×350 pt content matches assets/dmg-background.png (1200×700 @2x).
+    set the bounds of container window to {220, 140, 820, 490}
     set viewOptions to the icon view options of container window
     set arrangement of viewOptions to not arranged
     set icon size of viewOptions to 128
+    try
+      set text size of viewOptions to 14
+    end try
     try
       set background picture of viewOptions to file ".background:background.png"
     end try
@@ -138,8 +116,12 @@ tell application "Finder"
       delete item "Applications"
     end try
     make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
-    set position of item "${APP_NAME}.app" of container window to {150, 180}
-    set position of item "Applications" of container window to {450, 180}
+    try
+      set the extension hidden of item "${APP_NAME}.app" to true
+    end try
+    -- Centers aligned with the light drop-zone rings on the background.
+    set position of item "${APP_NAME}.app" of container window to {150, 165}
+    set position of item "Applications" of container window to {450, 165}
     update without registering applications
     delay 1
     close

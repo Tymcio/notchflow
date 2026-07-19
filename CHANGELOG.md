@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.29] - 2026-07-19
+
+### Changed
+
+- DMG installer background: light theme with clear arrow and readable Finder labels
+
 ## [1.0.28] - 2026-07-19
 
 ### Changed
