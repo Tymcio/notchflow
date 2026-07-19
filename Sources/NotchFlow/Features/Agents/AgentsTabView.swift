@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 struct AgentsTabView: View {
     @Bindable var appState: AppState
     @State private var installMessage = ""

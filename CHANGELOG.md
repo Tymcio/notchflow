@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.24] - 2026-07-19
+
+### Fixed
+
+- Release build on Xcode 15.4: Agents tab MainActor isolation and Contacts authorization status
+
 ## [1.0.23] - 2026-07-19
 
 ### Added

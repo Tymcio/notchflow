@@ -12,7 +12,7 @@ enum ContactPhotoProvider {
         let store = CNContactStore()
         let status = CNContactStore.authorizationStatus(for: .contacts)
         switch status {
-        case .authorized, .limited:
+        case .authorized:
             break
         case .notDetermined:
             // Don't block the main actor; next ring can use the photo after the prompt.
