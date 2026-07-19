@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.25] - 2026-07-19
+
+### Added
+
+- Proper macOS app icon (`AppIcon.icns`) so Finder, Dock, and system UI no longer show the gray template placeholder
+
 ## [1.0.24] - 2026-07-19
 
 ### Fixed

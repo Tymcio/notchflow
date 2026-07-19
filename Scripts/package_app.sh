@@ -46,6 +46,38 @@ else
   echo "WARNING: NotchFlow_NotchFlow.bundle not found — icons and localizations may be missing." >&2
 fi
 
+# App icon (.icns) — without CFBundleIconFile macOS shows the gray template placeholder.
+APP_ICON_SRC=""
+for candidate in \
+  "$ROOT_DIR/Assets/AppIcon.png" \
+  "$ROOT_DIR/assets/AppIcon.png" \
+  "$ROOT_DIR/ikonka.png"; do
+  if [[ -f "$candidate" ]]; then
+    APP_ICON_SRC="$candidate"
+    break
+  fi
+done
+
+if [[ -n "$APP_ICON_SRC" ]]; then
+  ICONSET_DIR="$BUILD_DIR/AppIcon.iconset"
+  rm -rf "$ICONSET_DIR"
+  mkdir -p "$ICONSET_DIR"
+  # Pad/crop to square master, then generate the iconset sizes Apple expects.
+  MASTER_PNG="$BUILD_DIR/AppIcon-1024.png"
+  sips -z 1024 1024 "$APP_ICON_SRC" --out "$MASTER_PNG" >/dev/null
+  declare -a ICON_SIZES=(16 32 128 256 512)
+  for size in "${ICON_SIZES[@]}"; do
+    sips -z "$size" "$size" "$MASTER_PNG" --out "$ICONSET_DIR/icon_${size}x${size}.png" >/dev/null
+    double=$((size * 2))
+    sips -z "$double" "$double" "$MASTER_PNG" --out "$ICONSET_DIR/icon_${size}x${size}@2x.png" >/dev/null
+  done
+  iconutil -c icns "$ICONSET_DIR" -o "$RESOURCES_DIR/AppIcon.icns"
+  rm -rf "$ICONSET_DIR" "$MASTER_PNG"
+  echo "Bundled AppIcon.icns (from $(basename "$APP_ICON_SRC"))"
+else
+  echo "WARNING: AppIcon.png / ikonka.png not found — Finder/Dock will show the placeholder icon." >&2
+fi
+
 # Copy Sparkle framework — required at runtime (@rpath)
 SPARKLE_FW=""
 for candidate in \
@@ -127,6 +159,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>6.0</string>
   <key>CFBundleName</key>
   <string>${APP_NAME}</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
