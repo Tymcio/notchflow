@@ -190,13 +190,16 @@ enum AgentHooksInstaller {
     }
 
     private static func bundledHookScript() -> String {
-        if let url = Bundle.main.url(forResource: "notchflow-agent-hook", withExtension: "sh", subdirectory: "AgentHooks"),
-           let contents = try? String(contentsOf: url, encoding: .utf8) {
-            return contents
-        }
-        if let url = Bundle.main.url(forResource: "notchflow-agent-hook", withExtension: "sh"),
-           let contents = try? String(contentsOf: url, encoding: .utf8) {
-            return contents
+        let bundles = [ResourceBundle.bundle, Bundle.main]
+        for bundle in bundles {
+            if let url = bundle.url(forResource: "notchflow-agent-hook", withExtension: "sh", subdirectory: "AgentHooks"),
+               let contents = try? String(contentsOf: url, encoding: .utf8) {
+                return contents
+            }
+            if let url = bundle.url(forResource: "notchflow-agent-hook", withExtension: "sh"),
+               let contents = try? String(contentsOf: url, encoding: .utf8) {
+                return contents
+            }
         }
         return embeddedHookScript
     }

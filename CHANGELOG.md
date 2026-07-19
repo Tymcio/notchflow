@@ -2,6 +2,18 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.30] - 2026-07-19
+
+### Fixed
+
+- Release app crash on launch: load SPM resources from `Contents/Resources` (signed `.app` cannot keep the bundle at the app root)
+- DMG background alignment: use 600×350 1:1 px→pt so install title is centered in Finder
+
+### Added
+
+- Custom Finder icon on the `.dmg` file and volume icon when mounted
+- `Scripts/install_local.sh` to install a local non-notarized build into `/Applications`
+
 ## [1.0.29] - 2026-07-19
 
 ### Changed

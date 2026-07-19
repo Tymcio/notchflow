@@ -33,7 +33,7 @@ private enum L10nCatalog {
     static let languageCode = LanguageResolver.languageCode
 
     private static let translations: [String: [String: String]] = {
-        guard let url = Bundle.module.url(forResource: "Localizable", withExtension: "xcstrings"),
+        guard let url = ResourceBundle.bundle.url(forResource: "Localizable", withExtension: "xcstrings"),
               let data = try? Data(contentsOf: url),
               let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let strings = root["strings"] as? [String: Any] else {
@@ -73,7 +73,7 @@ private enum L10nCatalog {
     }
 }
 
-/// Resolves a localized string from the NotchFlow String Catalog (`Bundle.module`).
+/// Resolves a localized string from the NotchFlow String Catalog.
 func loc(_ key: String) -> String {
     L10nCatalog.localized(key)
 }

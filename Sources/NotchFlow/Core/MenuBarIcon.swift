@@ -6,7 +6,7 @@ enum MenuBarIcon {
     private static let maxPointWidth: CGFloat = 18
 
     static func makeTemplateImage() -> NSImage {
-        guard let url = Bundle.module.url(forResource: "MenuBarIcon", withExtension: "png"),
+        guard let url = ResourceBundle.bundle.url(forResource: "MenuBarIcon", withExtension: "png"),
               let data = try? Data(contentsOf: url),
               let sourceRep = NSBitmapImageRep(data: data) else {
             return fallbackImage()

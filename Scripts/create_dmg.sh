@@ -100,7 +100,7 @@ tell application "Finder"
     try
       set sidebar width of container window to 0
     end try
-    -- 600×350 pt content matches assets/dmg-background.png (1200×700 @2x).
+    -- 600×350 pt content; background PNG must be exactly 600×350 (1:1 px→pt).
     set the bounds of container window to {220, 140, 820, 490}
     set viewOptions to the icon view options of container window
     set arrangement of viewOptions to not arranged
@@ -144,6 +144,22 @@ if [[ ! -e "$VOLUME_PATH/Applications" ]]; then
   ln -s /Applications "$VOLUME_PATH/Applications"
 fi
 
+# Volume icon (sidebar / desktop when the image is mounted).
+ICNS_SRC=""
+for candidate in \
+  "$APP_PATH/Contents/Resources/AppIcon.icns" \
+  "$ROOT_DIR/build/${APP_NAME}.app/Contents/Resources/AppIcon.icns"; do
+  if [[ -f "$candidate" ]]; then
+    ICNS_SRC="$candidate"
+    break
+  fi
+done
+if [[ -n "$ICNS_SRC" ]]; then
+  cp "$ICNS_SRC" "$VOLUME_PATH/.VolumeIcon.icns"
+  SetFile -c icnC "$VOLUME_PATH/.VolumeIcon.icns" 2>/dev/null || true
+  SetFile -a C "$VOLUME_PATH" 2>/dev/null || true
+fi
+
 sync
 hdiutil detach "$DEVICE" -force >/dev/null
 DEVICE=""
@@ -152,6 +168,23 @@ DEVICE=""
 hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG_PATH" >/dev/null
 # Convenience alias for Sparkle / latest download URL.
 cp -f "$DMG_PATH" "$ROOT_DIR/build/${APP_NAME}.dmg"
+
+# Custom Finder icon on the .dmg file itself (download / Finder list view).
+if [[ -n "$ICNS_SRC" ]]; then
+  set_dmg_file_icon() {
+    local dmg="$1"
+    local icns="$2"
+    osascript \
+      -e 'use framework "AppKit"' \
+      -e "set img to current application's NSImage's alloc()'s initWithContentsOfFile:\"$icns\"" \
+      -e 'if img is missing value then error "failed to load DMG icon"' \
+      -e "set ok to current application's NSWorkspace's sharedWorkspace()'s setIcon:img forFile:\"$dmg\" options:0" \
+      -e 'if ok is false then error "setIcon failed"' \
+      >/dev/null
+  }
+  set_dmg_file_icon "$DMG_PATH" "$ICNS_SRC" || echo "WARNING: could not set icon on $DMG_PATH" >&2
+  set_dmg_file_icon "$ROOT_DIR/build/${APP_NAME}.dmg" "$ICNS_SRC" || echo "WARNING: could not set icon on ${APP_NAME}.dmg" >&2
+fi
 
 if [[ "$style_ok" -eq 1 ]]; then
   echo "Created drag-to-Applications DMG (styled): $DMG_PATH"

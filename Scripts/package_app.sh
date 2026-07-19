@@ -39,9 +39,11 @@ for candidate in \
 done
 
 if [[ -n "$RESOURCE_BUNDLE" ]]; then
-  rm -rf "$RESOURCES_DIR/NotchFlow_NotchFlow.bundle"
-  cp -R "$RESOURCE_BUNDLE" "$RESOURCES_DIR/"
-  echo "Bundled NotchFlow_NotchFlow.bundle"
+  # Must live under Contents/Resources — codesign rejects unsealed files at the .app root.
+  # Runtime loads via ResourceBundle (not SPM's Bundle.module, which looks at app root).
+  rm -rf "$APP_DIR/NotchFlow_NotchFlow.bundle" "$RESOURCES_DIR/NotchFlow_NotchFlow.bundle"
+  cp -R "$RESOURCE_BUNDLE" "$RESOURCES_DIR/NotchFlow_NotchFlow.bundle"
+  echo "Bundled NotchFlow_NotchFlow.bundle → Contents/Resources"
 else
   echo "WARNING: NotchFlow_NotchFlow.bundle not found — icons and localizations may be missing." >&2
 fi

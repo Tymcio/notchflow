@@ -3,7 +3,7 @@ import SwiftUI
 
 enum NotchFlowLogo {
     static var markImage: NSImage? {
-        guard let url = Bundle.module.url(forResource: "LogoMark", withExtension: "png"),
+        guard let url = ResourceBundle.bundle.url(forResource: "LogoMark", withExtension: "png"),
               let image = NSImage(contentsOf: url) else {
             return nil
         }
