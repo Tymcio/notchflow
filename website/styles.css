@@ -2040,6 +2040,18 @@ body.cookie-banner-open {
   display: grid;
   gap: 2.5rem;
   grid-template-columns: 1.4fr repeat(3, 1fr);
+  align-items: center;
+}
+
+/* Compact footers (pricing): brand + link row — stretch links across leftover columns */
+.footer-grid > .footer-links {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -2049,6 +2061,11 @@ body.cookie-banner-open {
 
   .footer-brand {
     grid-column: 1 / -1;
+  }
+
+  .footer-grid > .footer-links {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 }
 
@@ -2314,16 +2331,11 @@ body.cookie-banner-open {
   color: rgba(255, 255, 255, 0.7);
 }
 
-.footer-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-}
-
 .footer-links a {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--muted);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .footer-links a:hover { color: var(--text); }
