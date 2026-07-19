@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.27] - 2026-07-19
+
+### Fixed
+
+- CI tests: convert notification catalog tests from Swift Testing to XCTest for Xcode 15.4
+
 ## [1.0.26] - 2026-07-19
 
 ### Fixed

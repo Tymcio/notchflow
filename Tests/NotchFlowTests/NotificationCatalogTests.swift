@@ -1,58 +1,56 @@
 import Foundation
-import Testing
+import XCTest
 @testable import NotchFlow
 
-@Suite("Notification catalog and allowlist")
-struct NotificationCatalogTests {
-    @Test("Supported catalog includes messaging apps and Mail, excludes Skype and Rambox")
-    func supportedCatalog() {
+final class NotificationCatalogTests: XCTestCase {
+    func testSupportedCatalogIncludesMessagingAppsAndMail() {
         let ids = Set(NotificationAppCatalog.supportedNotificationApps.map(\.bundleID))
-        #expect(ids.contains("net.whatsapp.WhatsApp"))
-        #expect(ids.contains("org.whispersystems.signal-desktop"))
-        #expect(ids.contains("com.apple.MobileSMS"))
-        #expect(ids.contains("com.apple.mail"))
-        #expect(!ids.contains("com.skype.skype"))
-        #expect(!ids.contains("com.rambox"))
-        #expect(!NotificationAppCatalog.isAggregator("com.rambox"))
-        #expect(NotificationAppCatalog.isEmailApp("com.apple.mail"))
-        #expect(NotificationAppCatalog.isMessagingApp("net.whatsapp.WhatsApp"))
-        #expect(!NotificationAppCatalog.isMessagingApp("com.apple.mail"))
+        XCTAssertTrue(ids.contains("net.whatsapp.WhatsApp"))
+        XCTAssertTrue(ids.contains("org.whispersystems.signal-desktop"))
+        XCTAssertTrue(ids.contains("com.apple.MobileSMS"))
+        XCTAssertTrue(ids.contains("com.apple.mail"))
+        XCTAssertFalse(ids.contains("com.skype.skype"))
+        XCTAssertFalse(ids.contains("com.rambox"))
+        XCTAssertFalse(NotificationAppCatalog.isAggregator("com.rambox"))
+        XCTAssertTrue(NotificationAppCatalog.isEmailApp("com.apple.mail"))
+        XCTAssertTrue(NotificationAppCatalog.isMessagingApp("net.whatsapp.WhatsApp"))
+        XCTAssertFalse(NotificationAppCatalog.isMessagingApp("com.apple.mail"))
         // Bundle IDs look like AX labels — catalog name must still win.
-        #expect(NotificationAppCatalog.name(for: "com.facebook.archon") == "Messenger")
-        #expect(NotificationAppCatalog.name(for: "org.whispersystems.signal-desktop") == "Signal")
+        XCTAssertEqual(NotificationAppCatalog.name(for: "com.facebook.archon"), "Messenger")
+        XCTAssertEqual(NotificationAppCatalog.name(for: "org.whispersystems.signal-desktop"), "Signal")
     }
 
-    @Test("Resolve prefers trusted catalog hint and exact icon labels")
-    func resolveCatalogHint() {
+    func testResolvePrefersTrustedCatalogHintAndExactIconLabels() {
         let resolved = NotificationAppCatalog.resolve(
             iconTexts: ["Signal"],
             contentTexts: ["Alice", "Hello"],
             deliveringHint: "org.whispersystems.signal-desktop"
         )
-        #expect(resolved.delivering == "org.whispersystems.signal-desktop")
-        #expect(resolved.service == "org.whispersystems.signal-desktop")
-        #expect(resolved.hasTrustedSource)
+        XCTAssertEqual(resolved.delivering, "org.whispersystems.signal-desktop")
+        XCTAssertEqual(resolved.service, "org.whispersystems.signal-desktop")
+        XCTAssertTrue(resolved.hasTrustedSource)
 
         let mail = NotificationAppCatalog.resolve(
             iconTexts: ["Mail"],
             contentTexts: ["Boss", "Quarterly report"],
             deliveringHint: "com.apple.mail"
         )
-        #expect(mail.delivering == "com.apple.mail")
-        #expect(NotificationAppCatalog.isEmailApp(mail.service))
+        XCTAssertEqual(mail.delivering, "com.apple.mail")
+        XCTAssertTrue(NotificationAppCatalog.isEmailApp(mail.service))
     }
 
-    @Test("Signal identity survives reverse-DNS AX icon labels and privacy banners")
-    func signalPrivacyIdentity() {
-        #expect(
+    func testSignalIdentitySurvivesReverseDNSAXLabelsAndPrivacyBanners() {
+        XCTAssertEqual(
             NotificationAppCatalog.iconIdentityLabel(
                 fromAccessibilityLabel: "org.whispersystems.signal-desktop"
-            ) == "Signal"
+            ),
+            "Signal"
         )
-        #expect(
+        XCTAssertEqual(
             NotificationAppCatalog.matchMessagingAppFromIconLabels(
                 in: ["org.whispersystems.signal-desktop"]
-            )?.bundleID == "org.whispersystems.signal-desktop"
+            )?.bundleID,
+            "org.whispersystems.signal-desktop"
         )
 
         let privacy = NotificationAppCatalog.resolve(
@@ -60,63 +58,65 @@ struct NotificationCatalogTests {
             contentTexts: [],
             deliveringHint: "org.whispersystems.signal-desktop"
         )
-        #expect(privacy.delivering == "org.whispersystems.signal-desktop")
-        #expect(privacy.service == "org.whispersystems.signal-desktop")
-        #expect(privacy.displayName == "Signal")
+        XCTAssertEqual(privacy.delivering, "org.whispersystems.signal-desktop")
+        XCTAssertEqual(privacy.service, "org.whispersystems.signal-desktop")
+        XCTAssertEqual(privacy.displayName, "Signal")
 
         // Generic system header alone is not readable — hub synthesizes a presence ping.
-        #expect(
-            !NotificationAppCatalog.isReadableNotificationText(
+        XCTAssertFalse(
+            NotificationAppCatalog.isReadableNotificationText(
                 title: "Powiadomienie",
                 body: ""
             )
         )
     }
 
-    @Test("Foreign posters are not remapped to Messages")
-    func foreignPosterStaysForeign() {
+    func testForeignPosterStaysForeign() {
         let resolved = NotificationAppCatalog.resolve(
             iconTexts: ["Cursor"],
             contentTexts: ["Agent finished", "Build completed"],
             deliveringHint: "com.todesktop.230313mzl4w4u92"
         )
-        #expect(resolved.delivering == "com.todesktop.230313mzl4w4u92")
-        #expect(resolved.service == "unknown.app")
+        XCTAssertEqual(resolved.delivering, "com.todesktop.230313mzl4w4u92")
+        XCTAssertEqual(resolved.service, "unknown.app")
     }
 
-    @Test("Call host bundle IDs resolve to Phone/FaceTime, not Notification")
-    func callHostDisplayName() {
+    func testCallHostBundleIDsResolveToPhoneOrFaceTime() {
         let phone = NotificationAppCatalog.name(for: "com.apple.mobilephone")
-        #expect(phone != "Powiadomienie")
-        #expect(phone != "Notification")
-        #expect(phone == "Phone" || phone == "Telefon" || !phone.contains("."))
+        XCTAssertNotEqual(phone, "Powiadomienie")
+        XCTAssertNotEqual(phone, "Notification")
+        XCTAssertTrue(phone == "Phone" || phone == "Telefon" || !phone.contains("."))
 
         let faceTime = NotificationAppCatalog.name(for: "com.apple.FaceTime")
-        #expect(faceTime != "Powiadomienie")
-        #expect(faceTime != "Notification")
-        #expect(faceTime.localizedCaseInsensitiveContains("FaceTime") || !faceTime.contains("."))
+        XCTAssertNotEqual(faceTime, "Powiadomienie")
+        XCTAssertNotEqual(faceTime, "Notification")
+        XCTAssertTrue(
+            faceTime.localizedCaseInsensitiveContains("FaceTime") || !faceTime.contains(".")
+        )
     }
 
-    @Test("Weekday calendar chrome is not a plausible caller name")
-    func calendarChromeRejectedAsCaller() {
-        #expect(!NotificationAppCatalog.isPlausibleCallerName("NIEDZIELA"))
-        #expect(!NotificationAppCatalog.isPlausibleCallerName("niedziela"))
-        #expect(!NotificationAppCatalog.isPlausibleCallerName("Sunday"))
-        #expect(!NotificationAppCatalog.isPlausibleCallerName("19 LIPCA"))
-        #expect(!NotificationAppCatalog.isPlausibleCallerName("NIEDZIELA, 19 LIPCA"))
-        #expect(NotificationAppCatalog.isCalendarChromeLabel("NIEDZIELA, 19 LIPCA"))
-        #expect(!NotificationAppCatalog.isCalendarChromeLabel("Ada Nowak"))
-        #expect(NotificationAppCatalog.isPlausibleCallerName("Ada Nowak"))
-        #expect(NotificationAppCatalog.isPlausibleCallerName("Martyna Tymków"))
-        #expect(NotificationAppCatalog.isContinuityCallSubtitle("Z Twojego iPhone'a"))
-        #expect(!NotificationAppCatalog.isPlausibleCallerName("„NotchFlow” chce uzyskać dostęp do Twoich kontaktów."))
-        #expect(NotificationAppCatalog.isSystemCallUILabel("Kamera (iPhone (Marcin))"))
-        #expect(NotificationAppCatalog.isContinuityDeviceRouteLabel("Mikrofon (iPhone (Marcin))"))
-        #expect(!NotificationAppCatalog.isPlausibleCallerName("Mikrofon (iPhone (Marcin))"))
+    func testWeekdayCalendarChromeIsNotAPlausibleCallerName() {
+        XCTAssertFalse(NotificationAppCatalog.isPlausibleCallerName("NIEDZIELA"))
+        XCTAssertFalse(NotificationAppCatalog.isPlausibleCallerName("niedziela"))
+        XCTAssertFalse(NotificationAppCatalog.isPlausibleCallerName("Sunday"))
+        XCTAssertFalse(NotificationAppCatalog.isPlausibleCallerName("19 LIPCA"))
+        XCTAssertFalse(NotificationAppCatalog.isPlausibleCallerName("NIEDZIELA, 19 LIPCA"))
+        XCTAssertTrue(NotificationAppCatalog.isCalendarChromeLabel("NIEDZIELA, 19 LIPCA"))
+        XCTAssertFalse(NotificationAppCatalog.isCalendarChromeLabel("Ada Nowak"))
+        XCTAssertTrue(NotificationAppCatalog.isPlausibleCallerName("Ada Nowak"))
+        XCTAssertTrue(NotificationAppCatalog.isPlausibleCallerName("Martyna Tymków"))
+        XCTAssertTrue(NotificationAppCatalog.isContinuityCallSubtitle("Z Twojego iPhone'a"))
+        XCTAssertFalse(
+            NotificationAppCatalog.isPlausibleCallerName(
+                "„NotchFlow” chce uzyskać dostęp do Twoich kontaktów."
+            )
+        )
+        XCTAssertTrue(NotificationAppCatalog.isSystemCallUILabel("Kamera (iPhone (Marcin))"))
+        XCTAssertTrue(NotificationAppCatalog.isContinuityDeviceRouteLabel("Mikrofon (iPhone (Marcin))"))
+        XCTAssertFalse(NotificationAppCatalog.isPlausibleCallerName("Mikrofon (iPhone (Marcin))"))
     }
 
-    @Test("Settings migration drops unsupported and Rambox aggregator IDs")
-    func settingsMigration() {
+    func testSettingsMigrationDropsUnsupportedAndRamboxAggregatorIDs() {
         let migrated = NotchSettings.migratedAllowedNotificationBundleIDs([
             "com.rambox",
             "net.whatsapp.WhatsApp",
@@ -125,18 +125,16 @@ struct NotificationCatalogTests {
             "com.apple.mail",
             "com.todesktop.230313mzl4w4u92",
         ])
-        #expect(migrated == [
+        XCTAssertEqual(migrated, [
             "net.whatsapp.WhatsApp",
             "com.apple.mail",
         ])
     }
 }
 
-@Suite("Live activity priority and call banner metrics")
 @MainActor
-struct CallActivityTests {
-    @Test("Incoming call outranks active call and notifications")
-    func liveActivityPriority() {
+final class CallActivityTests: XCTestCase {
+    func testIncomingCallOutranksActiveCallAndNotifications() {
         let incoming = IncomingCallActivity(
             callerName: "Ada",
             appBundleID: "com.apple.FaceTime",
@@ -167,11 +165,10 @@ struct CallActivityTests {
             notification: peek,
             showsMedia: true
         )
-        #expect(resolved == .incomingCall(incoming))
+        XCTAssertEqual(resolved, .incomingCall(incoming))
     }
 
-    @Test("Notification peek temporarily outranks a running focus timer")
-    func notificationOutranksTimer() {
+    func testNotificationPeekTemporarilyOutranksRunningFocusTimer() {
         let timer = FocusTimerActivity(
             formattedTime: "12:00",
             progress: 0.4,
@@ -199,23 +196,21 @@ struct CallActivityTests {
             notification: peek,
             showsMedia: true
         )
-        #expect(resolved == .notification(peek))
+        XCTAssertEqual(resolved, .notification(peek))
     }
 
-    @Test("Incoming banner width stays within bounds")
-    func incomingBannerWidth() {
+    func testIncomingBannerWidthStaysWithinBounds() {
         let call = IncomingCallActivity(
             callerName: "Wesley Tingey",
             appBundleID: "com.apple.FaceTime",
             receivedAt: .now
         )
         let width = IncomingCallBannerMetrics.preferredWidth(for: call, cutoutWidth: 184)
-        #expect(width >= NotchFlowConstants.minIncomingCallBannerWidth)
-        #expect(width <= NotchFlowConstants.maxIncomingCallBannerWidth)
+        XCTAssertGreaterThanOrEqual(width, NotchFlowConstants.minIncomingCallBannerWidth)
+        XCTAssertLessThanOrEqual(width, NotchFlowConstants.maxIncomingCallBannerWidth)
     }
 
-    @Test("Notification drip width stays within bounds")
-    func notificationBannerWidth() {
+    func testNotificationDripWidthStaysWithinBounds() {
         let peek = NotificationPeekActivity(
             id: UUID(),
             appName: "Signal",
@@ -228,7 +223,7 @@ struct CallActivityTests {
             supportsQuickReply: false
         )
         let width = NotificationBannerMetrics.preferredWidth(for: peek, cutoutWidth: 184)
-        #expect(width >= NotchFlowConstants.minNotificationBannerWidth)
-        #expect(width <= NotchFlowConstants.maxNotificationBannerWidth)
+        XCTAssertGreaterThanOrEqual(width, NotchFlowConstants.minNotificationBannerWidth)
+        XCTAssertLessThanOrEqual(width, NotchFlowConstants.maxNotificationBannerWidth)
     }
 }
