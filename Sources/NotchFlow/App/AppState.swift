@@ -103,7 +103,6 @@ final class AppState {
             return IdleCallMetrics.activeCallRightWingWidth
         case .agentSession(let session):
             return IdleAgentMetrics.preferredRightWingWidth(
-                title: session.title,
                 needsAttention: session.needsAttention
             )
         case .timer(let timer) where timer.isFinished && timer.isAlertMuted:
@@ -194,6 +193,10 @@ final class AppState {
                 try await localAPIServer.start(appState: self)
             } catch {
                 NotchFlowLog.api.error("Failed to start local API: \(error.localizedDescription, privacy: .public)")
+            }
+            // Keep installed agent hook script in sync with the running app build.
+            if AgentHooksInstaller.currentStatus(localAPIEnabled: true).hookScriptInstalled {
+                try? AgentHooksInstaller.refreshBundledScript()
             }
         }
     }

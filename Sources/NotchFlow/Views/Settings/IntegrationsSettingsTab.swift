@@ -7,6 +7,12 @@ struct IntegrationsSettingsTab: View {
     @State private var copiedToken = false
     @State private var copiedURL = false
     @State private var apiBaseURL = ""
+    @State private var agentsMessage = ""
+    @State private var isInstallingAgents = false
+
+    private var agentsSetup: AgentHooksInstaller.SetupStatus {
+        AgentHooksInstaller.currentStatus(localAPIEnabled: appState.settings.localAPIEnabled)
+    }
 
     var body: some View {
         SettingsFormContent {
@@ -75,7 +81,7 @@ struct IntegrationsSettingsTab: View {
             }
 
             Section {
-                LocText("Monitor Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Kimi, and DeepSeek in the notch. Requires the Agents addon (€14.90) and Local API.")
+                LocText("Optional coding addon — monitor agents in the notch. Separate from Premium (€14.90).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -86,20 +92,49 @@ struct IntegrationsSettingsTab: View {
                 }
 
                 if appState.hasAgentsAddon {
-                    Button(loc("Install / refresh agent hooks")) {
-                        Task {
-                            do {
-                                if !appState.settings.localAPIEnabled {
-                                    appState.settings.localAPIEnabled = true
-                                    try await appState.localAPIServer.start(appState: appState)
-                                }
-                                _ = try APIAuth.token()
-                                let url = try AgentHooksInstaller.install()
-                                NSWorkspace.shared.activateFileViewerSelecting([url])
-                            } catch {
-                                NotchFlowLog.api.error("Agents hook install failed: \(error.localizedDescription, privacy: .public)")
-                            }
-                        }
+                    LabeledContent(loc("Local API")) {
+                        Text(agentsSetup.localAPIEnabled ? loc("On") : loc("Off"))
+                    }
+                    LabeledContent("Claude Code") {
+                        Text(agentsSetup.claudeHooksInstalled ? loc("Connected") : loc("Not connected"))
+                    }
+                    LabeledContent("Cursor") {
+                        Text(agentsSetup.cursorHooksInstalled ? loc("Connected") : loc("Not connected"))
+                    }
+
+                    Button(isInstallingAgents ? loc("Connecting…") : loc("Connect agents (Claude + Cursor)")) {
+                        installAgents()
+                    }
+                    .disabled(isInstallingAgents)
+
+                    Button(loc("Reveal hooks folder")) {
+                        let url = AgentHooksInstaller.hookScriptURL.deletingLastPathComponent()
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(loc("How to connect Cursor"))
+                            .font(.headline)
+                        Text(loc("1. Click Connect agents — writes ~/.cursor/hooks.json and enables Local API."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(loc("2. Fully quit Cursor (Cmd+Q) and open it again."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(loc("3. Start Agent Chat — live status appears in the notch and clears when the agent finishes."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(loc("Allow / Deny in the notch only for real consent prompts (Claude Code). Cursor keeps its own Ask/Allow UI — NotchFlow does not approve every tool call."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 4)
+
+                    if !agentsMessage.isEmpty {
+                        Text(agentsMessage)
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 } else {
                     Button(loc("Open license activation")) {
@@ -108,10 +143,33 @@ struct IntegrationsSettingsTab: View {
                 }
             } header: {
                 Text(loc("Agents addon"))
+            } footer: {
+                Text(loc("Hooks stay on your Mac. No agent code or prompts are sent to NotchFlow servers."))
+                    .font(.caption)
             }
         }
         .onAppear {
             refreshAPIInfo()
+        }
+    }
+
+    private func installAgents() {
+        isInstallingAgents = true
+        agentsMessage = ""
+        Task {
+            do {
+                if !appState.settings.localAPIEnabled {
+                    appState.settings.localAPIEnabled = true
+                    try await appState.localAPIServer.start(appState: appState)
+                }
+                _ = try APIAuth.token()
+                let url = try AgentHooksInstaller.install()
+                refreshAPIInfo()
+                agentsMessage = locFormat("Hooks installed. Restart Cursor, then use Agent Chat. Folder: %@", url.path)
+            } catch {
+                agentsMessage = error.localizedDescription
+            }
+            isInstallingAgents = false
         }
     }
 

@@ -6244,6 +6244,726 @@
           }
         }
       }
+    },
+    "Agents addon": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Addon Agents"
+          }
+        }
+      }
+    },
+    "Monitor Claude Code, Codex, Cursor, and more from the notch. One-time €14.90.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitoruj Claude Code, Codex, Cursor i inne z notcha. Jednorazowo €14,90."
+          }
+        }
+      }
+    },
+    "No active agent sessions": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brak aktywnych sesji agentów"
+          }
+        }
+      }
+    },
+    "Enable hooks so Claude Code and other agents appear here. Local API must stay on.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Włącz hooki, żeby Claude Code i inne agenty pojawiały się tutaj. Local API musi być włączone."
+          }
+        }
+      }
+    },
+    "Enable Agents": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Włącz Agents"
+          }
+        }
+      }
+    },
+    "Installing…": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instalowanie…"
+          }
+        }
+      }
+    },
+    "Clear finished": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyczyść zakończone"
+          }
+        }
+      }
+    },
+    "Hooks installed at %@": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooki zainstalowane w %@"
+          }
+        }
+      }
+    },
+    "Agents": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenci"
+          }
+        }
+      }
+    },
+    "Jump to agent": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skocz do agenta"
+          }
+        }
+      }
+    },
+    "Deny": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odrzuć"
+          }
+        }
+      }
+    },
+    "Allow": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zezwól"
+          }
+        }
+      }
+    },
+    "Running": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Działa"
+          }
+        }
+      }
+    },
+    "Needs approval": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czeka na zgodę"
+          }
+        }
+      }
+    },
+    "Waiting": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czeka"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gotowe"
+          }
+        }
+      }
+    },
+    "Working…": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pracuje…"
+          }
+        }
+      }
+    },
+    "Error": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Błąd"
+          }
+        }
+      }
+    },
+    "Addon status": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status addonu"
+          }
+        }
+      }
+    },
+    "Unlocked": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odblokowany"
+          }
+        }
+      }
+    },
+    "Locked": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zablokowany"
+          }
+        }
+      }
+    },
+    "Install / refresh agent hooks": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zainstaluj / odśwież hooki agentów"
+          }
+        }
+      }
+    },
+    "Monitor Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Kimi, and DeepSeek in the notch. Requires the Agents addon (€14.90) and Local API.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitoruj Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Kimi i DeepSeek w notchu. Wymaga addonu Agents (€14,90) i Local API."
+          }
+        }
+      }
+    },
+    "Connection": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Połączenie"
+          }
+        }
+      }
+    },
+    "Ready": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gotowe"
+          }
+        }
+      }
+    },
+    "Needs setup": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wymaga konfiguracji"
+          }
+        }
+      }
+    },
+    "Local API": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local API"
+          }
+        }
+      }
+    },
+    "Connecting…": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Łączenie…"
+          }
+        }
+      }
+    },
+    "Connect agents": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Połącz agentów"
+          }
+        }
+      }
+    },
+    "How to connect": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jak połączyć"
+          }
+        }
+      }
+    },
+    "Tap Connect agents — turns on Local API and writes hooks.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kliknij „Połącz agentów” — włącza Local API i zapisuje hooki."
+          }
+        }
+      }
+    },
+    "Cursor: quit Cursor fully (Cmd+Q), reopen, start Agent Chat.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursor: zamknij Cursor całkowicie (Cmd+Q), otwórz ponownie, uruchom Agent Chat."
+          }
+        }
+      }
+    },
+    "When Cursor asks to run a shell/tool, Allow / Deny appears in the notch.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gdy Cursor chce uruchomić shell/tool, w notchu pojawia się Allow / Deny."
+          }
+        }
+      }
+    },
+    "Claude Code: hooks go to ~/.claude/settings.json automatically.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code: hooki trafiają automatycznie do ~/.claude/settings.json."
+          }
+        }
+      }
+    },
+    "Details: Settings → Integrations → Agents.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Szczegóły: Ustawienia → Integracje → Agents."
+          }
+        }
+      }
+    },
+    "Waiting for an agent session": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czekam na sesję agenta"
+          }
+        }
+      }
+    },
+    "After connecting, run an agent in Cursor or Claude Code — activity shows up here.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Po połączeniu uruchom agenta w Cursor lub Claude Code — aktywność pojawi się tutaj."
+          }
+        }
+      }
+    },
+    "Active sessions": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktywne sesje"
+          }
+        }
+      }
+    },
+    "Connected. Restart Cursor (Cmd+Q), then run Agent Chat.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Połączono. Zrestartuj Cursor (Cmd+Q), potem uruchom Agent Chat."
+          }
+        }
+      }
+    },
+    "Optional coding addon — monitor agents in the notch. Separate from Premium (€14.90).": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opcjonalny addon do kodowania — monitoruj agentów w notchu. Osobno od Premium (€14,90)."
+          }
+        }
+      }
+    },
+    "On": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Włączone"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyłączone"
+          }
+        }
+      }
+    },
+    "Connected": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Połączono"
+          }
+        }
+      }
+    },
+    "Not connected": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niepołączono"
+          }
+        }
+      }
+    },
+    "Connect agents (Claude + Cursor)": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Połącz agentów (Claude + Cursor)"
+          }
+        }
+      }
+    },
+    "Reveal hooks folder": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokaż folder z hookami"
+          }
+        }
+      }
+    },
+    "How to connect Cursor": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jak połączyć Cursor"
+          }
+        }
+      }
+    },
+    "1. Click Connect agents — writes ~/.cursor/hooks.json and enables Local API.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Kliknij „Połącz agentów” — zapisuje ~/.cursor/hooks.json i włącza Local API."
+          }
+        }
+      }
+    },
+    "2. Fully quit Cursor (Cmd+Q) and open it again.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Całkowicie zamknij Cursor (Cmd+Q) i otwórz ponownie."
+          }
+        }
+      }
+    },
+    "3. Start Agent Chat — live status appears in the notch and clears when the agent finishes.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Uruchom Agent Chat — status pojawia się w notchu i znika po zakończeniu pracy agenta."
+          }
+        }
+      }
+    },
+    "Allow / Deny in the notch only for real consent prompts (Claude Code). Cursor keeps its own Ask/Allow UI — NotchFlow does not approve every tool call.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow / Deny w notchu tylko przy prawdziwych prośbach o zgodę (Claude Code). Cursor zostawia własne Ask/Allow — NotchFlow nie zatwierdza każdego tool calla."
+          }
+        }
+      }
+    },
+    "Claude Code is wired automatically via ~/.claude/settings.json.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code łączy się automatycznie przez ~/.claude/settings.json."
+          }
+        }
+      }
+    },
+    "Hooks installed. Restart Cursor, then use Agent Chat. Folder: %@": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooki zainstalowane. Zrestartuj Cursor, potem użyj Agent Chat. Folder: %@"
+          }
+        }
+      }
+    },
+    "Hooks stay on your Mac. No agent code or prompts are sent to NotchFlow servers.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooki zostają na Twoim Macu. Kod i prompty agentów nie są wysyłane na serwery NotchFlow."
+          }
+        }
+      }
+    },
+    "Buy Agents addon (€14.90)": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kup addon Agents (€14,90)"
+          }
+        }
+      }
+    },
+    "Agents addon activated.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Addon Agents aktywowany."
+          }
+        }
+      }
+    },
+    "Agents addon removed from this Mac.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Addon Agents usunięty z tego Maca."
+          }
+        }
+      }
+    },
+    "Agents activation released in Polar.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktywacja Agents zwolniona w Polar."
+          }
+        }
+      }
+    },
+    "Manage Agents": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zarządzaj Agents"
+          }
+        }
+      }
+    },
+    "Remove Agents from this Mac": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usuń Agents z tego Maca"
+          }
+        }
+      }
+    },
+    "Release Agents activation (Polar)": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwolnij aktywację Agents (Polar)"
+          }
+        }
+      }
+    },
+    "Not activated": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nieaktywowany"
+          }
+        }
+      }
+    },
+    "Active": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktywny"
+          }
+        }
+      }
+    },
+    "Beta period — all Premium and Agents features are unlocked. A key will be required in the stable release; any key entered now will be remembered.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okres beta — wszystkie funkcje Premium i Agents są odblokowane. W stabilnej wersji klucz będzie wymagany; wpisany teraz klucz zostanie zapamiętany."
+          }
+        }
+      }
+    },
+    "Paste a Premium key (NOTCHFLOW_…) or Agents key (NOTCHFLOW_AGENTS_…) from notchflow.eu.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wklej klucz Premium (NOTCHFLOW_…) lub Agents (NOTCHFLOW_AGENTS_…) z notchflow.eu."
+          }
+        }
+      }
+    },
+    "Manage Premium": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zarządzaj Premium"
+          }
+        }
+      }
+    },
+    "Approved": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zatwierdzono"
+          }
+        }
+      }
+    },
+    "Denied": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odrzucono"
+          }
+        }
+      }
+    },
+    "Answered": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpowiedziano"
+          }
+        }
+      }
+    },
+    "Answered: %@": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpowiedź: %@"
+          }
+        }
+      }
+    },
+    "Connect agents in Settings → Integrations, then run Cursor Agent or Claude Code.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Połącz agentów w Ustawienia → Integracje, potem uruchom Cursor Agent lub Claude Code."
+          }
+        }
+      }
+    },
+    "Open Integrations": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otwórz Integracje"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -24,6 +24,19 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         }
     }
 
+    /// Short label for the narrow idle wing.
+    var compactDisplayName: String {
+        switch self {
+        case .claude: "Claude"
+        case .codex: "Codex"
+        case .cursor: "Cursor"
+        case .opencode: "OpenCode"
+        case .gemini: "Gemini"
+        case .kimi: "Kimi"
+        case .deepseek: "DeepSeek"
+        }
+    }
+
     var systemImage: String {
         switch self {
         case .claude: "brain.head.profile"

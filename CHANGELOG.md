@@ -2,6 +2,18 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.31] - 2026-07-19
+
+### Changed
+
+- Agents idle wing: icon + agent name, typing indicator instead of music equalizer; clears when the agent finishes
+- Cursor hooks stay monitor-only — notch Allow/Deny only for real consent prompts (e.g. Claude Code)
+- Agents panel buttons restyled to match the island (no system blue CTA)
+
+### Fixed
+
+- Finished Cursor sessions no longer stuck as “Running” / last tool name when `stop` omits conversation id
+
 ## [1.0.30] - 2026-07-19
 
 ### Fixed

@@ -6,24 +6,28 @@ Supported: **Claude Code**, **Codex**, **Cursor**, **OpenCode**, **Gemini CLI**,
 
 ## Setup
 
-1. Buy / activate an Agents key (`NOTCHFLOW_AGENTS_…`) in **Settings → License**.
-2. Enable **Local API** (Settings → Integrations) — hooks talk to `127.0.0.1`.
-3. Open the **Agents** tab in the island → **Enable Agents**, or use **Install / refresh agent hooks** in Integrations.
+1. Activate an Agents key in **Settings → License** (or use beta unlock).
+2. Open **Settings → Integrations → Agents**.
+3. Click **Connect agents (Claude + Cursor)**.
+4. **Fully quit Cursor** (`Cmd+Q`) and open it again.
+5. Start **Agent Chat** — session status appears in the notch.
 
-That installs:
+Setup lives only in Settings (not in the island Agents tab).
 
-- `~/Library/Application Support/NotchFlow/Agents/notchflow-agent-hook.sh`
-- Claude Code hooks in `~/.claude/settings.json`
-- Per-agent notes for Codex / Cursor / OpenCode / Gemini / Kimi / DeepSeek
+## Cursor vs Claude Code
 
-## Claude Code
+| | Cursor | Claude Code |
+|--|--------|-------------|
+| Status in notch | ✓ | ✓ |
+| Allow / Deny in notch | — (Cursor keeps its own prompts) | ✓ |
+| Config | `~/.cursor/hooks.json` | `~/.claude/settings.json` |
 
-Permission prompts are forwarded to the island. **Allow** / **Deny** answers the hook (up to ~10 minutes wait). Other events (`SessionStart`, `Stop`, `Notification`, `PostToolUse`) update session status.
+Cursor hooks are **monitor-only** (`sessionStart`, `stop`, `postToolUse`, …). Blocking hooks like `beforeShellExecution` are intentionally not installed — they caused Cursor to hang waiting for NotchFlow while showing no in-app permission UI.
 
 ## Other agents
 
-Wire each tool’s notify/hook command to the same script (`NOTCHFLOW_AGENT=codex …`), or `POST /v1/agents/events` (see [raycast-integration.md](raycast-integration.md)).
+Wire notify/hook commands to the same script with `NOTCHFLOW_AGENT=…`, or `POST /v1/agents/events` (see [raycast-integration.md](raycast-integration.md)).
 
 ## Licensing
 
-Agents is **independent of Premium**. Both keys can be active on the same Mac (activation limit 2 each). See [free-vs-premium.md](free-vs-premium.md) and [polar-setup.md](polar-setup.md).
+Agents is **independent of Premium**. See [free-vs-premium.md](free-vs-premium.md) and [polar-setup.md](polar-setup.md).

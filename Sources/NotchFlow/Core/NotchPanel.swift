@@ -200,10 +200,14 @@ final class NotchPanelController: ObservableObject {
                 keepIdleVisibleIfNeeded()
                 return
             }
-            // During a call, hovering reveals the wing controls (Answer/Decline or End) —
-            // auto-expanding would hide them before the user can click.
+            // During a call or agent permission prompt, hovering reveals wing controls —
+            // auto-expanding would hide Allow/Deny before the user can click.
             switch appState.activeLiveActivity {
             case .activeCall, .incomingCall:
+                hoverDwellTask?.cancel()
+                keepIdleVisibleIfNeeded()
+                return
+            case .agentSession(let session) where session.needsAttention:
                 hoverDwellTask?.cancel()
                 keepIdleVisibleIfNeeded()
                 return
@@ -399,6 +403,8 @@ final class NotchPanelController: ObservableObject {
         case .incomingCall, .activeCall:
             return true
         case .notification:
+            return true
+        case .agentSession(let session) where session.needsAttention:
             return true
         case .timer(let timer):
             return timer.isFinished

@@ -17,58 +17,66 @@ struct IdleAgentSessionView: View {
         IdleWingContainer(
             wingLayout: wingLayout,
             leading: {
-                ZStack {
-                    if needsAttention {
-                        Circle()
-                            .fill(Color.orange.opacity(0.28))
-                            .frame(width: pulse ? 24 : 16, height: pulse ? 24 : 16)
-                            .animation(
-                                .easeInOut(duration: 0.7).repeatForever(autoreverses: true),
-                                value: pulse
-                            )
+                // Left petal: icon + agent name only.
+                HStack(spacing: 4) {
+                    ZStack {
+                        if needsAttention {
+                            Circle()
+                                .fill(Color.orange.opacity(0.32))
+                                .frame(width: pulse ? 20 : 14, height: pulse ? 20 : 14)
+                                .animation(
+                                    .easeInOut(duration: 0.7).repeatForever(autoreverses: true),
+                                    value: pulse
+                                )
+                        }
+                        Image(systemName: activity.agent.systemImage)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(needsAttention ? Color.orange : accent)
                     }
-                    Image(systemName: activity.agent.systemImage)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(needsAttention ? Color.orange : accent)
+                    Text(activity.agent.compactDisplayName)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(IslandStyle.primaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                 }
+                .padding(.horizontal, 6)
+                .contentShape(Rectangle())
+                .onTapGesture { onJump?() }
                 .onAppear { pulse = needsAttention }
                 .onChange(of: needsAttention) { _, value in pulse = value }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(activity.agent.displayName)
+                .accessibilityAddTraits(.isButton)
             },
             trailing: {
-                HStack(spacing: 6) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(activity.title)
-                            .font(.system(size: 10, weight: .semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                        Text(activity.agent.displayName)
-                            .font(.system(size: 9))
-                            .foregroundStyle(IslandStyle.secondaryText)
-                            .lineLimit(1)
-                    }
-                    .padding(.leading, NotchFlowConstants.idleWingInnerOverlap + 6)
-                    .contentShape(Rectangle())
-                    .onTapGesture { onJump?() }
-
+                Group {
                     if needsAttention {
                         HStack(spacing: 4) {
                             agentButton(
                                 systemImage: "xmark",
                                 label: loc("Deny"),
-                                tint: .red,
+                                fill: Color.red.opacity(0.9),
+                                foreground: .white,
                                 action: { onDeny?() }
                             )
                             agentButton(
                                 systemImage: "checkmark",
                                 label: loc("Allow"),
-                                tint: .green,
+                                fill: Color.green,
+                                foreground: .black.opacity(0.85),
                                 action: { onAllow?() }
                             )
                         }
                         .padding(.trailing, 8)
+                    } else {
+                        AgentTypingIndicator(color: accent)
+                            .padding(.trailing, 10)
+                            .accessibilityLabel(loc("Working…"))
                     }
                 }
-                .foregroundStyle(IslandStyle.primaryText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture { onJump?() }
             }
         )
     }
@@ -77,33 +85,61 @@ struct IdleAgentSessionView: View {
     private func agentButton(
         systemImage: String,
         label: String,
-        tint: Color,
+        fill: Color,
+        foreground: Color,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(tint)
+                .foregroundStyle(foreground)
                 .frame(width: 24, height: 24)
-                .background(Circle().fill(Color.white.opacity(0.12)))
+                .background(Circle().fill(fill))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
     }
 }
 
-enum IdleAgentMetrics {
-    @MainActor
-    static func preferredRightWingWidth(title: String, needsAttention: Bool) -> CGFloat {
-        let titleWidth = (title as NSString)
-            .size(withAttributes: [.font: NSFont.systemFont(ofSize: 10, weight: .semibold)])
-            .width
-        var total = titleWidth + NotchFlowConstants.idleWingInnerOverlap + 24
-        if needsAttention {
-            total += 56
+/// Compact “agent is thinking / typing” indicator — not a music equalizer.
+private struct AgentTypingIndicator: View {
+    let color: Color
+    @State private var bouncing = false
+
+    var body: some View {
+        HStack(spacing: 3.5) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(color)
+                    .frame(width: 5, height: 5)
+                    .offset(y: bouncing ? -2.8 : 1.6)
+                    .opacity(bouncing ? 1 : 0.35)
+                    .animation(
+                        .easeInOut(duration: 0.38)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.13),
+                        value: bouncing
+                    )
+            }
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(0.08))
+        )
+        .onAppear { bouncing = true }
+    }
+}
+
+enum IdleAgentMetrics {
+    /// Right petal only widens for Allow/Deny; typing dots fit the default wing.
+    @MainActor
+    static func preferredRightWingWidth(needsAttention: Bool) -> CGFloat? {
+        guard needsAttention else { return nil }
+        let total = NotchFlowConstants.idleWingInnerOverlap + 56
         return min(
-            max(NotchFlowConstants.idleWingProtrusion, total.rounded(.up)),
+            max(NotchFlowConstants.idleWingProtrusion, CGFloat(total)),
             NotchFlowConstants.maxIdleCallWingWidth
         )
     }
