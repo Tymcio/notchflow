@@ -2,6 +2,13 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.33] - 2026-07-19
+
+### Fixed
+
+- Hide Premium license prompt in General settings when Premium is already active
+- Blank settings window on first open (empty SwiftUI Settings scene)
+
 ## [1.0.32] - 2026-07-19
 
 ### Added

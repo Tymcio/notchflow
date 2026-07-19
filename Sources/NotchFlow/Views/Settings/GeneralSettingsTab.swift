@@ -142,15 +142,17 @@ struct GeneralSettingsTab: View {
                 }
             }
 
-            Section {
-                Button(loc("Enter license key…"), action: onOpenLicense)
-            } header: {
-                Text(loc("Premium"))
-            } footer: {
-                if LicenseMode.current.isEnforced {
-                    SettingsFooterCaption("Camera mirror, themes, larger clipboard, and more require an active license.")
-                } else {
-                    SettingsFooterCaption("Beta period — all Premium features are unlocked without a key.")
+            if !isPremium {
+                Section {
+                    Button(loc("Enter license key…"), action: onOpenLicense)
+                } header: {
+                    Text(loc("Premium"))
+                } footer: {
+                    if LicenseMode.current.isEnforced {
+                        SettingsFooterCaption("Camera mirror, themes, larger clipboard, and more require an active license.")
+                    } else {
+                        SettingsFooterCaption("Beta period — all Premium features are unlocked without a key.")
+                    }
                 }
             }
         }
