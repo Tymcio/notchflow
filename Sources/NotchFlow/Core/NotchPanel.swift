@@ -174,6 +174,8 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func updateVisibility(hovering: Bool) {
+        appState.isIdleWingHoverActive = hovering && !isExpanded
+
         guard !displayManager.shouldHideIsland || hasPriorityLiveActivity else {
             dismissImmediately()
             return
@@ -197,6 +199,16 @@ final class NotchPanelController: ObservableObject {
             if suppressQuickExpandUntilHoverEnd {
                 keepIdleVisibleIfNeeded()
                 return
+            }
+            // During a call, hovering reveals the wing controls (Answer/Decline or End) —
+            // auto-expanding would hide them before the user can click.
+            switch appState.activeLiveActivity {
+            case .activeCall, .incomingCall:
+                hoverDwellTask?.cancel()
+                keepIdleVisibleIfNeeded()
+                return
+            default:
+                break
             }
             scheduleExpandAfterHoverDwell()
             return
@@ -249,6 +261,8 @@ final class NotchPanelController: ObservableObject {
     private var hasPriorityLiveActivity: Bool {
         switch appState.activeLiveActivity {
         case .incomingCall, .activeCall, .notification:
+            return true
+        case .agentSession(let session) where session.needsAttention:
             return true
         default:
             return false

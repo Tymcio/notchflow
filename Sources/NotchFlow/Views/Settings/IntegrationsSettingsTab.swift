@@ -73,6 +73,42 @@ struct IntegrationsSettingsTab: View {
 
                 Link(loc("Install NotchFlow extension (repo)"), destination: NotchFlowConstants.githubURL.appending(path: "tree/main/integrations/raycast/notchflow"))
             }
+
+            Section {
+                LocText("Monitor Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Kimi, and DeepSeek in the notch. Requires the Agents addon (€14.90) and Local API.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                LabeledContent(loc("Addon status")) {
+                    Text(appState.hasAgentsAddon ? loc("Unlocked") : loc("Locked"))
+                        .fontWeight(.medium)
+                }
+
+                if appState.hasAgentsAddon {
+                    Button(loc("Install / refresh agent hooks")) {
+                        Task {
+                            do {
+                                if !appState.settings.localAPIEnabled {
+                                    appState.settings.localAPIEnabled = true
+                                    try await appState.localAPIServer.start(appState: appState)
+                                }
+                                _ = try APIAuth.token()
+                                let url = try AgentHooksInstaller.install()
+                                NSWorkspace.shared.activateFileViewerSelecting([url])
+                            } catch {
+                                NotchFlowLog.api.error("Agents hook install failed: \(error.localizedDescription, privacy: .public)")
+                            }
+                        }
+                    }
+                } else {
+                    Button(loc("Open license activation")) {
+                        appState.openLicenseSettings()
+                    }
+                }
+            } header: {
+                Text(loc("Agents addon"))
+            }
         }
         .onAppear {
             refreshAPIInfo()

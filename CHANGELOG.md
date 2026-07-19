@@ -2,6 +2,23 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.23] - 2026-07-19
+
+### Added
+
+- Agents addon: coding agents in the notch (Claude Code, Codex, Cursor, and more) with Allow / Deny
+- Website: app notifications in the features showcase, pricing comparison, and privacy notes
+
+### Changed
+
+- Shelved incoming-calls-in-notch: removed from Settings, docs, and runtime (no Continuity capture / ring UI)
+- App notifications remain Premium; system-banner dismiss applies to messaging toasts only
+- Licensing: separate Polar product / key path for the Agents addon
+
+### Removed
+
+- Calls-in-notch toggle and marketing claims for Continuity call answering in the island
+
 ## [1.0.22] - 2026-07-19
 
 ### Added

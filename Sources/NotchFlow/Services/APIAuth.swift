@@ -16,6 +16,7 @@ enum APIAuth {
         }
         if let existing = keychain.read(key: tokenKey) {
             cachedToken = existing
+            persistTokenFile(existing)
             return existing
         }
         let key = SymmetricKey(size: .bits256)
@@ -25,10 +26,31 @@ enum APIAuth {
         do {
             try keychain.save(key: tokenKey, value: generated)
             cachedToken = generated
+            persistTokenFile(generated)
             return generated
         } catch {
             NotchFlowLog.api.error("Failed to persist API token: \(error.localizedDescription, privacy: .public)")
             throw APIAuthError.tokenPersistenceFailed
+        }
+    }
+
+    /// Hook scripts (Agents addon) read the bearer token from this file.
+    static var tokenFileURL: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("NotchFlow/api-token")
+    }
+
+    private static func persistTokenFile(_ token: String) {
+        let url = tokenFileURL
+        do {
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try SecureFileWriter.write(Data(token.utf8), to: url)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        } catch {
+            NotchFlowLog.api.error("Failed to write API token file: \(error.localizedDescription, privacy: .public)")
         }
     }
 

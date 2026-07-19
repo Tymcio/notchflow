@@ -105,7 +105,11 @@ struct NotchIslandView: View {
                 onOpenNotification: { appState.openHubNotificationApp() },
                 onReplyNotification: { text in appState.replyToHubNotification(text) },
                 onDismissFinishedTimer: { appState.focusTimerManager.reset() },
-                supportsQuickReply: appState.notificationHub.supportsQuickReply
+                onAllowAgent: { appState.allowActiveAgentPermission() },
+                onDenyAgent: { appState.denyActiveAgentPermission() },
+                onJumpAgent: { appState.jumpToActiveAgentSession() },
+                supportsQuickReply: appState.notificationHub.supportsQuickReply,
+                isWingHoverActive: appState.isIdleWingHoverActive
             )
             .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight, alignment: .topLeading)
             .clipShape(Rectangle())
@@ -184,6 +188,7 @@ struct NotchIslandView: View {
                 ExpandedNotchTabBar(
                     activeModule: $appState.activeModule,
                     isPremium: appState.isPremium,
+                    hasAgentsAddon: appState.hasAgentsAddon,
                     notchCutoutWidth: geometry?.physicalNotchCutoutWidth ?? 0,
                     badgeCounts: tabBadgeCounts
                 )
@@ -192,6 +197,7 @@ struct NotchIslandView: View {
                 IslandTabBar(
                     activeModule: $appState.activeModule,
                     isPremium: appState.isPremium,
+                    hasAgentsAddon: appState.hasAgentsAddon,
                     badgeCounts: tabBadgeCounts
                 )
                 .frame(height: NotchFlowConstants.expandedTabBarHeight, alignment: .top)
@@ -211,6 +217,10 @@ struct NotchIslandView: View {
         var counts: [IslandModule: Int] = [:]
         if appState.shelfBadgeCount > 0 {
             counts[.shelf] = appState.shelfBadgeCount
+        }
+        let agentAttention = appState.agentSessionManager.attentionCount
+        if agentAttention > 0 {
+            counts[.agents] = agentAttention
         }
         return counts
     }
@@ -266,6 +276,8 @@ struct NotchIslandView: View {
             QuickNotesView(appState: appState)
         case .clipboard:
             ClipboardHistoryView(appState: appState)
+        case .agents:
+            AgentsTabView(appState: appState)
         case .mirror:
             CameraMirrorView(appState: appState)
         }

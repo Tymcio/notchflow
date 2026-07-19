@@ -49,10 +49,6 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(lyricsSharingEnabled, forKey: Keys.lyricsSharingEnabled) }
     }
 
-    var callsInNotchEnabled: Bool {
-        didSet { UserDefaults.standard.set(callsInNotchEnabled, forKey: Keys.callsInNotchEnabled) }
-    }
-
     var appNotificationsEnabled: Bool {
         didSet { UserDefaults.standard.set(appNotificationsEnabled, forKey: Keys.appNotificationsEnabled) }
     }
@@ -97,7 +93,6 @@ final class NotchSettings {
         static let avoidMenuOverlap = "avoidMenuOverlap"
         static let urlSchemeAutomationEnabled = "urlSchemeAutomationEnabled"
         static let lyricsSharingEnabled = "lyricsSharingEnabled"
-        static let callsInNotchEnabled = "callsInNotchEnabled"
         static let appNotificationsEnabled = "appNotificationsEnabled"
         static let allowedNotificationBundleIDs = "allowedNotificationBundleIDs"
         static let allowedNativeNotificationBundleIDs = "allowedNativeNotificationBundleIDs"
@@ -131,11 +126,11 @@ final class NotchSettings {
         avoidMenuOverlap = defaults.object(forKey: Keys.avoidMenuOverlap) as? Bool ?? true
         urlSchemeAutomationEnabled = defaults.bool(forKey: Keys.urlSchemeAutomationEnabled)
         lyricsSharingEnabled = defaults.bool(forKey: Keys.lyricsSharingEnabled)
-        callsInNotchEnabled = defaults.bool(forKey: Keys.callsInNotchEnabled)
         appNotificationsEnabled = defaults.bool(forKey: Keys.appNotificationsEnabled)
         allowedNativeNotificationBundleIDs = Self.loadMigratedAllowlist(from: defaults)
         hideNotificationBody = defaults.bool(forKey: Keys.hideNotificationBody)
-        dismissSystemBanners = defaults.bool(forKey: Keys.dismissSystemBanners)
+        // Default ON — notch replaces the corner banner for calls and messaging.
+        dismissSystemBanners = defaults.object(forKey: Keys.dismissSystemBanners) as? Bool ?? true
         let savedTimerSound = defaults.string(forKey: Keys.timerAlertSoundName) ?? TimerAlertSound.defaultID
         timerAlertSoundName = TimerAlertSound.migratedID(savedTimerSound)
     }

@@ -12,18 +12,27 @@ Powiązane: **[polar-rejestracja.md](polar-rejestracja.md)** (pełna instrukcja 
 
 ## 2. Products & benefits
 
-Create two products (or one product with two prices):
+Create three products:
 
 | Product | Type | Price | License benefit |
 |---------|------|-------|-----------------|
 | **Premium Annual** | Subscription, yearly | €12/year | License keys, expires after 1 year |
 | **Premium Lifetime** | One-time | €24 | License keys, no expiration |
+| **Agents addon** | One-time | €14.90 | License keys, no expiration — prefix `NOTCHFLOW_AGENTS_` |
 
-For each product, add a **License Keys** benefit:
+For Premium products, add a **License Keys** benefit:
 
 - Prefix: `NOTCHFLOW_` (optional branding)
 - **Activation limit: 2** (required — app enforces per-device activation)
 - Allow customers to deactivate devices in Polar portal (recommended)
+
+For **Agents**, add a separate **License Keys** benefit:
+
+- Prefix: `NOTCHFLOW_AGENTS_` (required — app detects Agents keys by this prefix / product metadata containing “agent”)
+- **Activation limit: 2**
+- Optional metadata: `addon=agents`
+
+The app stores Premium and Agents keys separately — a user can own both.
 
 ## 3. Checkout integration (website)
 
@@ -31,23 +40,24 @@ NotchFlow uses **Checkout Links** — persistent Polar URLs that create a checko
 
 ### 3.1 Create Checkout Links (Polar dashboard)
 
-**Products → Checkout Links → New Link** — create **two** links (one per product).
+**Products → Checkout Links → New Link** — create **three** links (one per product).
 
-| Setting | Lifetime link | Annual link |
-|---------|---------------|-------------|
-| **Product** | `NotchFlow Premium Lifetime` only | `NotchFlow Premium Annual` only |
-| **Label** | `NotchFlow Lifetime` | `NotchFlow Annual` |
-| **Discount** | — | — |
-| **Allow discount codes** | Off (unless you run promos) | Off |
-| **Success URL** | `https://notchflow.eu/pricing/?purchased=lifetime` | `https://notchflow.eu/pricing/?purchased=annual` |
-| **Return URL** | `https://notchflow.eu/pricing/` | `https://notchflow.eu/pricing/` |
-| **Trial** | — | Off (no trial for v1.0) |
-| **Metadata** | optional: `plan=lifetime` | optional: `plan=annual` |
+| Setting | Lifetime link | Annual link | Agents link |
+|---------|---------------|-------------|-------------|
+| **Product** | `NotchFlow Premium Lifetime` only | `NotchFlow Premium Annual` only | `NotchFlow Agents` only |
+| **Label** | `NotchFlow Lifetime` | `NotchFlow Annual` | `NotchFlow Agents` |
+| **Discount** | — | — | — |
+| **Allow discount codes** | Off (unless you run promos) | Off | Off |
+| **Success URL** | `https://notchflow.eu/pricing/?purchased=lifetime` | `https://notchflow.eu/pricing/?purchased=annual` | `https://notchflow.eu/pricing/?purchased=agents` |
+| **Return URL** | `https://notchflow.eu/pricing/` | `https://notchflow.eu/pricing/` | `https://notchflow.eu/pricing/` |
+| **Trial** | — | Off (no trial for v1.0) | Off |
+| **Metadata** | optional: `plan=lifetime` | optional: `plan=annual` | `addon=agents` |
 
 For Polish pricing page redirects, you can instead use:
 
 - `https://notchflow.eu/pl/pricing/?purchased=lifetime`
 - `https://notchflow.eu/pl/pricing/?purchased=annual`
+- `https://notchflow.eu/pl/pricing/?purchased=agents`
 
 Or keep English pricing URLs for both — the success banner detects `/pl/` and shows Polish copy.
 
@@ -61,10 +71,11 @@ Update `website/checkout-urls.js`:
 var NOTCHFLOW_CHECKOUT = {
   lifetime: "https://buy.polar.sh/polar_cl_XXXXX",
   annual: "https://buy.polar.sh/polar_cl_YYYYY",
+  agents: "https://buy.polar.sh/polar_cl_ZZZZZ",
 };
 ```
 
-The script finds every `[data-polar-checkout="lifetime|annual"]` button on:
+The script finds every `[data-polar-checkout="lifetime|annual|agents"]` button on:
 
 - `website/index.html`
 - `website/pricing/index.html`

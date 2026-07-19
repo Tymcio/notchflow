@@ -50,7 +50,7 @@ Planned releases **v1.1 → v1.3** and status of each item. ✅ = shipped today 
 | **Shipped** | Hover island, media, calendar, shelf, focus timer, notes, clipboard, mirror | ✅ |
 | **Shipped** | Volume / brightness HUD, URL scheme, local API, Raycast | ✅ |
 | **Shipped** | Localization (en, pl, de, it, es) + in-app language picker | ✅ |
-| **Shipped** | Incoming calls & app notifications in the notch (Premium) | ✅ |
+| **Shipped** | App notifications in the notch (Premium) | ✅ |
 | **Shipped** | Close system banner when notification appears in island (Premium) | ✅ |
 | **v1.1** | Album art colors (gradient from artwork) | 📋 |
 | **v1.1** | Spring animations (+ reduce motion setting) | 📋 |

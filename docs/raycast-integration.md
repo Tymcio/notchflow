@@ -35,8 +35,8 @@ All requests require header:
 Authorization: Bearer <token>
 ```
 
-| Method | Path | Description | Premium |
-|--------|------|-------------|---------|
+| Method | Path | Description | Gate |
+|--------|------|-------------|------|
 | GET | `/v1/status` | Playback + premium flag | Free |
 | POST | `/v1/media/play-pause` | Toggle playback | Free |
 | POST | `/v1/media/next` | Next track | Free |
@@ -46,6 +46,29 @@ Authorization: Bearer <token>
 | GET | `/v1/clipboard` | Clipboard history | Premium |
 | POST | `/v1/island/show` | Expand notch island | Free |
 | POST | `/v1/mirror/toggle` | Toggle camera mirror | Premium |
+| POST | `/v1/agents/events` | Ingest agent session event | Agents addon |
+| GET | `/v1/agents/sessions` | List agent sessions | Agents addon |
+| GET | `/v1/agents/permission/<id>` | Poll Allow/Deny decision | Agents addon |
+| POST | `/v1/agents/permission/<id>` | Set decision `{"decision":"allow\|deny"}` | Agents addon |
+| GET | `/v1/agents/question/<id>` | Poll question answer | Agents addon |
+
+### Agents event payload
+
+```json
+{
+  "agent": "claude",
+  "event": "permission",
+  "sessionId": "abc",
+  "title": "fix auth bug",
+  "toolName": "Bash",
+  "summary": "npm test",
+  "permissionId": "p1",
+  "cwd": "/path/to/project"
+}
+```
+
+`agent` values: `claude`, `codex`, `cursor`, `opencode`, `gemini`, `kimi`, `deepseek`.
+`event` values: `session.started`, `tool`, `permission`, `question`, `done`, `error`, `clear`.
 
 ## URL scheme
 

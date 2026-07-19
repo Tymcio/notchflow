@@ -68,7 +68,9 @@ struct SettingsView: View {
                 licenseMessage: $licenseMessage,
                 onActivate: activateLicense,
                 onDeactivate: deactivateLicense,
-                onDeactivateInPolar: deactivateInPolar
+                onDeactivateInPolar: deactivateInPolar,
+                onDeactivateAgents: deactivateAgents,
+                onDeactivateAgentsInPolar: deactivateAgentsInPolar
             )
         case .privacy:
             PrivacySettingsTab(settings: appState.settings)
@@ -80,8 +82,13 @@ struct SettingsView: View {
     private func activateLicense() {
         Task {
             do {
-                try await appState.licenseManager.activate(key: licenseKey.trimmingCharacters(in: .whitespacesAndNewlines))
-                licenseMessage = loc("License activated.")
+                let key = licenseKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                try await appState.licenseManager.activate(key: key)
+                if PolarLicenseClient.looksLikeAgentsKey(key) || appState.licenseStatus.hasAgentsAddon {
+                    licenseMessage = loc("Agents addon activated.")
+                } else {
+                    licenseMessage = loc("License activated.")
+                }
             } catch {
                 licenseMessage = error.localizedDescription
             }
@@ -102,6 +109,26 @@ struct SettingsView: View {
             do {
                 try await appState.licenseManager.deactivateInPolar()
                 licenseMessage = loc("Activation released in Polar. You can activate the key on another Mac.")
+            } catch {
+                licenseMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func deactivateAgents() {
+        do {
+            try appState.licenseManager.deactivateAgents()
+            licenseMessage = loc("Agents addon removed from this Mac.")
+        } catch {
+            licenseMessage = error.localizedDescription
+        }
+    }
+
+    private func deactivateAgentsInPolar() {
+        Task {
+            do {
+                try await appState.licenseManager.deactivateAgentsInPolar()
+                licenseMessage = loc("Agents activation released in Polar.")
             } catch {
                 licenseMessage = error.localizedDescription
             }

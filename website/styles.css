@@ -1143,6 +1143,81 @@ a:hover { color: var(--accent-hover); }
   flex-shrink: 0;
 }
 
+/* Notifications mock */
+
+.showcase-ui.notify {
+  gap: 0.65rem;
+  justify-content: space-between;
+}
+
+.showcase-ui .notify-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.showcase-ui .notify-app {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.45rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.showcase-ui .notify-app.signal {
+  background: linear-gradient(145deg, #3a76f0, #2c56c8);
+}
+
+.showcase-ui .notify-app.mail {
+  background: linear-gradient(145deg, #3aa3ff, #1f6fd6);
+}
+
+.showcase-ui .notify-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.showcase-ui .notify-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.showcase-ui .notify-body {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.48);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.showcase-ui .notify-time {
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.showcase-ui .notify-foot {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.42);
+}
+
 /* Split section */
 
 .split-grid {
@@ -1605,6 +1680,75 @@ a:hover { color: var(--accent-hover); }
 }
 
 .pricing-card .btn { width: 100%; }
+
+/* Optional add-on below Free / Premium — not a fourth plan column */
+.pricing-addon {
+  margin-top: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.25rem 2rem;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.35rem 1.75rem;
+}
+
+.pricing-addon-copy h2,
+.pricing-addon-copy h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.pricing-addon-copy p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  max-width: 42rem;
+  line-height: 1.45;
+}
+
+.pricing-addon-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+  min-width: 9.5rem;
+}
+
+.pricing-addon-action .price {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-align: right;
+}
+
+.pricing-addon-action .price span {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.pricing-addon-action .btn {
+  width: 100%;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .pricing-addon {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing-addon-action {
+    align-items: stretch;
+  }
+
+  .pricing-addon-action .price {
+    text-align: left;
+  }
+}
 
 .compare-table {
   width: 100%;

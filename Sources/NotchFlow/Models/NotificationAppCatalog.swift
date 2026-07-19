@@ -379,6 +379,15 @@ enum NotificationAppCatalog {
         if let entry = entry(forAnyBundleID: bundleID) {
             return entry.localizedName
         }
+        // Phone/FaceTime aren't messaging-catalog apps; never map their bundle IDs to "Notification".
+        if isCallUIHostBundleID(bundleID) || callBundleIDs.contains(bundleID) {
+            for candidate in bundleIDCandidates(for: bundleID) {
+                if let running = runningAppName(for: candidate) { return running }
+            }
+            let lower = bundleID.lowercased()
+            if lower.contains("facetime") { return "FaceTime" }
+            return "Phone"
+        }
         if isInternalAccessibilityLabel(bundleID) {
             return loc("Notification")
         }
@@ -491,6 +500,10 @@ enum NotificationAppCatalog {
         if bundleID == genericMessagingBundleID {
             return genericMessagingBundleID
         }
+        // Phone/FaceTime aren't messaging-catalog apps — keep them for real app icons.
+        if isCallUIHostBundleID(bundleID) || callBundleIDs.contains(canonicalBundleID(for: bundleID)) {
+            return canonicalBundleID(for: bundleID)
+        }
         guard isMessagingApp(bundleID) || isEmailApp(bundleID) || isCatalogApp(bundleID) else {
             return genericNotificationBundleID
         }
@@ -520,6 +533,21 @@ enum NotificationAppCatalog {
         "com.apple.CallKitUI",
         "com.apple.IncomingCall",
     ]
+
+    /// Processes whose *presence* means a ringing/active Continuity call UI (not daemons).
+    /// `callservicesd` / TelephonyUtilities is always running — never treat it as a ring signal.
+    static let callUIHostBundleIDs: Set<String> = [
+        "com.apple.FaceTime",
+        "com.apple.mobilephone",
+        "com.apple.phone",
+        "com.apple.CallKitUI",
+        "com.apple.IncomingCall",
+    ]
+
+    static func isCallUIHostBundleID(_ bundleID: String?) -> Bool {
+        guard let bundleID else { return false }
+        return callUIHostBundleIDs.contains(canonicalBundleID(for: bundleID))
+    }
 
     /// Nagłówki systemowych powiadomień — nie traktuj jak SMS (Status, Następne itd.).
     static func isBlockedNotificationContent(title: String, body: String) -> Bool {
@@ -563,7 +591,7 @@ enum NotificationAppCatalog {
         "połączenie", "przychodzące", "dzwoni", "połączenie przychodzące",
         "eingehender anruf", "anruf", "chiamata in arrivo", "chiamata",
         "llamada entrante", "llamada", "on iphone", "na iphone", "from iphone", "z iphone",
-        "apple watch", "zegarek",
+        "apple watch", "zegarek", "facetime_notification",
     ]
 
     private static let callIconLabels = [
@@ -585,11 +613,127 @@ enum NotificationAppCatalog {
     static func isSystemCallUILabel(_ text: String) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return true }
+        if trimmed == "…" || trimmed == "..." { return true }
         if isInternalAccessibilityLabel(trimmed) { return true }
         if isExactAppName(trimmed) { return false }
         if isBlockedNotificationContent(title: trimmed, body: "") { return true }
         if looksLikeCallNotification(title: trimmed, body: "", iconLabels: []) { return true }
+        if isCalendarChromeLabel(trimmed) { return true }
+
+        let lower = trimmed.lowercased()
+        let chromeFragments = [
+            "centrum powiadomień", "notification center", "powiadomienie", "notification",
+            "status", "następne", "approve", "terminal command", "cursor", "agent",
+            "control center", "centrum sterowania", "process-only-ring",
+            "facetime_notification", "facetime notification",
+            "chce uzyskać dostęp", "wants to access", "would like to access",
+            "zugriff auf", "deseas acceder", "desidera accedere",
+            // Phone.app sidebar/tab labels (OCR of the wrong window must not become the caller)
+            "ulubione", "favorites", "ostatnie", "recents", "poczta głosowa",
+            "voicemail", "klawiatura", "keypad", "kontakty", "contacts",
+        ]
+        if chromeFragments.contains(where: { lower == $0 || lower.contains($0) }) {
+            return true
+        }
+        if isContinuityDeviceRouteLabel(trimmed) { return true }
+        if lower.contains("widżet") || lower.contains("widget") { return true }
         return false
+    }
+
+    /// Phone.app AX often exposes audio routes as "Mikrofon (iPhone (Marcin))" — not the caller.
+    static func isContinuityDeviceRouteLabel(_ text: String) -> Bool {
+        let lower = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !lower.isEmpty else { return true }
+        let routeTokens = [
+            "mikrofon", "microphone", "kamera", "camera",
+            "głośnik", "głośniki", "speaker", "speakers",
+            "audio", "iphone cellular",
+        ]
+        let looksLikeRoute = routeTokens.contains { lower.hasPrefix($0) || lower.contains("\($0) (") }
+        if looksLikeRoute, lower.contains("iphone") || lower.contains("(") { return true }
+        // "Something (iPhone (Name))" device pattern without a person-first token.
+        if lower.range(of: #"^.+\(iphone\b"#, options: .regularExpression) != nil,
+           routeTokens.contains(where: { lower.contains($0) }) {
+            return true
+        }
+        return false
+    }
+
+    /// Dni tygodnia / miesiące / „dziś” z Calendar Up Next — nie mylić z dzwoniącym.
+    static func isCalendarChromeLabel(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return true }
+        if isSingleCalendarToken(trimmed) { return true }
+
+        // "NIEDZIELA, 19 LIPCA" — every comma/dot segment is calendar chrome.
+        let parts = trimmed
+            .components(separatedBy: CharacterSet(charactersIn: ",·|/"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        if parts.count >= 2, parts.allSatisfy(isSingleCalendarToken) {
+            return true
+        }
+        return false
+    }
+
+    private static func isSingleCalendarToken(_ text: String) -> Bool {
+        let lower = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !lower.isEmpty else { return true }
+        let labels: Set<String> = [
+            // Weekdays
+            "niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota",
+            "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
+            "sonntag", "montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag",
+            "domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato",
+            "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado",
+            // Relative / calendar chrome
+            "dziś", "dzisiaj", "jutro", "wczoraj", "today", "tomorrow", "yesterday",
+            "heute", "morgen", "gestern", "oggi", "domani", "ieri", "hoy", "mañana", "ayer",
+            "up next", "następne", "all-day", "cały dzień",
+        ]
+        if labels.contains(lower) { return true }
+
+        // "19 LIPCA", "19 lipca", "July 19", "19.07"
+        let monthDay = #"^\d{1,2}(\s+|\.)(stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia|january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|\d{1,2})$"#
+        if lower.range(of: monthDay, options: .regularExpression) != nil { return true }
+        return false
+    }
+
+    /// Continuity subtitle under the caller name on Phone/FaceTime banners.
+    static func isContinuityCallSubtitle(_ text: String) -> Bool {
+        let lower = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let marks = [
+            "z twojego iphone", "z twojego iphone'a", "from your iphone",
+            "von deinem iphone", "dal tuo iphone", "desde tu iphone",
+            "iphone cellular", "calls from iphone",
+        ]
+        return marks.contains { lower.contains($0) }
+    }
+
+    /// Imię/numer kontaktu nadający się do UI połączenia (nie chrome NC / nie nazwa apki).
+    static func isPlausibleCallerName(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2, trimmed.count <= 64 else { return false }
+        if isSystemCallUILabel(trimmed) { return false }
+        if isExactAppName(trimmed) { return false }
+        if isInternalAccessibilityLabel(trimmed) { return false }
+        if isCalendarChromeLabel(trimmed) { return false }
+
+        // Phone numbers.
+        let digits = trimmed.filter(\.isNumber)
+        if digits.count >= 6, digits.count >= trimmed.filter({ $0.isLetter || $0.isNumber }).count - 2 {
+            return true
+        }
+
+        // Person-like: at least one letter, not a sentence / path / command.
+        guard trimmed.contains(where: \.isLetter) else { return false }
+        if trimmed.contains("/") || trimmed.contains("://") { return false }
+        if trimmed.lowercased().hasPrefix("cd ") { return false }
+        if trimmed.contains("•") { return false }
+        // TCC / Settings sentences are never caller names.
+        if trimmed.count > 40, trimmed.contains(" ") { return false }
+        if trimmed.contains("„") || trimmed.contains("\"") { return false }
+        return true
     }
 
     /// Wewnętrzne identyfikatory AX/widgetów (np. widget-local:com.apple.iCloud…).

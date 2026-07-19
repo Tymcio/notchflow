@@ -4,6 +4,7 @@ import SwiftUI
 struct ExpandedNotchTabBar: View {
     @Binding var activeModule: IslandModule
     let isPremium: Bool
+    var hasAgentsAddon: Bool = true
     var notchCutoutWidth: CGFloat = 0
     var badgeCounts: [IslandModule: Int] = [:]
 
@@ -27,11 +28,17 @@ struct ExpandedNotchTabBar: View {
         IslandModuleTabButton(
             module: module,
             isActive: activeModule == module,
-            isLocked: module.requiresPremium && !isPremium,
+            isLocked: moduleLockState(module),
             badgeCount: badgeCounts[module] ?? 0,
             style: .expanded
         ) {
             activeModule = module
         }
+    }
+
+    private func moduleLockState(_ module: IslandModule) -> Bool {
+        if module.requiresPremium && !isPremium { return true }
+        if module.requiresAgentsAddon && !hasAgentsAddon { return true }
+        return false
     }
 }

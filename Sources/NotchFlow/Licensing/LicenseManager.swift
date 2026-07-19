@@ -12,12 +12,23 @@ struct LicenseStatus: Equatable, Sendable {
     let key: String?
     let validatedAt: Date?
     let expiresAt: Date?
+    let hasAgentsAddon: Bool
+    let agentsKey: String?
+    let agentsValidatedAt: Date?
 
     var isPremium: Bool {
         tier == .annual || tier == .lifetime
     }
 
-    static let free = LicenseStatus(tier: .free, key: nil, validatedAt: nil, expiresAt: nil)
+    static let free = LicenseStatus(
+        tier: .free,
+        key: nil,
+        validatedAt: nil,
+        expiresAt: nil,
+        hasAgentsAddon: false,
+        agentsKey: nil,
+        agentsValidatedAt: nil
+    )
 }
 
 enum LicenseValidationError: Error, LocalizedError {
@@ -53,6 +64,8 @@ final class LicenseManager {
         static let licenseKey = "license_key"
         static let activationID = "license_activation_id"
         static let licenseStatus = "license_status"
+        static let agentsKey = "agents_license_key"
+        static let agentsActivationID = "agents_activation_id"
     }
 
     func refreshIfNeeded() async {
@@ -61,22 +74,43 @@ final class LicenseManager {
             return
         }
 
-        guard let key = keychain.read(key: KeychainKey.licenseKey) else {
-            status = .free
-            return
+        var next = LicenseStatus.free
+
+        if let key = keychain.read(key: KeychainKey.licenseKey) {
+            do {
+                let session = try await validateStoredSession(
+                    key: key,
+                    activationKeychainKey: KeychainKey.activationID
+                )
+                if !session.isAgentsProduct {
+                    try persistPremium(session: session, key: key)
+                    next = merge(premium: session.status, agents: next)
+                }
+            } catch {
+                NotchFlowLog.license.error("License refresh failed: \(error.localizedDescription, privacy: .public)")
+            }
         }
 
-        do {
-            let session = try await validateStoredSession(key: key)
-            try persist(session: session)
-            status = session.status
-        } catch {
-            NotchFlowLog.license.error("License refresh failed: \(error.localizedDescription, privacy: .public)")
-            if let cached = loadCachedStatus(), isWithinGracePeriod(cached) {
-                status = cached
-            } else {
-                status = .free
+        if let agentsKey = keychain.read(key: KeychainKey.agentsKey) {
+            do {
+                let session = try await validateStoredSession(
+                    key: agentsKey,
+                    activationKeychainKey: KeychainKey.agentsActivationID
+                )
+                if session.isAgentsProduct || PolarLicenseClient.looksLikeAgentsKey(agentsKey) {
+                    try persistAgents(session: session, key: agentsKey)
+                    next = merge(premium: next, agents: session.status.withAgentsAddon(key: agentsKey))
+                }
+            } catch {
+                NotchFlowLog.license.error("Agents license refresh failed: \(error.localizedDescription, privacy: .public)")
             }
+        }
+
+        if next == .free, let cached = loadCachedStatus(), isWithinGracePeriod(cached) {
+            status = cached
+        } else {
+            status = next
+            try? persistCombinedStatus(next)
         }
     }
 
@@ -86,17 +120,54 @@ final class LicenseManager {
             key: trimmed,
             instanceName: Host.current().localizedName ?? "Mac"
         )
+
+        if session.isAgentsProduct || PolarLicenseClient.looksLikeAgentsKey(trimmed) {
+            try keychain.save(key: KeychainKey.agentsKey, value: trimmed)
+            try keychain.save(key: KeychainKey.agentsActivationID, value: session.activationID)
+            let agentsStatus = session.status.withAgentsAddon(key: trimmed)
+            let merged = merge(premium: status, agents: agentsStatus)
+            try persistCombinedStatus(merged)
+            status = merged
+            return
+        }
+
         try keychain.save(key: KeychainKey.licenseKey, value: trimmed)
         try keychain.save(key: KeychainKey.activationID, value: session.activationID)
-        try persist(session: session)
-        status = session.status
+        let merged = merge(premium: session.status, agents: status)
+        try persistCombinedStatus(merged)
+        status = merged
     }
 
     func deactivate() throws {
         try keychain.delete(key: KeychainKey.licenseKey)
         try keychain.delete(key: KeychainKey.activationID)
-        try keychain.delete(key: KeychainKey.licenseStatus)
-        status = .free
+        let agentsOnly = LicenseStatus(
+            tier: .free,
+            key: nil,
+            validatedAt: nil,
+            expiresAt: nil,
+            hasAgentsAddon: status.hasAgentsAddon,
+            agentsKey: status.agentsKey,
+            agentsValidatedAt: status.agentsValidatedAt
+        )
+        try persistCombinedStatus(agentsOnly)
+        status = agentsOnly
+    }
+
+    func deactivateAgents() throws {
+        try keychain.delete(key: KeychainKey.agentsKey)
+        try keychain.delete(key: KeychainKey.agentsActivationID)
+        let premiumOnly = LicenseStatus(
+            tier: status.tier,
+            key: status.key,
+            validatedAt: status.validatedAt,
+            expiresAt: status.expiresAt,
+            hasAgentsAddon: false,
+            agentsKey: nil,
+            agentsValidatedAt: nil
+        )
+        try persistCombinedStatus(premiumOnly)
+        status = premiumOnly
     }
 
     func deactivateInPolar() async throws {
@@ -113,22 +184,41 @@ final class LicenseManager {
             throw LicenseValidationError.cannotDeactivate
         }
 
-        // Keep the license key so the user can re-activate easily.
         try keychain.delete(key: KeychainKey.activationID)
-        try keychain.delete(key: KeychainKey.licenseStatus)
-        status = .free
+        try deactivate()
+    }
+
+    func deactivateAgentsInPolar() async throws {
+        guard let key = keychain.read(key: KeychainKey.agentsKey),
+              let activationID = keychain.read(key: KeychainKey.agentsActivationID) else {
+            throw LicenseValidationError.cannotDeactivate
+        }
+
+        do {
+            try await apiClient.deactivate(key: key, activationID: activationID)
+        } catch LicenseValidationError.invalidKey {
+        } catch {
+            throw LicenseValidationError.cannotDeactivate
+        }
+
+        try keychain.delete(key: KeychainKey.agentsActivationID)
+        try deactivateAgents()
     }
 
     var storedLicenseKey: String? {
         keychain.read(key: KeychainKey.licenseKey)
     }
 
-    private func validateStoredSession(key: String) async throws -> PolarLicenseSession {
-        if let activationID = keychain.read(key: KeychainKey.activationID) {
+    var storedAgentsLicenseKey: String? {
+        keychain.read(key: KeychainKey.agentsKey)
+    }
+
+    private func validateStoredSession(key: String, activationKeychainKey: String) async throws -> PolarLicenseSession {
+        if let activationID = keychain.read(key: activationKeychainKey) {
             do {
                 return try await apiClient.validate(key: key, activationID: activationID)
             } catch LicenseValidationError.invalidKey {
-                try? keychain.delete(key: KeychainKey.activationID)
+                try? keychain.delete(key: activationKeychainKey)
             }
         }
 
@@ -138,9 +228,18 @@ final class LicenseManager {
         )
     }
 
-    private func persist(session: PolarLicenseSession) throws {
+    private func persistPremium(session: PolarLicenseSession, key: String) throws {
+        try keychain.save(key: KeychainKey.licenseKey, value: key)
         try keychain.save(key: KeychainKey.activationID, value: session.activationID)
-        let data = try JSONEncoder().encode(PersistedLicenseStatus(status: session.status))
+    }
+
+    private func persistAgents(session: PolarLicenseSession, key: String) throws {
+        try keychain.save(key: KeychainKey.agentsKey, value: key)
+        try keychain.save(key: KeychainKey.agentsActivationID, value: session.activationID)
+    }
+
+    private func persistCombinedStatus(_ status: LicenseStatus) throws {
+        let data = try JSONEncoder().encode(PersistedLicenseStatus(status: status))
         try keychain.save(key: KeychainKey.licenseStatus, data: data)
     }
 
@@ -149,16 +248,61 @@ final class LicenseManager {
               let persisted = try? JSONDecoder().decode(PersistedLicenseStatus.self, from: data) else {
             return nil
         }
-        return persisted.toStatus(key: keychain.read(key: KeychainKey.licenseKey))
+        return persisted.toStatus(
+            key: keychain.read(key: KeychainKey.licenseKey),
+            agentsKey: keychain.read(key: KeychainKey.agentsKey)
+        )
+    }
+
+    private func merge(premium: LicenseStatus, agents: LicenseStatus) -> LicenseStatus {
+        LicenseStatus(
+            tier: premium.tier != .free ? premium.tier : .free,
+            key: premium.key,
+            validatedAt: premium.validatedAt,
+            expiresAt: premium.expiresAt,
+            hasAgentsAddon: agents.hasAgentsAddon || premium.hasAgentsAddon,
+            agentsKey: agents.agentsKey ?? premium.agentsKey,
+            agentsValidatedAt: agents.agentsValidatedAt ?? premium.agentsValidatedAt
+        )
     }
 
     private func isWithinGracePeriod(_ status: LicenseStatus) -> Bool {
-        guard let validatedAt = status.validatedAt else { return false }
-        let graceEnd = validatedAt.addingTimeInterval(TimeInterval(NotchFlowConstants.licenseGraceDays * 24 * 3600))
-        if let expiresAt = status.expiresAt, expiresAt < Date() {
-            return false
-        }
-        return Date() <= graceEnd
+        let premiumOK: Bool = {
+            guard status.tier != .free else { return true }
+            guard let validatedAt = status.validatedAt else { return false }
+            let graceEnd = validatedAt.addingTimeInterval(
+                TimeInterval(NotchFlowConstants.licenseGraceDays * 24 * 3600)
+            )
+            if let expiresAt = status.expiresAt, expiresAt < Date() {
+                return false
+            }
+            return Date() <= graceEnd
+        }()
+
+        let agentsOK: Bool = {
+            guard status.hasAgentsAddon else { return true }
+            guard let validatedAt = status.agentsValidatedAt ?? status.validatedAt else { return false }
+            let graceEnd = validatedAt.addingTimeInterval(
+                TimeInterval(NotchFlowConstants.licenseGraceDays * 24 * 3600)
+            )
+            return Date() <= graceEnd
+        }()
+
+        return premiumOK && agentsOK
+    }
+}
+
+private extension LicenseStatus {
+    func withAgentsAddon(key: String) -> LicenseStatus {
+        LicenseStatus(
+            tier: .free,
+            key: nil,
+            validatedAt: nil,
+            expiresAt: nil,
+            hasAgentsAddon: true,
+            agentsKey: key,
+            agentsValidatedAt: Date()
+        )
     }
 }
 
@@ -166,14 +310,26 @@ private struct PersistedLicenseStatus: Codable {
     let tier: LicenseTier
     let validatedAt: Date?
     let expiresAt: Date?
+    let hasAgentsAddon: Bool?
+    let agentsValidatedAt: Date?
 
     init(status: LicenseStatus) {
         tier = status.tier
         validatedAt = status.validatedAt
         expiresAt = status.expiresAt
+        hasAgentsAddon = status.hasAgentsAddon
+        agentsValidatedAt = status.agentsValidatedAt
     }
 
-    func toStatus(key: String?) -> LicenseStatus {
-        LicenseStatus(tier: tier, key: key, validatedAt: validatedAt, expiresAt: expiresAt)
+    func toStatus(key: String?, agentsKey: String?) -> LicenseStatus {
+        LicenseStatus(
+            tier: tier,
+            key: key,
+            validatedAt: validatedAt,
+            expiresAt: expiresAt,
+            hasAgentsAddon: hasAgentsAddon ?? false,
+            agentsKey: agentsKey,
+            agentsValidatedAt: agentsValidatedAt
+        )
     }
 }

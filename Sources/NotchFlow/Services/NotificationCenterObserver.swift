@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import CoreGraphics
 import Foundation
 import os
 
@@ -38,7 +39,10 @@ struct ParsedNotificationBanner {
     }
 
     var isLikelyCall: Bool {
-        NotificationAppCatalog.isLikelyIncomingCallBanner(
+        // `isCall` is already scored at parse time with raw AX text; don't let display-title
+        // scrubbing (e.g. "Powiadomienie") drop a known call below threshold.
+        if isCall { return true }
+        return NotificationAppCatalog.isLikelyIncomingCallBanner(
             title: title,
             body: body,
             iconLabels: iconLabels,
@@ -46,7 +50,7 @@ struct ParsedNotificationBanner {
             actionButtonCount: actionButtonCount,
             hasAnswerControl: hasAnswerControl,
             hasDeclineControl: hasDeclineControl,
-            isCallFlag: isCall
+            isCallFlag: false
         )
     }
 
@@ -68,6 +72,11 @@ final class NotificationCenterObserver {
     private var callsPriorityScanning = false
     /// Gdy CallManager ma ringing/active — częstszy safety poll.
     var callSessionActiveProvider: (() -> Bool)?
+    /// True tylko gdy w notchu wisi połączenie przychodzące (dzwoni teraz).
+    var incomingCallRingingProvider: (() -> Bool)?
+    /// Nazwa dzwoniącego już ustalona w bieżącej sesji (incoming/active) — pozwala
+    /// pominąć kosztowne scrape'y AX/OCR w kolejnych skanach.
+    var knownCallerNameProvider: (() -> String?)?
     private var seenFingerprints: [String: Date] = [:]
     private var consecutiveEmptyScans = 0
     private var axObservers: [pid_t: AXObserver] = [:]
@@ -78,6 +87,21 @@ final class NotificationCenterObserver {
 
     private static let axMaxDepth = 10
     private static let axMaxNodesPerPID = 1_000
+
+    /// Temporary file trace for Continuity / Phone.app call detection.
+    private static func callDebugTrace(_ message: String) {
+        let line = "\(ISO8601DateFormatter().string(from: Date())) \(message)\n"
+        let url = URL(fileURLWithPath: "/tmp/notchflow-call-debug.log")
+        guard let data = line.data(using: .utf8) else { return }
+        if FileManager.default.fileExists(atPath: url.path),
+           let handle = try? FileHandle(forWritingTo: url) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        } else {
+            try? data.write(to: url)
+        }
+    }
 
     private var pollInterval: Duration {
         // Banners are nested AXGroups inside an existing NC window — AXObserver on the
@@ -126,24 +150,37 @@ final class NotificationCenterObserver {
         _ = AXIsProcessTrustedWithOptions(options)
     }
 
-    func pressAnswer(on banner: ParsedNotificationBanner) {
+    @discardableResult
+    func pressAnswer(on banner: ParsedNotificationBanner) -> Bool {
+        // Lift cover so Continuity receives the click.
+        ContinuityCallBannerCover.stopCovering()
         if let button = banner.answerButton, AXHelpers.press(button) {
-            return
+            Self.callDebugTrace("answer via banner.answerButton")
+            return true
         }
         if let element = banner.element,
-           let button = Self.findButton(in: element, matching: Self.answerKeywords) {
-            _ = AXHelpers.press(button)
+           let button = Self.findButton(in: element, matching: Self.answerKeywords),
+           AXHelpers.press(button) {
+            Self.callDebugTrace("answer via banner AX keywords")
+            return true
         }
+        let ok = ContinuityCallActions.pressAnswer()
+        Self.callDebugTrace("answer via ContinuityCallActions=\(ok)")
+        return ok
     }
 
-    func pressDecline(on banner: ParsedNotificationBanner) {
+    @discardableResult
+    func pressDecline(on banner: ParsedNotificationBanner) -> Bool {
+        ContinuityCallBannerCover.stopCovering()
         if let button = banner.declineButton, AXHelpers.press(button) {
-            return
+            return true
         }
         if let element = banner.element,
-           let button = Self.findButton(in: element, matching: Self.declineKeywords) {
-            _ = AXHelpers.press(button)
+           let button = Self.findButton(in: element, matching: Self.declineKeywords),
+           AXHelpers.press(button) {
+            return true
         }
+        return ContinuityCallActions.pressDecline()
     }
 
     /// Zamyka systemowy dymek (akcja „Close” przez AX) — powiadomienie zostało już pokazane w notchu.
@@ -152,7 +189,7 @@ final class NotificationCenterObserver {
         guard let element = banner.element else { return }
         Task { @MainActor in
             for attempt in 0..<8 {
-                if AXHelpers.performCloseAction(on: element) {
+                if dismissAXElement(element) {
                     return
                 }
                 try? await Task.sleep(for: .milliseconds(attempt == 0 ? 120 : 180))
@@ -160,6 +197,44 @@ final class NotificationCenterObserver {
             Self.logger.debug("dismissBanner: close action not found for \(banner.title, privacy: .private)")
         }
     }
+
+    /// Hide Continuity / NC call UI that duplicates the notch — once per ring.
+    /// Continuity's photo card has no Close action, so we cover it with an opaque panel.
+    func dismissVisibleCallSystemBanners(from banners: [ParsedNotificationBanner]) {
+        guard !didHideSystemCallUIThisRing else { return }
+        didHideSystemCallUIThisRing = true
+        Task { @MainActor in
+            var closed = 0
+            for banner in banners where banner.isLikelyCall {
+                guard let element = banner.element else { continue }
+                if dismissAXElement(element) { closed += 1 }
+            }
+            ContinuityCallBannerCover.startCovering()
+            Self.callDebugTrace("hid system call UI ncClose=\(closed) cover=started")
+        }
+    }
+
+    func resetSystemCallUIHideState() {
+        didHideSystemCallUIThisRing = false
+        ContinuityCallBannerCover.stopCovering()
+    }
+
+    private var didHideSystemCallUIThisRing = false
+
+    private func dismissAXElement(_ element: AXUIElement) -> Bool {
+        if AXHelpers.performCloseAction(on: element) { return true }
+        if let close = Self.findButton(in: element, matching: Self.closeBannerKeywords),
+           AXHelpers.press(close) {
+            return true
+        }
+        return false
+    }
+
+    private static let closeBannerKeywords = [
+        "close", "clear", "dismiss",
+        "zamknij", "wyczyść", "usuń",
+        "schließen", "chiudi", "cerrar",
+    ]
 
     /// Best-effort quick reply via AX text field / Reply button on the live NC banner.
     @discardableResult
@@ -341,11 +416,15 @@ final class NotificationCenterObserver {
                 guard notificationCenterMayHaveBanners(pid: pid) else { continue }
             }
 
+            let hostBundleID = AXHelpers.bundleID(forPID: pid)
+            let hostIsCallApp = NotificationAppCatalog.isCallUIHostBundleID(hostBundleID)
+
             let appElement = AXUIElementCreateApplication(pid)
             var nodeBudget = Self.axMaxNodesPerPID
             for banner in collectBanners(
                 from: appElement,
                 depth: 0,
+                inheritedBundleHint: hostIsCallApp ? hostBundleID : nil,
                 nodeBudget: &nodeBudget
             ) {
                 let key = banner.fingerprint
@@ -353,9 +432,115 @@ final class NotificationCenterObserver {
                 banners.append(banner)
                 if banner.isLikelyCall {
                     foundConfidentCall = true
+                    Self.callDebugTrace(
+                        "found call banner host=\(hostBundleID ?? "?") title=\(banner.title) buttons=\(banner.actionButtonCount)"
+                    )
                 }
             }
-            if foundConfidentCall, callsPriorityScanning { break }
+            // Don't stop after a privacy-scrubbed FACETIME stub — Phone.app may still expose the name.
+            let hasUsableCaller = banners.contains {
+                $0.isLikelyCall && NotificationAppCatalog.isPlausibleCallerName($0.title)
+            }
+            if hasUsableCaller, callsPriorityScanning { break }
+        }
+
+        if callsPriorityScanning {
+            let hosts = pids.compactMap(AXHelpers.bundleID(forPID:))
+            let hasCallHost = hosts.contains { NotificationAppCatalog.isCallUIHostBundleID($0) }
+            // Deep scrapes read other apps' window titles / capture the screen — macOS
+            // lights the screen-recording indicator for that, so run them only while a
+            // call is actually ringing (call banner on screen or incoming call in notch).
+            let ringingNow = banners.contains(where: \.isLikelyCall)
+                || (hasCallHost && incomingCallRingingProvider?() == true)
+            var callerHint = bestCallerHint(from: banners)
+            // Once the ring session already has a usable name, don't re-scrape (AX
+            // walks + OCR captures are the main source of in-ring lag).
+            if callerHint == nil,
+               let known = knownCallerNameProvider?(),
+               NotificationAppCatalog.isPlausibleCallerName(known) {
+                callerHint = known
+            }
+            if callerHint == nil, ringingNow {
+                callerHint = scrapeCallerHintFromNotificationCenter()
+                    ?? scrapeCallerFromCallHosts(pids: pids)
+                    ?? scrapeCallerFromCallWindowTitles()
+                if callerHint == nil {
+                    callerHint = await scrapeCallerFromContinuityOverlayOCR()
+                }
+            }
+
+            if let callerHint {
+                Self.callDebugTrace("callerHint resolved=\(callerHint)")
+            }
+
+            for banner in banners {
+                Self.callDebugTrace(
+                    """
+                    banner call=\(banner.isLikelyCall) isCall=\(banner.isCall) \
+                    buttons=\(banner.actionButtonCount) answer=\(banner.hasAnswerControl) decline=\(banner.hasDeclineControl) \
+                    deliver=\(banner.deliveringBundleID) ax=\(banner.axDeliveringBundleID ?? "nil") \
+                    title=\(banner.title) body=\(banner.body) icons=\(banner.iconLabels.joined(separator: "|"))
+                    """
+                )
+            }
+
+            // Upgrade privacy stubs ("Powiadomienie" / FACETIME_NOTIFICATION) with a real caller hint.
+            if let callerHint,
+               NotificationAppCatalog.isPlausibleCallerName(callerHint),
+               let idx = banners.firstIndex(where: {
+                   $0.isLikelyCall && !NotificationAppCatalog.isPlausibleCallerName($0.title)
+               }) {
+                banners[idx] = forcingCallBanner(
+                    banners[idx],
+                    appBundleID: NotificationAppCatalog.isCallUIHostBundleID(banners[idx].deliveringBundleID)
+                        ? banners[idx].deliveringBundleID
+                        : "com.apple.mobilephone",
+                    callerHint: callerHint
+                )
+                foundConfidentCall = true
+                Self.callDebugTrace("enriched call banner title=\(banners[idx].title)")
+            }
+
+            // Tahoe: Phone.app / FaceTime host the ring UI; AX toast often has no call keywords.
+            if !foundConfidentCall, hasCallHost,
+               let synthetic = synthesizeCallBanner(
+                fromCallHostPIDs: pids,
+                callerHint: callerHint
+               ) {
+                banners.insert(synthetic, at: 0)
+                foundConfidentCall = true
+                Self.callDebugTrace(
+                    "synthesized call from host title=\(synthetic.title) app=\(synthetic.deliveringBundleID) buttons=\(synthetic.actionButtonCount)"
+                )
+            } else if !foundConfidentCall, hasCallHost, let boosted = banners.first {
+                let forced = forcingCallBanner(
+                    boosted,
+                    appBundleID: "com.apple.mobilephone",
+                    callerHint: callerHint
+                )
+                banners[0] = forced
+                foundConfidentCall = true
+                Self.callDebugTrace("boosted NC banner to call title=\(forced.title)")
+            } else if foundConfidentCall, hasCallHost,
+                      !banners.contains(where: {
+                          $0.isLikelyCall && NotificationAppCatalog.isPlausibleCallerName($0.title)
+                      }),
+                      let synthetic = synthesizeCallBanner(
+                        fromCallHostPIDs: pids,
+                        callerHint: callerHint
+                      ),
+                      NotificationAppCatalog.isPlausibleCallerName(synthetic.title) {
+                banners.insert(synthetic, at: 0)
+                Self.callDebugTrace(
+                    "synthesized richer call title=\(synthetic.title) app=\(synthetic.deliveringBundleID)"
+                )
+            }
+
+            if !banners.isEmpty || hasCallHost {
+                Self.callDebugTrace(
+                    "scan pids=\(pids.count) banners=\(banners.count) calls=\(banners.filter(\.isLikelyCall).count) hosts=\(hosts.joined(separator: ",")) callerHint=\(callerHint ?? "nil")"
+                )
+            }
         }
 
         if callsPriorityScanning {
@@ -397,6 +582,457 @@ final class NotificationCenterObserver {
             hasDeclineControl: banner.hasDeclineControl,
             isCallFlag: banner.isCall
         )
+    }
+
+    /// Phone.app / FaceTime often expose a window without NC banner subrole or call keywords.
+    private func synthesizeCallBanner(
+        fromCallHostPIDs pids: [pid_t],
+        callerHint: String?
+    ) -> ParsedNotificationBanner? {
+        for pid in pids {
+            guard let hostBundleID = AXHelpers.bundleID(forPID: pid),
+                  NotificationAppCatalog.isCallUIHostBundleID(hostBundleID) else { continue }
+            let canonical = NotificationAppCatalog.canonicalBundleID(for: hostBundleID)
+
+            let appElement = AXUIElementCreateApplication(pid)
+            let windows = AXHelpers.children(of: appElement).filter {
+                let role = AXHelpers.role(of: $0) ?? ""
+                return (role == "AXWindow" || role == "AXGroup") && !AXHelpers.isHidden($0)
+            }
+            let window = windows.first {
+                (AXHelpers.role(of: $0) ?? "") == "AXWindow"
+            } ?? windows.first {
+                guard let frame = AXHelpers.frame(of: $0) else { return false }
+                return frame.width >= 160 && frame.height >= 60
+            }
+            enableAXManualAccessibility(on: appElement)
+
+            guard let window else {
+                // Even without a window role, walk the app tree for Continuity caller text.
+                if let fromTree = scrapeCallerFromAXTree(appElement, host: hostBundleID)
+                    ?? usableCaller(callerHint) {
+                    Self.callDebugTrace("call host \(hostBundleID) process-only with caller=\(fromTree)")
+                    return ParsedNotificationBanner(
+                        deliveringBundleID: canonical,
+                        serviceBundleID: canonical,
+                        axDeliveringBundleID: hostBundleID,
+                        iconLabels: [NotificationAppCatalog.name(for: canonical)],
+                        appName: NotificationAppCatalog.name(for: canonical),
+                        title: fromTree,
+                        body: "process-only-ring",
+                        isCall: true,
+                        hasTrustedSource: true,
+                        answerButton: nil,
+                        declineButton: nil,
+                        actionButtonCount: 0,
+                        hasAnswerControl: false,
+                        hasDeclineControl: false,
+                        replyField: nil,
+                        replyButton: nil,
+                        element: nil
+                    )
+                }
+                Self.callDebugTrace("call host \(hostBundleID) has no usable AX chrome — process-only ring")
+                let title = usableCaller(callerHint) ?? loc("Incoming call")
+                // No fake Answer/Decline — otherwise we never promote to the in-call state.
+                return ParsedNotificationBanner(
+                    deliveringBundleID: canonical,
+                    serviceBundleID: canonical,
+                    axDeliveringBundleID: hostBundleID,
+                    iconLabels: [NotificationAppCatalog.name(for: canonical)],
+                    appName: NotificationAppCatalog.name(for: canonical),
+                    title: title,
+                    body: "process-only-ring",
+                    isCall: true,
+                    hasTrustedSource: true,
+                    answerButton: nil,
+                    declineButton: nil,
+                    actionButtonCount: 0,
+                    hasAnswerControl: false,
+                    hasDeclineControl: false,
+                    replyField: nil,
+                    replyButton: nil,
+                    element: nil
+                )
+            }
+
+            dumpCallHostAX(window, host: hostBundleID)
+
+            enableAXManualAccessibility(on: window)
+            let buttons = collectButtons(from: window)
+            let texts = collectText(from: window, depth: 0)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty && !NotificationAppCatalog.isInternalAccessibilityLabel($0) }
+            let caller = usableCaller(callerHint)
+                ?? scrapeCallerFromAXTree(window, host: hostBundleID)
+                ?? usableCaller(
+                    NotificationAppCatalog.bestCallerName(
+                        from: texts,
+                        appName: NotificationAppCatalog.name(for: canonical)
+                    )
+                )
+                ?? loc("Incoming call")
+            let answer = buttons.first { isAnswerButton($0) }
+                ?? Self.findButton(in: window, matching: Self.answerKeywords)
+            let decline = buttons.first { isDeclineButton($0) }
+                ?? Self.findButton(in: window, matching: Self.declineKeywords)
+            var answerButton = answer
+            var declineButton = decline
+            if answerButton == nil, declineButton == nil, buttons.count >= 2 {
+                declineButton = buttons[0]
+                answerButton = buttons[buttons.count - 1]
+            }
+
+            return ParsedNotificationBanner(
+                deliveringBundleID: canonical,
+                serviceBundleID: canonical,
+                axDeliveringBundleID: hostBundleID,
+                iconLabels: [NotificationAppCatalog.name(for: canonical)],
+                appName: NotificationAppCatalog.name(for: canonical),
+                title: caller,
+                body: texts.filter { $0 != caller }.prefix(2).joined(separator: " · "),
+                isCall: true,
+                hasTrustedSource: true,
+                answerButton: answerButton,
+                declineButton: declineButton,
+                actionButtonCount: max(buttons.count, 2),
+                hasAnswerControl: answerButton != nil || buttons.count >= 2,
+                hasDeclineControl: declineButton != nil || buttons.count >= 2,
+                replyField: nil,
+                replyButton: nil,
+                element: window
+            )
+        }
+        return nil
+    }
+
+    private func forcingCallBanner(
+        _ banner: ParsedNotificationBanner,
+        appBundleID: String,
+        callerHint: String?
+    ) -> ParsedNotificationBanner {
+        let canonical = NotificationAppCatalog.canonicalBundleID(for: appBundleID)
+        let title = usableCaller(callerHint)
+            ?? usableCaller(banner.title)
+            ?? usableCaller(banner.body)
+            ?? loc("Incoming call")
+        return ParsedNotificationBanner(
+            deliveringBundleID: canonical,
+            serviceBundleID: canonical,
+            axDeliveringBundleID: banner.axDeliveringBundleID ?? appBundleID,
+            iconLabels: banner.iconLabels.isEmpty
+                ? [NotificationAppCatalog.name(for: canonical)]
+                : banner.iconLabels,
+            appName: NotificationAppCatalog.name(for: canonical),
+            title: title,
+            body: banner.body == title ? "" : banner.body,
+            isCall: true,
+            hasTrustedSource: true,
+            answerButton: banner.answerButton,
+            declineButton: banner.declineButton,
+            actionButtonCount: banner.actionButtonCount,
+            hasAnswerControl: banner.hasAnswerControl || banner.answerButton != nil,
+            hasDeclineControl: banner.hasDeclineControl || banner.declineButton != nil,
+            replyField: nil,
+            replyButton: nil,
+            element: banner.element
+        )
+    }
+
+    private func bestCallerHint(from banners: [ParsedNotificationBanner]) -> String? {
+        // Prefer call-adjacent strings ("Ada, Połączenie przychodzące") over raw NC titles.
+        // Calendar Up Next ("NIEDZIELA") must never become the caller hint.
+        for banner in banners {
+            if let fromAttr = callerFromCallLikeText(
+                [banner.title, banner.body].joined(separator: ", ")
+            ) {
+                return fromAttr
+            }
+        }
+        for banner in banners where banner.isCall || banner.isLikelyCall {
+            let lines = [banner.title]
+                + banner.body.components(separatedBy: " · ")
+                + banner.iconLabels
+            let name = NotificationAppCatalog.bestCallerName(from: lines, appName: "")
+            if let usable = usableCaller(name) { return usable }
+        }
+        return nil
+    }
+
+    /// Deep scrape NC for a contact-like string while Phone.app is ringing.
+    private func scrapeCallerHintFromNotificationCenter() -> String? {
+        let bundleIDs = [
+            "com.apple.notificationcenterui",
+            "com.apple.UserNotificationCenter",
+        ]
+        for bundleID in bundleIDs {
+            guard let pid = AXHelpers.runningApplication(bundleID: bundleID)?.processIdentifier else {
+                continue
+            }
+            let root = AXUIElementCreateApplication(pid)
+            enableAXManualAccessibility(on: root)
+            if let found = scrapeCallerFromAXTree(root, host: bundleID) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    /// Phone.app Continuity banner often exposes the contact only after AXManualAccessibility.
+    private func scrapeCallerFromCallHosts(pids: [pid_t]) -> String? {
+        for pid in pids {
+            guard let bundleID = AXHelpers.bundleID(forPID: pid),
+                  NotificationAppCatalog.isCallUIHostBundleID(bundleID) else { continue }
+            let root = AXUIElementCreateApplication(pid)
+            enableAXManualAccessibility(on: root)
+            if let found = scrapeCallerFromAXTree(root, host: bundleID) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    /// Window titles sometimes carry the contact when AX children are empty.
+    private func scrapeCallerFromCallWindowTitles() -> String? {
+        guard let info = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements],
+            kCGNullWindowID
+        ) as? [[String: Any]] else { return nil }
+
+        for window in info {
+            guard let pid = window[kCGWindowOwnerPID as String] as? pid_t,
+                  let bundleID = AXHelpers.bundleID(forPID: pid),
+                  NotificationAppCatalog.isCallUIHostBundleID(bundleID)
+                    || bundleID.contains("notificationcenter")
+                    || bundleID == "com.apple.UserNotificationCenter"
+            else { continue }
+
+            let name = (window[kCGWindowName as String] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if let usable = usableCaller(name) {
+                Self.callDebugTrace("caller scrape (window title)=\(usable) host=\(bundleID)")
+                return usable
+            }
+            if let fromCall = callerFromCallLikeText(name) {
+                Self.callDebugTrace("caller scrape (window call-like)=\(fromCall) host=\(bundleID)")
+                return fromCall
+            }
+        }
+        return nil
+    }
+
+    private func enableAXManualAccessibility(on element: AXUIElement) {
+        // SwiftUI call banners often hide static text until this is set.
+        AXUIElementSetAttributeValue(
+            element,
+            "AXManualAccessibility" as CFString,
+            kCFBooleanTrue
+        )
+        AXUIElementSetAttributeValue(
+            element,
+            "AXEnhancedUserInterface" as CFString,
+            kCFBooleanTrue
+        )
+    }
+
+    private func scrapeCallerFromAXTree(_ root: AXUIElement, host: String) -> String? {
+        var budget = 320
+        var orderedTexts: [String] = []
+        var callAdjacent: [String] = []
+
+        func walk(_ el: AXUIElement, depth: Int) {
+            guard depth < 10, budget > 0 else { return }
+            budget -= 1
+            for value in [
+                AXHelpers.attributedDescription(of: el),
+                AXHelpers.title(of: el),
+                AXHelpers.description(of: el),
+                AXHelpers.label(of: el),
+                AXHelpers.value(of: el),
+            ].compactMap({ $0 }) {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { continue }
+                orderedTexts.append(trimmed)
+                if let caller = callerFromCallLikeText(trimmed) {
+                    callAdjacent.append(caller)
+                }
+            }
+            for child in AXHelpers.children(of: el) {
+                walk(child, depth: depth + 1)
+            }
+        }
+        walk(root, depth: 0)
+
+        // Continuity layout first: "Martyna Tymków" then "Z Twojego iPhone'a".
+        for index in orderedTexts.indices {
+            guard NotificationAppCatalog.isContinuityCallSubtitle(orderedTexts[index]) else { continue }
+            let before = orderedTexts[..<index].reversed()
+            for candidate in before {
+                if let usable = usableCaller(candidate) {
+                    Self.callDebugTrace("caller scrape (continuity)=\(usable) host=\(host)")
+                    return usable
+                }
+            }
+        }
+
+        // call-adjacent only after filtering Continuity audio-route chrome ("Mikrofon (iPhone…)").
+        if let best = callAdjacent.first {
+            Self.callDebugTrace("caller scrape (call-adjacent)=\(best) host=\(host)")
+            return best
+        }
+
+        return nil
+    }
+
+    private var lastContinuityOCRAttemptAt: Date?
+    private var lastWindowDumpAt: Date?
+    private var lastScreenCaptureAccessRequestAt: Date?
+
+    /// OCR the Continuity photo card — AX often exposes only audio routes, not the contact name.
+    private func scrapeCallerFromContinuityOverlayOCR() async -> String? {
+        if let last = lastContinuityOCRAttemptAt, Date().timeIntervalSince(last) < 0.8 {
+            return nil
+        }
+        lastContinuityOCRAttemptAt = .now
+
+        // Rebuilding the app resets the Screen Recording grant — without it the card
+        // can't be located at all, so re-request up front (prompt shows at most once).
+        if !CGPreflightScreenCaptureAccess() {
+            if lastScreenCaptureAccessRequestAt == nil
+                || Date().timeIntervalSince(lastScreenCaptureAccessRequestAt!) > 30 {
+                lastScreenCaptureAccessRequestAt = .now
+                let granted = CGRequestScreenCaptureAccess()
+                Self.callDebugTrace("screen capture access requested granted=\(granted)")
+            }
+            return nil
+        }
+
+        if await ContinuityCallActions.findCard() == nil {
+            // Periodic window dump so we can see what the card actually looks like to CG.
+            if lastWindowDumpAt == nil || Date().timeIntervalSince(lastWindowDumpAt!) > 10 {
+                lastWindowDumpAt = .now
+                Self.callDebugTrace(
+                    "ocr miss — no card; screenRec=\(CGPreflightScreenCaptureAccess()) windows: "
+                        + ContinuityCallActions.debugWindowSummary()
+                )
+            }
+            return nil
+        }
+        if let name = await ContinuityCallActions.ocrCallerName() {
+            Self.callDebugTrace("caller scrape (ocr)=\(name)")
+            return name
+        }
+        if !CGPreflightScreenCaptureAccess() {
+            Self.callDebugTrace("ocr waiting for Screen Recording permission")
+        } else {
+            Self.callDebugTrace("ocr miss — empty / unreadable card")
+        }
+        return nil
+    }
+
+    /// "Anna Kowalska, Połączenie przychodzące" / "Ada, mobile" → "Anna Kowalska".
+    private func callerFromCallLikeText(_ value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        if NotificationAppCatalog.isContinuityDeviceRouteLabel(trimmed) { return nil }
+        let lower = trimmed.lowercased()
+        // Bare "iphone" matches Continuity mic/camera routes — require stronger call marks.
+        let callMarks = [
+            "połączenie", "przychodzące", "incoming", "facetime", "mobile",
+            "calling", "ringing", "telefon", "anruf", "chiamata", "llamada",
+            "facetime_notification", "from your iphone", "z twojego iphone",
+        ]
+        guard callMarks.contains(where: { lower.contains($0) }) else { return nil }
+
+        let separators = CharacterSet(charactersIn: ",·\n—–-")
+        let parts = trimmed.components(separatedBy: separators)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        for part in parts {
+            if let usable = usableCaller(part) { return usable }
+        }
+        return nil
+    }
+
+    /// Walk nested AX nodes under a FaceTime/Phone toast for a contact-like label.
+    private func deepCallerName(from element: AXUIElement) -> String? {
+        var budget = 120
+        var candidates: [String] = []
+
+        func walk(_ el: AXUIElement, depth: Int) {
+            guard depth < 8, budget > 0 else { return }
+            budget -= 1
+            for value in [
+                AXHelpers.title(of: el),
+                AXHelpers.description(of: el),
+                AXHelpers.label(of: el),
+                AXHelpers.value(of: el),
+                AXHelpers.attributedDescription(of: el),
+                AXHelpers.help(of: el),
+            ].compactMap({ $0 }) {
+                if let fromCall = callerFromCallLikeText(value) {
+                    candidates.append(fromCall)
+                }
+                for part in value.components(separatedBy: CharacterSet(charactersIn: ",·\n|")) {
+                    if let usable = usableCaller(part) {
+                        candidates.append(usable)
+                    }
+                }
+            }
+            // Also try identifier — sometimes stacking embeds a display name nearby.
+            if let ident = AXHelpers.identifier(of: el), !ident.uppercased().contains("FACETIME") {
+                if let usable = usableCaller(ident) {
+                    candidates.append(usable)
+                }
+            }
+            for child in AXHelpers.children(of: el) {
+                walk(child, depth: depth + 1)
+            }
+        }
+
+        walk(element, depth: 0)
+        if candidates.isEmpty {
+            Self.callDebugTrace("deep caller miss — dumping AX")
+            dumpCallHostAX(element, host: "facetime-toast")
+        }
+        return candidates.first
+    }
+
+    private func usableCaller(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard NotificationAppCatalog.isPlausibleCallerName(trimmed) else { return nil }
+        // Extra FaceTime chrome tokens.
+        let lower = trimmed.lowercased()
+        if lower == "facetime_notification" || lower.hasPrefix("facetime_") { return nil }
+        return trimmed
+    }
+
+    private func dumpCallHostAX(_ element: AXUIElement, host: String, depth: Int = 0) {
+        guard depth == 0 else { return }
+        var lines: [String] = ["ax-dump host=\(host)"]
+        func walk(_ el: AXUIElement, d: Int, budget: inout Int) {
+            guard d < 5, budget > 0 else { return }
+            budget -= 1
+            let role = AXHelpers.role(of: el) ?? "?"
+            let title = AXHelpers.title(of: el) ?? ""
+            let desc = AXHelpers.description(of: el) ?? ""
+            let attr = AXHelpers.attributedDescription(of: el) ?? ""
+            let sub = AXHelpers.subrole(of: el) ?? ""
+            if d <= 2 || role.contains("Button") || !title.isEmpty || !desc.isEmpty || !attr.isEmpty {
+                lines.append(
+                    String(repeating: " ", count: d * 2)
+                        + "\(role) sub=\(sub) title=\(title.prefix(60)) desc=\(desc.prefix(40)) attr=\(attr.prefix(80))"
+                )
+            }
+            for child in AXHelpers.children(of: el) {
+                walk(child, d: d + 1, budget: &budget)
+            }
+        }
+        var budget = 80
+        walk(element, d: 0, budget: &budget)
+        Self.callDebugTrace(lines.joined(separator: " | "))
     }
 
     private func notificationCenterMayHaveBanners(pid: pid_t) -> Bool {
@@ -454,7 +1090,11 @@ final class NotificationCenterObserver {
                     nodeBudget: &nodeBudget
                 )
             )
-            if callsPriorityScanning, results.contains(where: \.isLikelyCall) {
+            // Keep scanning siblings until we have a call banner with a real caller name.
+            if callsPriorityScanning,
+               results.contains(where: {
+                   $0.isLikelyCall && NotificationAppCatalog.isPlausibleCallerName($0.title)
+               }) {
                 break
             }
         }
@@ -488,6 +1128,9 @@ final class NotificationCenterObserver {
 
         let buttons = collectButtons(from: element)
         let buttonCount = buttons.count
+        let hostIsCallApp = NotificationAppCatalog.callBundleIDs.contains(
+            NotificationAppCatalog.canonicalBundleID(for: deliveringBundleHint ?? "")
+        ) || NotificationAppCatalog.isCallRelatedBundleHint(deliveringBundleHint)
         let callShape = buttonCount >= 2
         let isNCBanner = AXHelpers.isNotificationCenterBanner(element)
 
@@ -582,6 +1225,22 @@ final class NotificationCenterObserver {
             title = resolved.displayName
         }
 
+        // Continuity often packs "Ada Nowak, Połączenie przychodzące" only in attributed description.
+        if let attr = AXHelpers.attributedDescription(of: element),
+           let caller = callerFromCallLikeText(attr) {
+            title = caller
+        } else if let caller = callerFromCallLikeText(attributedParts.joined(separator: ", ")) {
+            title = caller
+        } else if let caller = contentTexts.compactMap(usableCaller).first {
+            title = caller
+        }
+
+        let looksLikeFaceTimeToast = texts.contains {
+            $0.localizedCaseInsensitiveContains("FACETIME_NOTIFICATION")
+                || $0.localizedCaseInsensitiveContains("facetime")
+        } || (deliveringBundleHint?.localizedCaseInsensitiveContains("facetime") == true)
+            || hostIsCallApp
+
         let hasAnswerControl = buttons.contains { isAnswerButton($0) }
             || Self.findButton(in: element, matching: Self.answerKeywords) != nil
         let hasDeclineControl = buttons.contains { isDeclineButton($0) }
@@ -611,19 +1270,30 @@ final class NotificationCenterObserver {
         )
         let isCall = callScore >= 3
 
-        if callsPriorityScanning, callScore > 0 || buttonCount >= 2 || strongEvidence {
-            Self.logger.info(
+        // Tahoe FaceTime/Phone banners often expose only "FACETIME_NOTIFICATION" / "Powiadomienie"
+        // at the group root — the contact name lives on a nested static text.
+        // Never deep-walk mere multi-button chrome (Calendar Up Next → "19 LIPCA").
+        if looksLikeFaceTimeToast || isCall || hostIsCallApp {
+            if !NotificationAppCatalog.isPlausibleCallerName(title),
+               let deep = deepCallerName(from: element) {
+                title = deep
+                Self.callDebugTrace("deep caller from AX=\(deep)")
+            }
+        }
+
+        if callsPriorityScanning, isCall || hostIsCallApp || looksLikeFaceTimeToast {
+            let attr = AXHelpers.attributedDescription(of: element) ?? ""
+            Self.callDebugTrace(
                 """
-                call-score=\(callScore, privacy: .public) isCall=\(isCall, privacy: .public) \
-                buttons=\(buttonCount, privacy: .public) answer=\(hasAnswerControl, privacy: .public) \
-                decline=\(hasDeclineControl, privacy: .public) \
-                hint=\(deliveringBundleHint ?? "nil", privacy: .public) \
-                title=\(scoreTitle, privacy: .private) body=\(scoreBody, privacy: .private)
+                parse callScore=\(callScore) isCall=\(isCall) hostCall=\(hostIsCallApp) \
+                title=\(title) scoreTitle=\(scoreTitle) attr=\(attr.prefix(120)) \
+                texts=\(contentTexts.prefix(4).joined(separator: " | "))
                 """
             )
         }
 
-        let maxHeight: CGFloat = isCall ? 400 : 280
+        // Phone.app / FaceTime incoming UI can be taller than a NC toast.
+        let maxHeight: CGFloat = (isCall || hostIsCallApp) ? 720 : 280
         guard frame.height <= maxHeight else { return nil }
 
         var answerButton = buttons.first { isAnswerButton($0) }
@@ -828,7 +1498,7 @@ final class NotificationCenterObserver {
         NotificationAppCatalog.name(for: bundleID)
     }
 
-    /// Mocne sygnały call (bundle / keywords / etykiety przycisków) — bez „2 bez ethkiet = call”.
+    /// Mocne sygnały call — bundle Phone/FaceTime sam nie wystarczy (inaczej cały Phone.app = false positive).
     private func isCallBanner(
         deliveringBundleID: String,
         serviceBundleID: String,
@@ -841,18 +1511,6 @@ final class NotificationCenterObserver {
         hasDeclineControl: Bool
     ) -> Bool {
         if hasAnswerControl && hasDeclineControl {
-            return true
-        }
-
-        if NotificationAppCatalog.isCallRelatedBundleHint(axDeliveringBundleID) {
-            return true
-        }
-
-        let bundleCandidates = [axDeliveringBundleID, deliveringBundleID, serviceBundleID]
-            .compactMap { $0 }
-            .map { NotificationAppCatalog.canonicalBundleID(for: $0) }
-
-        if bundleCandidates.contains(where: { NotificationAppCatalog.callBundleIDs.contains($0) }) {
             return true
         }
 
@@ -874,8 +1532,19 @@ final class NotificationCenterObserver {
             return true
         }
 
+        let bundleCandidates = [axDeliveringBundleID, deliveringBundleID, serviceBundleID]
+            .compactMap { $0 }
+            .map { NotificationAppCatalog.canonicalBundleID(for: $0) }
+        let fromCallHost = bundleCandidates.contains(where: { NotificationAppCatalog.callBundleIDs.contains($0) })
+            || NotificationAppCatalog.isCallRelatedBundleHint(axDeliveringBundleID)
+
+        // Host Phone/FaceTime + choć jeden przycisk akcji / para przycisków = baner połączenia.
+        if fromCallHost, hasAnswerControl || hasDeclineControl || actionButtonCount >= 2 {
+            return true
+        }
+
         if hasAnswerControl || hasDeclineControl {
-            return bundleCandidates.contains(where: { NotificationAppCatalog.callBundleIDs.contains($0) })
+            return fromCallHost
                 || Self.callKeywords.contains(where: { combined.contains($0) })
                 || actionButtonCount >= 2
         }

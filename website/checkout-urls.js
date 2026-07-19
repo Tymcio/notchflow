@@ -3,10 +3,12 @@
 var NOTCHFLOW_CHECKOUT = {
   lifetime: "https://buy.polar.sh/polar_cl_IFSZArybpJcU5Jx11XnZYRA5fGFcQgUdrU2Gv0bL3zW",
   annual: "https://buy.polar.sh/polar_cl_IFSZArybpJcU5Jx11XnZYRA5fGFcQgUdrU2Gv0bL3zW",
+  // Replace with the Polar Checkout Link for the Agents (€14.90) product when created.
+  agents: "https://buy.polar.sh/polar_cl_IFSZArybpJcU5Jx11XnZYRA5fGFcQgUdrU2Gv0bL3zW",
 };
 
 (function () {
-  var PLACEHOLDER_PATH = /\/notchflow\/(lifetime|annual)$/;
+  var PLACEHOLDER_PATH = /\/notchflow\/(lifetime|annual|agents)$/;
 
   document.querySelectorAll("[data-polar-checkout]").forEach(function (el) {
     var key = el.getAttribute("data-polar-checkout");
@@ -25,7 +27,7 @@ var NOTCHFLOW_CHECKOUT = {
 
   var params = new URLSearchParams(window.location.search);
   var purchased = params.get("purchased");
-  if (purchased !== "lifetime" && purchased !== "annual") return;
+  if (purchased !== "lifetime" && purchased !== "annual" && purchased !== "agents") return;
 
   var isPL =
     document.documentElement.lang === "pl" ||
@@ -43,6 +45,11 @@ var NOTCHFLOW_CHECKOUT = {
         body:
           "Check your email for your license key. Open NotchFlow → Settings → License, paste the key, and click Activate. Your plan renews yearly until you cancel in the Polar customer portal.",
       },
+      agents: {
+        title: "Thank you for buying Agents!",
+        body:
+          "Check your email for your Agents key (NOTCHFLOW_AGENTS_…). Open NotchFlow → Settings → License, paste the key, then enable hooks in Settings → Integrations or the Agents tab.",
+      },
     },
     pl: {
       lifetime: {
@@ -54,6 +61,11 @@ var NOTCHFLOW_CHECKOUT = {
         title: "Dziękujemy za subskrypcję!",
         body:
           "Sprawdź e-mail z kluczem licencyjnym. Otwórz NotchFlow → Ustawienia → Licencja, wklej klucz i kliknij Aktywuj. Plan odnawia się co rok — anulujesz w portalu klienta Polar.",
+      },
+      agents: {
+        title: "Dziękujemy za zakup Agents!",
+        body:
+          "Sprawdź e-mail z kluczem Agents (NOTCHFLOW_AGENTS_…). Otwórz NotchFlow → Ustawienia → Licencja, wklej klucz, potem włącz hooki w Integracjach lub zakładce Agents.",
       },
     },
   };

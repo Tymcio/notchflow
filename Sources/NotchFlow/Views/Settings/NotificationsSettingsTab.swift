@@ -9,23 +9,6 @@ struct NotificationsSettingsTab: View {
     var body: some View {
         SettingsFormContent {
             Section {
-                Toggle(loc("Show incoming calls in the island"), isOn: $settings.callsInNotchEnabled)
-                    .disabled(!isPremium)
-                    .onChange(of: settings.callsInNotchEnabled) { _, _ in
-                        AppController.appState?.applyNotificationSettings()
-                    }
-            } header: {
-                Text(loc("Calls in the notch"))
-            } footer: {
-                VStack(alignment: .leading, spacing: 6) {
-                    if !isPremium {
-                        SettingsFooterCaption("Calls in the notch require a Premium license.")
-                    }
-                    SettingsFooterCaption("FaceTime and calls relayed from iPhone appear in the island instead of only as a side banner.")
-                }
-            }
-
-            Section {
                 Toggle(loc("Show notifications from selected apps in the island"), isOn: $settings.appNotificationsEnabled)
                     .disabled(!isPremium)
                     .onChange(of: settings.appNotificationsEnabled) { _, _ in
@@ -37,13 +20,17 @@ struct NotificationsSettingsTab: View {
                     .onChange(of: settings.hideNotificationBody) { _, _ in
                         AppController.appState?.applyNotificationSettings()
                     }
+            } header: {
+                Text(loc("App notifications"))
+            }
 
+            Section {
                 Toggle(loc("Close the system banner when shown in the island"), isOn: $settings.dismissSystemBanners)
                     .disabled(!settings.appNotificationsEnabled || !isPremium)
             } header: {
-                Text(loc("App notifications"))
+                Text(loc("System banners"))
             } footer: {
-                if settings.appNotificationsEnabled && isPremium, settings.dismissSystemBanners {
+                if settings.appNotificationsEnabled && isPremium {
                     SettingsFooterCaption("The macOS banner in the corner is closed automatically once the notification appears in the notch.")
                 }
             }
@@ -70,7 +57,7 @@ struct NotificationsSettingsTab: View {
                     if menuBarLayoutManager.isAccessibilityTrusted {
                         SettingsFooterCaption("Accessibility is enabled — NotchFlow can read system notification banners.")
                     } else {
-                        SettingsFooterCaption("Accessibility permission is required to detect calls and Notification Center alerts.")
+                        SettingsFooterCaption("Accessibility permission is required to detect Notification Center alerts.")
                     }
                     SettingsFooterCaption("Notification content is kept in RAM only and is not saved to disk.")
                 }

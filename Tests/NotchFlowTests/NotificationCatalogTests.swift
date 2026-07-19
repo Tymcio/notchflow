@@ -84,6 +84,37 @@ struct NotificationCatalogTests {
         #expect(resolved.service == "unknown.app")
     }
 
+    @Test("Call host bundle IDs resolve to Phone/FaceTime, not Notification")
+    func callHostDisplayName() {
+        let phone = NotificationAppCatalog.name(for: "com.apple.mobilephone")
+        #expect(phone != "Powiadomienie")
+        #expect(phone != "Notification")
+        #expect(phone == "Phone" || phone == "Telefon" || !phone.contains("."))
+
+        let faceTime = NotificationAppCatalog.name(for: "com.apple.FaceTime")
+        #expect(faceTime != "Powiadomienie")
+        #expect(faceTime != "Notification")
+        #expect(faceTime.localizedCaseInsensitiveContains("FaceTime") || !faceTime.contains("."))
+    }
+
+    @Test("Weekday calendar chrome is not a plausible caller name")
+    func calendarChromeRejectedAsCaller() {
+        #expect(!NotificationAppCatalog.isPlausibleCallerName("NIEDZIELA"))
+        #expect(!NotificationAppCatalog.isPlausibleCallerName("niedziela"))
+        #expect(!NotificationAppCatalog.isPlausibleCallerName("Sunday"))
+        #expect(!NotificationAppCatalog.isPlausibleCallerName("19 LIPCA"))
+        #expect(!NotificationAppCatalog.isPlausibleCallerName("NIEDZIELA, 19 LIPCA"))
+        #expect(NotificationAppCatalog.isCalendarChromeLabel("NIEDZIELA, 19 LIPCA"))
+        #expect(!NotificationAppCatalog.isCalendarChromeLabel("Ada Nowak"))
+        #expect(NotificationAppCatalog.isPlausibleCallerName("Ada Nowak"))
+        #expect(NotificationAppCatalog.isPlausibleCallerName("Martyna Tymków"))
+        #expect(NotificationAppCatalog.isContinuityCallSubtitle("Z Twojego iPhone'a"))
+        #expect(!NotificationAppCatalog.isPlausibleCallerName("„NotchFlow” chce uzyskać dostęp do Twoich kontaktów."))
+        #expect(NotificationAppCatalog.isSystemCallUILabel("Kamera (iPhone (Marcin))"))
+        #expect(NotificationAppCatalog.isContinuityDeviceRouteLabel("Mikrofon (iPhone (Marcin))"))
+        #expect(!NotificationAppCatalog.isPlausibleCallerName("Mikrofon (iPhone (Marcin))"))
+    }
+
     @Test("Settings migration drops unsupported and Rambox aggregator IDs")
     func settingsMigration() {
         let migrated = NotchSettings.migratedAllowedNotificationBundleIDs([
@@ -131,6 +162,7 @@ struct CallActivityTests {
         let resolved = LiveActivityResolver.resolve(
             incomingCall: incoming,
             activeCall: active,
+            agentSession: nil,
             timer: nil,
             notification: peek,
             showsMedia: true
@@ -162,6 +194,7 @@ struct CallActivityTests {
         let resolved = LiveActivityResolver.resolve(
             incomingCall: nil,
             activeCall: nil,
+            agentSession: nil,
             timer: timer,
             notification: peek,
             showsMedia: true

@@ -14,7 +14,7 @@ struct IncomingCallBannerView: View {
     @State private var appeared = false
 
     private var genericCaller: Bool {
-        NotificationAppCatalog.isSystemCallUILabel(call.callerName)
+        !NotificationAppCatalog.isPlausibleCallerName(call.callerName)
     }
 
     private var displayName: String {
@@ -22,8 +22,11 @@ struct IncomingCallBannerView: View {
     }
 
     private var sourceLabel: String {
-        let name = NotificationAppCatalog.name(for: call.appBundleID)
-        if name == call.appBundleID || NotificationAppCatalog.isInternalAccessibilityLabel(name) {
+        let preferred = NotificationAppCatalog.isCallUIHostBundleID(call.appBundleID)
+            ? call.appBundleID
+            : "com.apple.mobilephone"
+        let name = NotificationAppCatalog.name(for: preferred)
+        if name == preferred || NotificationAppCatalog.isInternalAccessibilityLabel(name) {
             return loc("Incoming call")
         }
         return name
@@ -101,12 +104,40 @@ struct IncomingCallBannerView: View {
                 .frame(width: pulse ? 36 : 30, height: pulse ? 36 : 30)
                 .animation(.easeInOut(duration: 1.05).repeatForever(autoreverses: true), value: pulse)
 
-            if NotificationAppCatalog.isCatalogApp(call.appBundleID)
-                || NotificationAppCatalog.isMessagingApp(call.appBundleID) {
-                CatalogAppIcon(bundleID: call.appBundleID, size: IncomingCallBannerMetrics.avatarSize)
+            if let data = call.avatarImageData, let nsImage = NSImage(data: data) {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(
+                        width: IncomingCallBannerMetrics.avatarSize,
+                        height: IncomingCallBannerMetrics.avatarSize
+                    )
+                    .clipShape(Circle())
+            } else if !genericCaller {
+                monogram
+            } else if NotificationAppCatalog.isCallUIHostBundleID(call.appBundleID)
+                || NotificationAppCatalog.callBundleIDs.contains(
+                    NotificationAppCatalog.canonicalBundleID(for: call.appBundleID)
+                ),
+                let phoneIcon = AppIconProvider.image(for: call.appBundleID)
+                    ?? AppIconProvider.image(for: "com.apple.mobilephone") {
+                Image(nsImage: phoneIcon)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(
+                        width: IncomingCallBannerMetrics.avatarSize,
+                        height: IncomingCallBannerMetrics.avatarSize
+                    )
                     .clipShape(Circle())
             } else {
-                monogram
+                Image(systemName: "phone.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(
+                        width: IncomingCallBannerMetrics.avatarSize,
+                        height: IncomingCallBannerMetrics.avatarSize
+                    )
+                    .background(Circle().fill(Color.green.opacity(0.85)))
             }
         }
         .frame(width: 36, height: 36)
@@ -162,12 +193,15 @@ enum IncomingCallBannerMetrics {
 
     @MainActor
     static func preferredWidth(for call: IncomingCallActivity, cutoutWidth: CGFloat) -> CGFloat {
-        let genericCaller = NotificationAppCatalog.isSystemCallUILabel(call.callerName)
+        let genericCaller = !NotificationAppCatalog.isPlausibleCallerName(call.callerName)
         let displayName = genericCaller ? loc("Incoming call") : call.callerName
         let callerWidth = width(of: displayName, font: .systemFont(ofSize: callerFontSize, weight: .semibold))
         var textWidth = callerWidth
         if !genericCaller {
-            let source = NotificationAppCatalog.name(for: call.appBundleID)
+            let sourceID = NotificationAppCatalog.isCallUIHostBundleID(call.appBundleID)
+                ? call.appBundleID
+                : "com.apple.mobilephone"
+            let source = NotificationAppCatalog.name(for: sourceID)
             let sourceWidth = width(of: source, font: .systemFont(ofSize: sourceFontSize, weight: .medium))
             textWidth = max(textWidth, sourceWidth)
         }

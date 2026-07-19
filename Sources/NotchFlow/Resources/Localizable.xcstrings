@@ -1401,6 +1401,34 @@
         }
       }
     },
+    "System banners": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banery systemowe"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System-Banner"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banner di sistema"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banners del sistema"
+          }
+        }
+      }
+    },
     "Close the system banner when shown in the island": {
       "localizations": {
         "pl": {

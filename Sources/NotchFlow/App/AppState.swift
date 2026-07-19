@@ -16,9 +16,14 @@ final class AppState {
     var clipboardEntries: [ClipboardEntry] = []
     var licenseStatus: LicenseStatus = .free
     var isIslandInputFocused = false
+    /// Pointer is inside the notch hover band while idle — drives hover-only wing UI
+    /// (e.g. the End-call button). SwiftUI onHover is unreliable in the idle panel.
+    var isIdleWingHoverActive = false
     var hubNotifications: [HubNotification] = []
     /// Wymusza odświeżenie widoku idle po zmianie połączenia (CallManager nie jest @Observable).
     private(set) var callLiveActivityRevision = 0
+    /// Wymusza odświeżenie idle po zmianie sesji agentów.
+    private(set) var agentLiveActivityRevision = 0
 
     let mediaMonitor: MediaMonitor
     let shelfManager: ShelfManager
@@ -36,6 +41,7 @@ final class AppState {
     let callManager: CallManager
     let notificationHub: NotificationHubManager
     let notificationCenterObserver: NotificationCenterObserver
+    let agentSessionManager: AgentSessionManager
 
     init() {
         let sharedSettings = NotchSettings.shared
@@ -56,11 +62,16 @@ final class AppState {
         callManager = CallManager()
         notificationHub = NotificationHubManager()
         notificationCenterObserver = NotificationCenterObserver()
+        agentSessionManager = AgentSessionManager()
         bindManagers()
     }
 
     var isPremium: Bool {
         !LicenseMode.current.isEnforced || licenseStatus.isPremium
+    }
+
+    var hasAgentsAddon: Bool {
+        !LicenseMode.current.isEnforced || licenseStatus.hasAgentsAddon
     }
 
     var showsMediaIdle: Bool {
@@ -69,9 +80,11 @@ final class AppState {
 
     var activeLiveActivity: LiveActivityKind? {
         _ = callLiveActivityRevision
+        _ = agentLiveActivityRevision
         return LiveActivityResolver.resolve(
             incomingCall: callManager.incomingCall,
             activeCall: callManager.activeCall,
+            agentSession: hasAgentsAddon ? agentSessionManager.primaryActivity : nil,
             timer: focusTimerState.showsInIdleNotch ? focusTimerState.activity : nil,
             notification: notificationHub.peek,
             showsMedia: showsMediaIdle
@@ -85,14 +98,13 @@ final class AppState {
     /// Active-call peeks widen the right wing so content is readable.
     var idleRightWingWidthOverride: CGFloat? {
         switch activeLiveActivity {
-        case .activeCall(let call):
-            let displayName = NotificationAppCatalog.isSystemCallUILabel(call.callerName)
-                ? loc("Incoming call")
-                : call.callerName
-            return IdleCallMetrics.preferredRightWingWidth(
-                callerName: displayName,
-                actionButtonCount: 1,
-                showsSubtitle: true
+        case .activeCall:
+            // Compact Live Activity: avatar+timer left, waveform (or End on hover) right.
+            return IdleCallMetrics.activeCallRightWingWidth
+        case .agentSession(let session):
+            return IdleAgentMetrics.preferredRightWingWidth(
+                title: session.title,
+                needsAttention: session.needsAttention
             )
         case .timer(let timer) where timer.isFinished && timer.isAlertMuted:
             return IdleTimerMetrics.preferredMutedRightWingWidth()
@@ -187,21 +199,16 @@ final class AppState {
     }
 
     func applyNotificationSettings() {
-        let callsEnabled = isPremium && settings.callsInNotchEnabled
         let notificationsEnabled = isPremium && settings.appNotificationsEnabled
 
-        callManager.isEnabled = callsEnabled
+        // Calls-in-notch is shelved: Continuity gives no public API for caller identity
+        // or Answer/Decline, and the AX/OCR/synthetic-click stack proved too fragile.
+        callManager.isEnabled = false
         notificationHub.isEnabled = notificationsEnabled
         notificationHub.allowedNativeBundleIDs = Set(settings.allowedNativeNotificationBundleIDs)
         notificationHub.hideMessageBody = settings.hideNotificationBody
 
-        notificationCenterObserver.setEnabled(
-            callsEnabled || notificationsEnabled,
-            callsPriority: callsEnabled
-        )
-        notificationCenterObserver.callSessionActiveProvider = { [weak self] in
-            self?.callManager.needsFrequentScan == true
-        }
+        notificationCenterObserver.setEnabled(notificationsEnabled, callsPriority: false)
         notifyLiveActivityChange()
     }
 
@@ -218,6 +225,22 @@ final class AppState {
     func endActiveCall() {
         callManager.endCall(using: notificationCenterObserver)
         notifyLiveActivityChange()
+    }
+
+    func allowActiveAgentPermission() {
+        guard let permission = agentSessionManager.sessions.compactMap(\.permission).first else { return }
+        agentSessionManager.decidePermission(id: permission.id, decision: .allow)
+    }
+
+    func denyActiveAgentPermission() {
+        guard let permission = agentSessionManager.sessions.compactMap(\.permission).first else { return }
+        agentSessionManager.decidePermission(id: permission.id, decision: .deny)
+    }
+
+    func jumpToActiveAgentSession() {
+        guard let session = agentSessionManager.sessions.first else { return }
+        agentSessionManager.jump(to: session)
+        activeModule = .agents
     }
 
     func openHubNotificationApp() {
@@ -262,6 +285,12 @@ final class AppState {
 
     private func notifyLiveActivityChange() {
         onLiveActivityChange?()
+    }
+
+    /// Used by Local API / hooks to refresh island chrome after agent events.
+    func notifyAgentActivityChange() {
+        agentLiveActivityRevision += 1
+        notifyLiveActivityChange()
     }
 
     private func bindManagers() {
@@ -327,6 +356,12 @@ final class AppState {
             self.notifyLiveActivityChange()
         }
 
+        agentSessionManager.onStateChange = { [weak self] in
+            guard let self else { return }
+            self.agentLiveActivityRevision += 1
+            self.notifyLiveActivityChange()
+        }
+
         notificationHub.onStateChange = { [weak self] in
             guard let self else { return }
             self.hubNotifications = self.notificationHub.recentNotifications
@@ -335,20 +370,13 @@ final class AppState {
 
         notificationCenterObserver.onBannerDetected = { [weak self] banner in
             guard let self else { return }
-            if banner.isLikelyCall {
-                guard self.isPremium, self.settings.callsInNotchEnabled else { return }
-                self.callManager.handleBanner(banner)
-                return
-            }
+            // Call banners are ignored — the calls-in-notch feature is shelved.
+            if banner.isLikelyCall { return }
 
             let shownInNotch = self.notificationHub.handleBanner(banner)
             if shownInNotch, self.settings.dismissSystemBanners {
                 self.notificationCenterObserver.dismissBanner(banner)
             }
-        }
-
-        notificationCenterObserver.onScanComplete = { [weak self] banners in
-            self?.callManager.reconcile(with: banners)
         }
     }
 }

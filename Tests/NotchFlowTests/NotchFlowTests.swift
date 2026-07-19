@@ -149,8 +149,46 @@ final class NotchGeometryTests: XCTestCase {
 final class LicenseStatusTests: XCTestCase {
     func testPremiumTiers() {
         XCTAssertFalse(LicenseStatus.free.isPremium)
-        XCTAssertTrue(LicenseStatus(tier: .lifetime, key: "x", validatedAt: .now, expiresAt: nil).isPremium)
-        XCTAssertTrue(LicenseStatus(tier: .annual, key: "x", validatedAt: .now, expiresAt: .now.addingTimeInterval(3600)).isPremium)
+        XCTAssertTrue(LicenseStatus(tier: .lifetime, key: "x", validatedAt: .now, expiresAt: nil, hasAgentsAddon: false, agentsKey: nil, agentsValidatedAt: nil).isPremium)
+        XCTAssertTrue(LicenseStatus(tier: .annual, key: "x", validatedAt: .now, expiresAt: .now.addingTimeInterval(3600), hasAgentsAddon: false, agentsKey: nil, agentsValidatedAt: nil).isPremium)
+    }
+
+    func testAgentsAddonFlag() {
+        let status = LicenseStatus(
+            tier: .free,
+            key: nil,
+            validatedAt: nil,
+            expiresAt: nil,
+            hasAgentsAddon: true,
+            agentsKey: "NOTCHFLOW_AGENTS_x",
+            agentsValidatedAt: .now
+        )
+        XCTAssertFalse(status.isPremium)
+        XCTAssertTrue(status.hasAgentsAddon)
+    }
+
+    func testAgentsKeyDetection() {
+        XCTAssertTrue(PolarLicenseClient.looksLikeAgentsKey("NOTCHFLOW_AGENTS_abc"))
+        XCTAssertFalse(PolarLicenseClient.looksLikeAgentsKey("NOTCHFLOW_LIFETIME_abc"))
+    }
+
+    @MainActor
+    func testAgentPermissionIngest() {
+        let manager = AgentSessionManager()
+        manager.ingestEvent([
+            "agent": "claude",
+            "event": "permission",
+            "sessionId": "s1",
+            "title": "fix auth",
+            "toolName": "Bash",
+            "summary": "npm test",
+            "permissionId": "p1",
+        ])
+        XCTAssertEqual(manager.sessions.count, 1)
+        XCTAssertEqual(manager.sessions[0].phase, .waitingPermission)
+        manager.decidePermission(id: "p1", decision: .allow)
+        XCTAssertEqual(manager.permissionDecision(id: "p1"), .allow)
+        XCTAssertEqual(manager.sessions[0].phase, .running)
     }
 }
 

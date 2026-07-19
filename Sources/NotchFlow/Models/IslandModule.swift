@@ -7,6 +7,7 @@ enum IslandModule: String, CaseIterable, Identifiable, Sendable {
     case focus
     case notes
     case clipboard
+    case agents
     case mirror
 
     var id: String { rawValue }
@@ -19,6 +20,7 @@ enum IslandModule: String, CaseIterable, Identifiable, Sendable {
         case .focus: loc("Timer")
         case .notes: loc("Notes")
         case .clipboard: loc("Clipboard")
+        case .agents: loc("Agents")
         case .mirror: loc("Mirror")
         }
     }
@@ -31,16 +33,24 @@ enum IslandModule: String, CaseIterable, Identifiable, Sendable {
         case .focus: "timer"
         case .notes: "note.text"
         case .clipboard: "doc.on.clipboard"
+        case .agents: "cpu"
         case .mirror: "camera.fill"
         }
     }
 
     static var leadingTabs: [IslandModule] { [.media, .calendar, .shelf] }
-    static var trailingTabs: [IslandModule] { [.focus, .notes, .clipboard, .mirror] }
+    static var trailingTabs: [IslandModule] { [.focus, .notes, .clipboard, .agents, .mirror] }
 
     var requiresPremium: Bool {
         switch self {
         case .mirror: true
+        default: false
+        }
+    }
+
+    var requiresAgentsAddon: Bool {
+        switch self {
+        case .agents: true
         default: false
         }
     }
@@ -63,6 +73,7 @@ enum IslandModule: String, CaseIterable, Identifiable, Sendable {
         case .shelf: 132
         case .focus: 188
         case .notes: 156
+        case .agents: 200
         case .mirror: 196
         case .clipboard: NotchFlowConstants.maximumExpandedContentHeight
         }

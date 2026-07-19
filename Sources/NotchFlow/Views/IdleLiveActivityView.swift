@@ -12,7 +12,13 @@ struct IdleLiveActivityView: View {
     var onOpenNotification: () -> Void = {}
     var onReplyNotification: (String) -> Void = { _ in }
     var onDismissFinishedTimer: () -> Void = {}
+    var onAllowAgent: () -> Void = {}
+    var onDenyAgent: () -> Void = {}
+    var onJumpAgent: () -> Void = {}
     var supportsQuickReply: Bool = false
+    /// Global hover state from the panel controller — SwiftUI onHover alone is
+    /// unreliable inside the borderless idle panel.
+    var isWingHoverActive: Bool = false
 
     var body: some View {
         switch activity {
@@ -20,17 +26,28 @@ struct IdleLiveActivityView: View {
             // Incoming calls render via IncomingCallBannerView in NotchIslandView.
             EmptyView()
         case .activeCall(let call):
-            let displayName = NotificationAppCatalog.isSystemCallUILabel(call.callerName)
-                ? loc("Incoming call")
-                : call.callerName
+            let displayName = NotificationAppCatalog.isPlausibleCallerName(call.callerName)
+                ? call.callerName
+                : loc("Incoming call")
             IdleCallView(
                 callerName: displayName,
                 startedAt: call.startedAt,
+                avatarImageData: call.avatarImageData,
                 wingLayout: wingLayout,
                 showsActions: true,
+                externalHoverActive: isWingHoverActive,
                 onAnswer: {},
                 onDecline: {},
                 onEnd: onEndCall
+            )
+        case .agentSession(let session):
+            IdleAgentSessionView(
+                activity: session,
+                accent: accent,
+                wingLayout: wingLayout,
+                onAllow: onAllowAgent,
+                onDeny: onDenyAgent,
+                onJump: onJumpAgent
             )
         case .timer(let timer):
             IdleTimerView(
@@ -252,6 +269,13 @@ enum IdleCallMetrics {
     static let subtitleFontSize: CGFloat = 9
     static let textLeadingPadding: CGFloat = 8
     static let trailingPadding: CGFloat = 10
+    /// Timer text + waveform/End button + paddings ("88:88" covers calls up to 99 min).
+    @MainActor
+    static var activeCallRightWingWidth: CGFloat {
+        let timerWidth = width(of: "88:88", font: .monospacedDigitSystemFont(ofSize: 11, weight: .semibold))
+        let total = NotchFlowConstants.idleWingInnerOverlap + timerWidth + 6 + 28 + 8
+        return min(total.rounded(.up), NotchFlowConstants.maxIdleCallWingWidth)
+    }
     private static let actionButtonWidth: CGFloat = 24
     private static let actionButtonSpacing: CGFloat = 4
 
@@ -288,90 +312,118 @@ struct IdleCallView: View {
     let callerName: String
     var subtitle: String?
     var startedAt: Date?
+    var avatarImageData: Data?
     let wingLayout: IdleWingLayout
     let showsActions: Bool
+    var externalHoverActive: Bool = false
     let onAnswer: () -> Void
     let onDecline: () -> Void
     let onEnd: () -> Void
 
     @State private var pulse = false
+    @State private var isHovering = false
 
     private var isIncoming: Bool { startedAt == nil }
+    private var showsEndControl: Bool { isHovering || externalHoverActive }
 
     var body: some View {
         Group {
-            if startedAt != nil {
+            if let startedAt {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    callChrome(at: context.date)
+                    activeCallChrome(startedAt: startedAt, at: context.date)
                 }
             } else {
-                callChrome(at: .now)
+                incomingCallChrome()
             }
         }
     }
 
+    /// Compact Live Activity: avatar | timer + waveform (End on hover).
     @ViewBuilder
-    private func callChrome(at date: Date) -> some View {
+    private func activeCallChrome(startedAt: Date, at date: Date) -> some View {
+        IdleWingContainer(
+            wingLayout: wingLayout,
+            leading: {
+                activeAvatar
+            },
+            trailing: {
+                HStack(spacing: 6) {
+                    Text(durationString(from: startedAt, at: date))
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize()
+                        .foregroundStyle(IslandStyle.primaryText)
+
+                    ZStack {
+                        EqualizerView(
+                            isAnimating: !showsEndControl,
+                            seed: callerName.hashValue,
+                            barColor: .green
+                        )
+                        .opacity(showsEndControl ? 0 : 1)
+
+                        if showsActions {
+                            callButton(
+                                systemImage: "phone.down.fill",
+                                label: loc("End call"),
+                                tint: .red,
+                                action: onEnd
+                            )
+                            .opacity(showsEndControl ? 1 : 0)
+                        }
+                    }
+                }
+                .padding(.leading, NotchFlowConstants.idleWingInnerOverlap)
+                .padding(.trailing, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .onHover { isHovering = $0 }
+                .animation(.easeOut(duration: 0.15), value: showsEndControl)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(callerName), \(durationString(from: startedAt, at: date))")
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func incomingCallChrome() -> some View {
         IdleWingContainer(
             wingLayout: wingLayout,
             leading: {
                 ZStack {
-                    if isIncoming {
-                        Circle()
-                            .fill(Color.green.opacity(0.25))
-                            .frame(width: pulse ? 22 : 16, height: pulse ? 22 : 16)
-                            .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: pulse)
-                    } else {
-                        Circle()
-                            .fill(Color.green.opacity(0.2))
-                            .frame(width: 18, height: 18)
-                    }
+                    Circle()
+                        .fill(Color.green.opacity(0.25))
+                        .frame(width: pulse ? 22 : 16, height: pulse ? 22 : 16)
+                        .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: pulse)
                     Image(systemName: "phone.fill")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(.green)
                 }
-                .onAppear { pulse = isIncoming }
+                .onAppear { pulse = true }
             },
             trailing: {
                 HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(callerName)
-                            .font(.system(size: IdleCallMetrics.callerFontSize, weight: .semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                        if showsSecondaryLine {
-                            Text(displaySubtitle(at: date))
-                                .font(.system(size: IdleCallMetrics.subtitleFontSize))
-                                .foregroundStyle(IslandStyle.secondaryText)
-                                .lineLimit(1)
-                                .monospacedDigit()
-                        }
-                    }
-                    .padding(.leading, NotchFlowConstants.idleWingInnerOverlap + IdleCallMetrics.textLeadingPadding)
+                    Text(callerName)
+                        .font(.system(size: IdleCallMetrics.callerFontSize, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .padding(.leading, NotchFlowConstants.idleWingInnerOverlap + IdleCallMetrics.textLeadingPadding)
 
                     if showsActions {
                         HStack(spacing: 4) {
-                            if isIncoming {
-                                callButton(
-                                    systemImage: "phone.down.fill",
-                                    label: loc("Decline call"),
-                                    tint: .red,
-                                    action: onDecline
-                                )
-                                callButton(
-                                    systemImage: "phone.fill",
-                                    label: loc("Answer call"),
-                                    tint: .green,
-                                    action: onAnswer
-                                )
-                            } else {
-                                callButton(
-                                    systemImage: "phone.down.fill",
-                                    label: loc("End call"),
-                                    tint: .red,
-                                    action: onEnd
-                                )
-                            }
+                            callButton(
+                                systemImage: "phone.down.fill",
+                                label: loc("Decline call"),
+                                tint: .red,
+                                action: onDecline
+                            )
+                            callButton(
+                                systemImage: "phone.fill",
+                                label: loc("Answer call"),
+                                tint: .green,
+                                action: onAnswer
+                            )
                         }
                         .padding(.trailing, IdleCallMetrics.trailingPadding)
                     }
@@ -381,23 +433,29 @@ struct IdleCallView: View {
         )
     }
 
-    private var showsSecondaryLine: Bool {
-        if startedAt != nil { return true }
-        if let subtitle, !subtitle.isEmpty { return true }
-        return false
+    @ViewBuilder
+    private var activeAvatar: some View {
+        Group {
+            if let data = avatarImageData, let image = NSImage(data: data) {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                ZStack {
+                    Circle().fill(Color.green.opacity(0.35))
+                    Text(String(callerName.prefix(1)).uppercased())
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .frame(width: 18, height: 18)
+        .clipShape(Circle())
     }
 
-    private func displaySubtitle(at date: Date) -> String {
-        if let subtitle {
-            return subtitle
-        }
-        if let startedAt {
-            let total = max(0, Int(date.timeIntervalSince(startedAt)))
-            let minutes = total / 60
-            let seconds = total % 60
-            return String(format: "%d:%02d", minutes, seconds)
-        }
-        return ""
+    private func durationString(from startedAt: Date, at date: Date) -> String {
+        let total = max(0, Int(date.timeIntervalSince(startedAt)))
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 
     @ViewBuilder

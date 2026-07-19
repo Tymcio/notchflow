@@ -9,6 +9,7 @@ NotchFlow is **open source** (GPL-3.0) — you can build and run it yourself wit
 | **Free** | €0 | Self-build or official build, free-tier limits |
 | **Premium Annual** | €12/year | All premium features, 2 Macs |
 | **Premium Lifetime** | €24 one-time | All premium features, perpetual |
+| **Agents addon** | €14.90 one-time | AI coding agents in the notch, 2 Macs |
 
 Purchase: [notchflow.eu](https://notchflow.eu) (checkout via [Polar](https://polar.sh))
 
@@ -38,6 +39,7 @@ Purchase: [notchflow.eu](https://notchflow.eu) (checkout via [Polar](https://pol
 | Quick notes | 5 max | Unlimited + pin |
 | Clipboard history | 5 max | 50 + search |
 | Camera mirror | Locked | Live preview |
+| Agents (coding) | — | See Agents addon |
 
 ### Shelf
 
@@ -57,27 +59,40 @@ Purchase: [notchflow.eu](https://notchflow.eu) (checkout via [Polar](https://pol
 | Idle notch countdown | ✓ | ✓ |
 | Pomodoro with auto-chaining | — | ✓ |
 
-### Calls & notifications
+### Notifications
 
 | Feature | Free | Premium |
 |---------|------|---------|
-| Incoming calls in notch | — | ✓ |
 | App notifications in notch | — | ✓ |
 | Hide message body (privacy) | — | ✓ |
 | Close system banner when shown in island | — | ✓ |
 
 ### System & integrations
 
-| Feature | Free | Premium |
-|---------|------|---------|
-| Volume / brightness HUD | ✓ | ✓ |
-| Launch at login | ✓ | ✓ |
-| URL scheme (`notchflow://`) | ✓ | ✓ |
-| Local API — media & island | ✓ | ✓ |
-| Local API — notes, clipboard, mirror | — | ✓ |
-| Hide island for selected apps | — | ✓ |
-| Hide island settings panel | — | ✓ |
-| Sparkle auto-updates | Official builds | Official builds |
+| Feature | Free | Premium | Agents addon |
+|---------|------|---------|--------------|
+| Volume / brightness HUD | ✓ | ✓ | — |
+| Launch at login | ✓ | ✓ | — |
+| URL scheme (`notchflow://`) | ✓ | ✓ | — |
+| Local API — media & island | ✓ | ✓ | — |
+| Local API — notes, clipboard, mirror | — | ✓ | — |
+| Local API — agent events | — | — | ✓ |
+| Hide island for selected apps | — | ✓ | — |
+| Hide island settings panel | — | ✓ | — |
+| Sparkle auto-updates | Official builds | Official builds | — |
+
+### Agents addon (€14.90 one-time)
+
+Separate Polar product — not included in Premium. Unlock with a `NOTCHFLOW_AGENTS_…` key (or any Polar key whose product/metadata is Agents).
+
+| Feature | Without addon | With Agents |
+|---------|---------------|-------------|
+| Agents island tab | Locked | ✓ |
+| Idle live activity for agent sessions | — | ✓ |
+| Allow / Deny permission prompts in the notch | — | ✓ |
+| Claude Code hooks (auto-install) | — | ✓ |
+| Codex, Cursor, OpenCode, Gemini CLI, Kimi, DeepSeek | — | ✓ (via hooks / Local API) |
+| Jump to terminal / IDE | — | ✓ (app activation) |
 
 ## Planned features (roadmap)
 
@@ -123,7 +138,7 @@ static let freeClipboardLimit = 5
 static let premiumClipboardLimit = 50
 ```
 
-Premium status is determined by `LicenseStatus.isPremium` (annual or lifetime tier from Polar license validation).
+Premium status is determined by `LicenseStatus.isPremium` (annual or lifetime tier from Polar license validation). Agents addon is `LicenseStatus.hasAgentsAddon` (separate Polar product / key).
 
 ## Self-build vs official build
 
@@ -131,6 +146,7 @@ Premium status is determined by `LicenseStatus.isPremium` (annual or lifetime ti
 |--|---------------------|-------------------------------|
 | Free features | ✓ | ✓ |
 | Premium features | Requires license key | Requires license key |
+| Agents addon | Requires Agents key | Requires Agents key |
 | Code signing | Your machine | Apple Developer ID |
 | Notarization | No | Yes |
 | Sparkle updates | Disabled (no ed key) | Enabled |

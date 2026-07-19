@@ -29,6 +29,24 @@ private struct LocalAPIErrorResponse: Encodable {
     let error: String
 }
 
+private struct LocalAPIAgentPermissionResponse: Encodable {
+    let decision: String?
+    let pending: Bool
+}
+
+private struct LocalAPIAgentQuestionResponse: Encodable {
+    let answer: String?
+    let pending: Bool
+}
+
+private struct LocalAPIAgentSessionResponse: Encodable {
+    let id: String
+    let agent: String
+    let title: String
+    let phase: String
+    let detail: String
+}
+
 @MainActor
 final class LocalAPIServer {
     private var listener: NWListener?
@@ -188,6 +206,38 @@ final class LocalAPIServer {
             ))
             return httpResponse(status: 200, reason: "OK", body: body)
 
+        case ("POST", "/v1/agents/events"):
+            guard appState.hasAgentsAddon else {
+                return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "agents addon required")))
+            }
+            if let bodyStart = request.range(of: "\r\n\r\n") {
+                let body = String(request[bodyStart.upperBound...])
+                if let payload = parseJSONObject(body) {
+                    appState.agentSessionManager.ingestEvent(payload)
+                    appState.notifyAgentActivityChange()
+                    if appState.agentSessionManager.attentionCount > 0 {
+                        AppController.appDelegate?.showIsland()
+                        appState.activeModule = .agents
+                    }
+                }
+            }
+            return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
+
+        case ("GET", "/v1/agents/sessions"):
+            guard appState.hasAgentsAddon else {
+                return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "agents addon required")))
+            }
+            let sessions = appState.agentSessionManager.sessions.map {
+                LocalAPIAgentSessionResponse(
+                    id: $0.id,
+                    agent: $0.agent.rawValue,
+                    title: $0.title,
+                    phase: $0.phase.rawValue,
+                    detail: $0.detail
+                )
+            }
+            return httpResponse(status: 200, reason: "OK", body: encode(sessions))
+
         case ("POST", "/v1/media/play-pause"):
             appState.mediaMonitor.togglePlayPause()
             return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
@@ -252,6 +302,45 @@ final class LocalAPIServer {
             return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
 
         default:
+            if method == "GET", path.hasPrefix("/v1/agents/permission/") {
+                guard appState.hasAgentsAddon else {
+                    return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "agents addon required")))
+                }
+                let id = String(path.dropFirst("/v1/agents/permission/".count))
+                let decision = appState.agentSessionManager.permissionDecision(id: id)
+                return httpResponse(
+                    status: 200,
+                    reason: "OK",
+                    body: encode(LocalAPIAgentPermissionResponse(decision: decision?.rawValue, pending: decision == nil))
+                )
+            }
+            if method == "POST", path.hasPrefix("/v1/agents/permission/") {
+                guard appState.hasAgentsAddon else {
+                    return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "agents addon required")))
+                }
+                let id = String(path.dropFirst("/v1/agents/permission/".count))
+                if let bodyStart = request.range(of: "\r\n\r\n") {
+                    let body = String(request[bodyStart.upperBound...])
+                    if let raw = extractJSONValue(body, key: "decision"),
+                       let decision = AgentPermissionDecision(rawValue: raw) {
+                        appState.agentSessionManager.decidePermission(id: id, decision: decision)
+                        appState.notifyAgentActivityChange()
+                    }
+                }
+                return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
+            }
+            if method == "GET", path.hasPrefix("/v1/agents/question/") {
+                guard appState.hasAgentsAddon else {
+                    return httpResponse(status: 403, reason: "Forbidden", body: encode(LocalAPIErrorResponse(error: "agents addon required")))
+                }
+                let id = String(path.dropFirst("/v1/agents/question/".count))
+                let answer = appState.agentSessionManager.questionAnswer(id: id)
+                return httpResponse(
+                    status: 200,
+                    reason: "OK",
+                    body: encode(LocalAPIAgentQuestionResponse(answer: answer, pending: answer == nil))
+                )
+            }
             return httpResponse(status: 404, reason: "Not Found", body: encode(LocalAPIErrorResponse(error: "not found")))
         }
     }
@@ -273,5 +362,13 @@ final class LocalAPIServer {
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let value = json[key] as? String else { return nil }
         return value
+    }
+
+    private func parseJSONObject(_ body: String) -> [String: Any]? {
+        guard let data = body.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return json
     }
 }

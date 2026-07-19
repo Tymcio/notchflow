@@ -120,7 +120,8 @@ struct PolarLicenseClient {
             throw LicenseValidationError.expired
         }
 
-        let tier: LicenseTier = expiresAt == nil ? .lifetime : .annual
+        let isAgents = Self.detectAgentsProduct(key: key, licenseObject: licenseObject, root: json)
+        let tier: LicenseTier = isAgents ? .free : (expiresAt == nil ? .lifetime : .annual)
 
         let activationID: String?
         if json["license_key"] != nil {
@@ -136,12 +137,45 @@ struct PolarLicenseClient {
         return PolarLicenseSession(
             status: LicenseStatus(
                 tier: tier,
-                key: key,
-                validatedAt: Date(),
-                expiresAt: expiresAt
+                key: isAgents ? nil : key,
+                validatedAt: isAgents ? nil : Date(),
+                expiresAt: isAgents ? nil : expiresAt,
+                hasAgentsAddon: isAgents,
+                agentsKey: isAgents ? key : nil,
+                agentsValidatedAt: isAgents ? Date() : nil
             ),
-            activationID: activationID
+            activationID: activationID,
+            isAgentsProduct: isAgents
         )
+    }
+
+    static func looksLikeAgentsKey(_ key: String) -> Bool {
+        let upper = key.uppercased()
+        return upper.contains("AGENTS") || upper.contains("NOTCHFLOW_AGENT")
+    }
+
+    private static func detectAgentsProduct(key: String, licenseObject: [String: Any], root: [String: Any]) -> Bool {
+        if looksLikeAgentsKey(key) { return true }
+
+        if let meta = licenseObject["metadata"] as? [String: Any] {
+            if let addon = (meta["addon"] as? String)?.lowercased(), addon.contains("agent") {
+                return true
+            }
+            if let product = (meta["product"] as? String)?.lowercased(), product.contains("agent") {
+                return true
+            }
+        }
+
+        let nameCandidates: [String?] = [
+            licenseObject["display_name"] as? String,
+            licenseObject["name"] as? String,
+            (root["benefit"] as? [String: Any])?["description"] as? String,
+            (root["product"] as? [String: Any])?["name"] as? String,
+        ]
+        for name in nameCandidates.compactMap({ $0?.lowercased() }) {
+            if name.contains("agent") { return true }
+        }
+        return false
     }
 
     private func parseDate(_ value: String?) -> Date? {
@@ -159,4 +193,5 @@ struct PolarLicenseClient {
 struct PolarLicenseSession: Equatable, Sendable {
     let status: LicenseStatus
     let activationID: String
+    let isAgentsProduct: Bool
 }

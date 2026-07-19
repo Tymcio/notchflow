@@ -228,29 +228,61 @@ enum AXHelpers {
         accessibilityBannerPIDs(callsPriority: false).first
     }
 
-    /// Banery NC/połączeń bywają w Notification Center UI albo Control Center (Continuity/iPhone).
+    /// Banery NC/połączeń: Centrum powiadomień, a na Tahoe także Phone.app / FaceTime.
     static func accessibilityBannerPIDs(callsPriority: Bool) -> [pid_t] {
         var bundleIDs = [
             "com.apple.notificationcenterui",
             "com.apple.notificationcenter",
+            "com.apple.UserNotificationCenter",
         ]
         if callsPriority {
             bundleIDs.append(contentsOf: [
+                // macOS 26+: cellular Continuity rings in Phone.app / FaceTime.
+                "com.apple.mobilephone",
+                "com.apple.FaceTime",
                 "com.apple.controlcenter",
                 "com.apple.CallKitUI",
-                "com.apple.TelephonyUtilities",
+                "com.apple.IncomingCall",
             ])
         }
 
         var seen = Set<pid_t>()
         var pids: [pid_t] = []
         for bundleID in bundleIDs {
-            guard let app = runningApplication(bundleID: bundleID) else { continue }
-            let pid = app.processIdentifier
-            guard seen.insert(pid).inserted else { continue }
-            pids.append(pid)
+            for app in NSRunningApplication.runningApplications(withBundleIdentifier: bundleID) {
+                let pid = app.processIdentifier
+                guard seen.insert(pid).inserted else { continue }
+                pids.append(pid)
+            }
         }
+
+        // Phone/FaceTime sometimes appear only while ringing — catch live UI hosts only.
+        if callsPriority {
+            for app in NSWorkspace.shared.runningApplications {
+                guard let bundleID = app.bundleIdentifier,
+                      NotificationAppCatalog.isCallUIHostBundleID(bundleID) else { continue }
+                let pid = app.processIdentifier
+                guard seen.insert(pid).inserted else { continue }
+                pids.append(pid)
+            }
+        }
+
         return pids
+    }
+
+    /// True when Phone.app / FaceTime (etc.) is running — Continuity ring or in-call UI.
+    static var isCallUIHostRunning: Bool {
+        for bundleID in NotificationAppCatalog.callUIHostBundleIDs {
+            if !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Bundle ID procesu, który hostuje baner (gdy AX stacking identifier nie podaje deliverera).
+    static func bundleID(forPID pid: pid_t) -> String? {
+        NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
     }
 
     private static func point(for element: AXUIElement, attribute: CFString) -> CGPoint? {

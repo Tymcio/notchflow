@@ -7,9 +7,12 @@ struct LicenseSettingsTab: View {
     let onActivate: () -> Void
     let onDeactivate: () -> Void
     let onDeactivateInPolar: () -> Void
+    var onDeactivateAgents: (() -> Void)?
+    var onDeactivateAgentsInPolar: (() -> Void)?
 
     private var licenseMessageIsSuccess: Bool {
         licenseMessage == loc("License activated.")
+            || licenseMessage == loc("Agents addon activated.")
     }
 
     var body: some View {
@@ -17,7 +20,7 @@ struct LicenseSettingsTab: View {
             if !LicenseMode.current.isEnforced {
                 Section {
                     Label {
-                        LocText("Beta period — all Premium features are unlocked. A key will be required in the stable release; any key entered now will be remembered.")
+                        LocText("Beta period — all Premium and Agents features are unlocked. A key will be required in the stable release; any key entered now will be remembered.")
                             .font(.caption)
                             .fixedSize(horizontal: false, vertical: true)
                     } icon: {
@@ -30,6 +33,11 @@ struct LicenseSettingsTab: View {
             Section {
                 LabeledContent(loc("Plan")) {
                     Text(status.isPremium ? localizedTier(status.tier) : loc("Free"))
+                        .fontWeight(.medium)
+                }
+
+                LabeledContent(loc("Agents addon")) {
+                    Text(status.hasAgentsAddon ? loc("Active") : loc("Not activated"))
                         .fontWeight(.medium)
                 }
 
@@ -56,9 +64,25 @@ struct LicenseSettingsTab: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 } header: {
-                    Text(loc("Manage license"))
+                    Text(loc("Manage Premium"))
                 }
-            } else {
+            }
+
+            if status.hasAgentsAddon {
+                Section {
+                    if let onDeactivateAgents {
+                        Button(loc("Remove Agents from this Mac"), role: .destructive, action: onDeactivateAgents)
+                    }
+                    if let onDeactivateAgentsInPolar {
+                        Button(loc("Release Agents activation (Polar)"), action: onDeactivateAgentsInPolar)
+                            .buttonStyle(.bordered)
+                    }
+                } header: {
+                    Text(loc("Manage Agents"))
+                }
+            }
+
+            if !status.isPremium || !status.hasAgentsAddon {
                 Section {
                     TextField(loc("License key"), text: $licenseKey)
                         .textFieldStyle(.roundedBorder)
@@ -77,11 +101,16 @@ struct LicenseSettingsTab: View {
                 } header: {
                     Text(loc("License key"))
                 } footer: {
-                    SettingsFooterCaption("Paste the key from your purchase at notchflow.eu (e.g. NOTCHFLOW_… or UUID from Polar email).")
+                    SettingsFooterCaption("Paste a Premium key (NOTCHFLOW_…) or Agents key (NOTCHFLOW_AGENTS_…) from notchflow.eu.")
                 }
 
                 Section {
-                    Link(loc("Buy Premium at notchflow.eu"), destination: NotchFlowConstants.websiteURL.appending(path: "pricing"))
+                    if !status.isPremium {
+                        Link(loc("Buy Premium at notchflow.eu"), destination: NotchFlowConstants.websiteURL.appending(path: "pricing"))
+                    }
+                    if !status.hasAgentsAddon {
+                        Link(loc("Buy Agents addon (€14.90)"), destination: NotchFlowConstants.websiteURL.appending(path: "pricing"))
+                    }
                 }
             }
         }

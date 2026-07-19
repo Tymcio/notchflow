@@ -29,10 +29,14 @@ struct CatalogAppIcon: View {
 
     var body: some View {
         let safeBundleID = NotificationAppCatalog.sanitizedIconBundleID(bundleID)
+        let allowSystemIcon = NotificationAppCatalog.isRecognizedNotificationIcon(safeBundleID)
+            || NotificationAppCatalog.isCallUIHostBundleID(safeBundleID)
+            || NotificationAppCatalog.callBundleIDs.contains(
+                NotificationAppCatalog.canonicalBundleID(for: safeBundleID)
+            )
 
-        // Prefer the real macOS app icon (Signal, WhatsApp, …) over brand SF-symbol badges.
-        if NotificationAppCatalog.isRecognizedNotificationIcon(safeBundleID),
-           let image = AppIconProvider.image(for: safeBundleID) {
+        // Prefer the real macOS app icon (Signal, WhatsApp, Phone, …) over brand SF-symbol badges.
+        if allowSystemIcon, let image = AppIconProvider.image(for: safeBundleID) {
             Image(nsImage: image)
                 .resizable()
                 .interpolation(.high)
@@ -40,6 +44,17 @@ struct CatalogAppIcon: View {
                 .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
         } else if let badge = NotificationAppCatalog.brandBadge(for: safeBundleID) {
             BrandBadgeIcon(badge: badge, size: size)
+        } else if NotificationAppCatalog.isCallUIHostBundleID(safeBundleID) {
+            BrandBadgeIcon(
+                badge: NotificationAppCatalog.BrandBadge(
+                    symbol: "phone.fill",
+                    gradient: [
+                        Color(red: 0.20, green: 0.78, blue: 0.35),
+                        Color(red: 0.10, green: 0.62, blue: 0.28),
+                    ]
+                ),
+                size: size
+            )
         } else {
             BrandBadgeIcon(
                 badge: NotificationAppCatalog.genericNotificationBadge,

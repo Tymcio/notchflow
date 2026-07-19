@@ -4,12 +4,39 @@ struct IncomingCallActivity: Equatable, Sendable {
     let callerName: String
     let appBundleID: String
     let receivedAt: Date
+    /// PNG/JPEG bytes of the contact thumbnail when Contacts lookup succeeds.
+    let avatarImageData: Data?
+
+    init(
+        callerName: String,
+        appBundleID: String,
+        receivedAt: Date,
+        avatarImageData: Data? = nil
+    ) {
+        self.callerName = callerName
+        self.appBundleID = appBundleID
+        self.receivedAt = receivedAt
+        self.avatarImageData = avatarImageData
+    }
 }
 
 struct ActiveCallActivity: Equatable, Sendable {
     let callerName: String
     let appBundleID: String
     let startedAt: Date
+    let avatarImageData: Data?
+
+    init(
+        callerName: String,
+        appBundleID: String,
+        startedAt: Date,
+        avatarImageData: Data? = nil
+    ) {
+        self.callerName = callerName
+        self.appBundleID = appBundleID
+        self.startedAt = startedAt
+        self.avatarImageData = avatarImageData
+    }
 
     var elapsedSeconds: Int {
         max(0, Int(Date().timeIntervalSince(startedAt)))
@@ -79,6 +106,7 @@ struct NotificationPeekActivity: Equatable, Sendable {
 enum LiveActivityKind: Equatable, Sendable {
     case incomingCall(IncomingCallActivity)
     case activeCall(ActiveCallActivity)
+    case agentSession(AgentSessionActivity)
     case timer(FocusTimerActivity)
     case notification(NotificationPeekActivity)
     case media
@@ -87,9 +115,11 @@ enum LiveActivityKind: Equatable, Sendable {
         switch self {
         case .incomingCall: 0
         case .activeCall: 1
-        case .notification: 2
-        case .timer: 3
-        case .media: 4
+        case .agentSession(let session) where session.needsAttention: 2
+        case .notification: 3
+        case .agentSession: 4
+        case .timer: 5
+        case .media: 6
         }
     }
 }
@@ -98,6 +128,7 @@ enum LiveActivityResolver {
     static func resolve(
         incomingCall: IncomingCallActivity?,
         activeCall: ActiveCallActivity?,
+        agentSession: AgentSessionActivity?,
         timer: FocusTimerActivity?,
         notification: NotificationPeekActivity?,
         showsMedia: Bool
@@ -108,9 +139,15 @@ enum LiveActivityResolver {
         if let activeCall {
             return .activeCall(activeCall)
         }
+        if let agentSession, agentSession.needsAttention {
+            return .agentSession(agentSession)
+        }
         // Transient notification peeks temporarily replace the focus timer in the island.
         if let notification, !notification.isExpired {
             return .notification(notification)
+        }
+        if let agentSession {
+            return .agentSession(agentSession)
         }
         if let timer {
             return .timer(timer)
