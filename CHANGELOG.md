@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.26] - 2026-07-19
+
+### Fixed
+
+- Include `assets/AppIcon.png` in the repo so release packaging can generate `AppIcon.icns`
+
 ## [1.0.25] - 2026-07-19
 
 ### Added
