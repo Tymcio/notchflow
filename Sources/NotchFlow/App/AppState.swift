@@ -375,8 +375,10 @@ final class AppState {
             self.notifyLiveActivityChange()
         }
 
-        // Vibe Island–style for Cursor: when consent appears, jump to the agent window.
+        // Real Claude-style consent: jump so the prompt is visible.
+        // Cursor jump-only heuristics are often false positives — pulse the notch, don't steal focus.
         agentSessionManager.onNeedsAttention = { [weak self] session in
+            guard session.showsNotchApproval else { return }
             self?.agentSessionManager.jumpIfNeeded(for: session)
         }
 

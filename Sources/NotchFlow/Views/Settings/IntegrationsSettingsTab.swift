@@ -124,7 +124,7 @@ struct IntegrationsSettingsTab: View {
                         Text(loc("3. Start Agent Chat — live status appears in the notch and clears when the agent finishes."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(loc("Claude Code: Allow / Deny in the notch. Cursor: keeps its own Skip/Run — NotchFlow jumps to Cursor when a consent-like prompt appears (same idea as Vibe Island)."))
+                        Text(loc("Claude Code: Allow / Deny in the notch. Cursor: keeps its own Skip/Run — the notch pulses on likely consent moments; tap to jump (no auto-focus)."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

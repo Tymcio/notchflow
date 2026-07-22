@@ -74,26 +74,20 @@ if isinstance(ti, dict):
 if not summary:
     summary = d.get("command") or d.get("prompt") or d.get("text") or ""
 
-# Cursor often keeps its own Skip/Run UI. Flag likely consent moments so NotchFlow can jump.
-# Only inspect a short head statement — long agent wrappers often embed "curl" and must not alert.
+# Cursor keeps its own Skip/Run UI. Flag only high-signal shell moments for a notch pulse
+# (no auto-jump — heuristics are noisy). Ignore MCP and unsandboxed shells by themselves.
 cmd = str(d.get("command") or summary or "").lower()
-sandbox = d.get("sandbox")
 needles = (
-    "git push", "git commit", "git reset", "git rebase", "sudo ", "rm -",
-    "curl ", "wget ", "ssh ", "kubectl ", "npm publish", "pnpm publish",
-    "docker ", "chmod ", "chown ", "security ", "xcrun notary",
+    "git push", "git commit", "git reset", "git rebase", "sudo ", "rm -rf",
+    "rm -r ", "wget ", "ssh ", "kubectl ", "npm publish", "pnpm publish",
+    "chmod ", "chown ", "security ", "xcrun notary",
 )
 wants_attention = False
-if ev_l == "beforemcpexecution":
-    wants_attention = True
-elif ev_l == "beforeshellexecution":
-    if sandbox is False:
-        wants_attention = True
-    else:
-        head = cmd.strip().split("\n")[0]
-        # Ignore huge multi-line agent shell blobs (false positives on embedded curl/git).
-        if len(cmd) <= 280:
-            wants_attention = any(n in head for n in needles)
+if ev_l == "beforeshellexecution":
+    head = cmd.strip().split("\n")[0]
+    # Ignore huge multi-line agent shell blobs (false positives on embedded git/ssh).
+    if len(cmd) <= 280:
+        wants_attention = any(n in head for n in needles)
 
 print(json.dumps({
     "agent": str(agent),

@@ -135,7 +135,7 @@ final class AgentSessionManager {
             session.permission = nil
             session.question = nil
         case "attention", "needs.input", "needs_input":
-            // Cursor-style: consent stays in the agent UI — notch pulses and we jump.
+            // Cursor-style: consent stays in the agent UI — notch pulses; user jumps manually.
             session.phase = .waitingPermission
             session.permission = nil
             session.question = nil
@@ -180,6 +180,10 @@ final class AgentSessionManager {
         if session.needsAttention {
             if !previousNeedsAttention {
                 onNeedsAttention?(session)
+                // Jump-only Cursor heuristics: soft-clear soon without stealing focus.
+                if !session.showsNotchApproval {
+                    scheduleJumpOnlyAttentionClear(id: session.id)
+                }
             }
         } else if lastAutoJumpSessionID == session.id {
             lastAutoJumpSessionID = nil

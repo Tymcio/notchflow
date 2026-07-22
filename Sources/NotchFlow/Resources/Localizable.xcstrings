@@ -6745,12 +6745,12 @@
         }
       }
     },
-    "Claude Code: Allow / Deny in the notch. Cursor: keeps its own Skip/Run — NotchFlow jumps to Cursor when a consent-like prompt appears (same idea as Vibe Island).": {
+    "Claude Code: Allow / Deny in the notch. Cursor: keeps its own Skip/Run — the notch pulses on likely consent moments; tap to jump (no auto-focus).": {
       "localizations": {
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Claude Code: Allow / Deny w notchu. Cursor: własne Skip/Run — NotchFlow skacze do Cursora przy prośbie o zgodę (jak Vibe Island)."
+            "value": "Claude Code: Allow / Deny w notchu. Cursor: własne Skip/Run — notch pulsuje przy prawdopodobnej zgodzie; kliknij, żeby skoczyć (bez auto-focusu)."
           }
         }
       }

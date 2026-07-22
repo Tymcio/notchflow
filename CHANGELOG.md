@@ -2,6 +2,13 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.34] - 2026-07-22
+
+### Changed
+
+- Cursor heuristic “waiting” no longer auto-focuses Cursor — notch pulses; tap to jump
+- Narrower Cursor attention heuristics (no blanket MCP / unsandboxed-shell alerts)
+
 ## [1.0.33] - 2026-07-19
 
 ### Fixed
