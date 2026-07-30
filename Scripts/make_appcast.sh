@@ -6,13 +6,20 @@ cd "$ROOT_DIR"
 
 source version.env
 
-DMG_PATH="$ROOT_DIR/build/${APP_NAME}-${MARKETING_VERSION}.dmg"
-APPCAST_PATH="$ROOT_DIR/build/appcast.xml"
-
-if [[ ! -f "$DMG_PATH" ]]; then
-  echo "Missing DMG: $DMG_PATH"
+# Source of truth is the versioned DMG (notarized + stapled). Refresh the
+# Sparkle download alias before signing so enclosure URL bytes match.
+VERSIONED_DMG="$ROOT_DIR/build/${APP_NAME}-${MARKETING_VERSION}.dmg"
+ALIAS_DMG="$ROOT_DIR/build/${APP_NAME}.dmg"
+if [[ -f "$VERSIONED_DMG" ]]; then
+  DMG_PATH="$VERSIONED_DMG"
+  cp -f "$VERSIONED_DMG" "$ALIAS_DMG"
+elif [[ -f "$ALIAS_DMG" ]]; then
+  DMG_PATH="$ALIAS_DMG"
+else
+  echo "Missing DMG: $VERSIONED_DMG (or $ALIAS_DMG)"
   exit 1
 fi
+APPCAST_PATH="$ROOT_DIR/build/appcast.xml"
 
 SHA256=$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')
 LENGTH=$(stat -f%z "$DMG_PATH")

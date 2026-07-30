@@ -167,6 +167,8 @@ DEVICE=""
 # Compress to final UDZO.
 hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG_PATH" >/dev/null
 # Convenience alias for Sparkle / latest download URL.
+# Note: sign-and-notarize.sh re-copies this AFTER stapler, because stapling
+# changes the file bytes that appcast ed25519 must cover.
 cp -f "$DMG_PATH" "$ROOT_DIR/build/${APP_NAME}.dmg"
 
 # Custom Finder icon on the .dmg file itself (download / Finder list view).

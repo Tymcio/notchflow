@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.35] - 2026-07-30
+
+### Fixed
+
+- Sparkle updates failing with “improperly signed”: refresh `NotchFlow.dmg` after stapling so the download matches the appcast ed25519 signature
+
 ## [1.0.34] - 2026-07-22
 
 ### Changed

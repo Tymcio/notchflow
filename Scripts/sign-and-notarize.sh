@@ -92,5 +92,11 @@ fi
 echo "Stapling..."
 xcrun stapler staple "$DMG_PATH"
 
+# Sparkle enclosure URL downloads NotchFlow.dmg (not the versioned name).
+# create_dmg.sh copies the alias *before* notarize/staple, so refresh it here
+# or the ed25519 signature in appcast will not match what clients download.
+cp -f "$DMG_PATH" "$ROOT_DIR/build/${APP_NAME}.dmg"
+
 echo "Release artifact: $DMG_PATH"
 shasum -a 256 "$DMG_PATH"
+shasum -a 256 "$ROOT_DIR/build/${APP_NAME}.dmg"
