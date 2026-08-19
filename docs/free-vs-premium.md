@@ -93,6 +93,7 @@ Separate Polar product — not included in Premium. Unlock with a `NOTCHFLOW_AGE
 | Claude Code hooks (auto-install) | — | ✓ |
 | Codex, Cursor, OpenCode, Gemini CLI, Kimi, DeepSeek | — | ✓ (via hooks / Local API) |
 | Jump to terminal / IDE | — | ✓ (app activation) |
+| Claude Code / Codex remaining quota (5h / 7d) | — | ✓ |
 
 ## Planned features (roadmap)
 

@@ -115,7 +115,14 @@ struct NotchIslandView: View {
                 onDenyAgent: { appState.denyActiveAgentPermission() },
                 onJumpAgent: { appState.jumpToActiveAgentSession() },
                 supportsQuickReply: appState.notificationHub.supportsQuickReply,
-                isWingHoverActive: appState.isIdleWingHoverActive
+                isWingHoverActive: appState.isIdleWingHoverActive,
+                agentUsageHint: {
+                    _ = appState.agentUsageRevision
+                    if case .agentSession(let session) = activity {
+                        return appState.agentUsageMonitor.idleHint(for: session.agent)
+                    }
+                    return nil
+                }()
             )
             .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight, alignment: .topLeading)
             .clipShape(Rectangle())

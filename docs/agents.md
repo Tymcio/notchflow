@@ -24,6 +24,16 @@ Setup lives only in Settings (not in the island Agents tab).
 
 Cursor hooks are **monitor-only** (`sessionStart`, `stop`, `postToolUse`, …). Blocking hooks like `beforeShellExecution` are intentionally not installed — they caused Cursor to hang waiting for NotchFlow while showing no in-app permission UI.
 
+## Usage limits (Claude Code + Codex)
+
+With the Agents addon, the island can show **remaining 5-hour and 7-day quota** for Claude Code and Codex — the same windows `/usage` reports.
+
+- Reuses the login already on this Mac (`~/.claude/.credentials.json` or Keychain, `~/.codex/auth.json`).
+- Asks Anthropic / OpenAI usage endpoints only. Tokens are not stored by NotchFlow and are not sent to NotchFlow servers.
+- Toggle in **Settings → Integrations**. Off = no usage network calls.
+- **Cursor is not supported** (no public usage API).
+- Idle wing shows the tighter window as a remaining percentage while that agent is running.
+
 ## Other agents
 
 Wire notify/hook commands to the same script with `NOTCHFLOW_AGENT=…`, or `POST /v1/agents/events` (see [raycast-integration.md](raycast-integration.md)).

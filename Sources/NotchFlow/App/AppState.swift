@@ -24,6 +24,8 @@ final class AppState {
     private(set) var callLiveActivityRevision = 0
     /// Wymusza odświeżenie idle po zmianie sesji agentów.
     private(set) var agentLiveActivityRevision = 0
+    /// Wymusza odświeżenie idle / zakładki Agents po zmianie limitów Claude/Codex.
+    private(set) var agentUsageRevision = 0
 
     let mediaMonitor: MediaMonitor
     let shelfManager: ShelfManager
@@ -42,6 +44,7 @@ final class AppState {
     let notificationHub: NotificationHubManager
     let notificationCenterObserver: NotificationCenterObserver
     let agentSessionManager: AgentSessionManager
+    let agentUsageMonitor: AgentUsageMonitor
 
     init() {
         let sharedSettings = NotchSettings.shared
@@ -63,6 +66,7 @@ final class AppState {
         notificationHub = NotificationHubManager()
         notificationCenterObserver = NotificationCenterObserver()
         agentSessionManager = AgentSessionManager()
+        agentUsageMonitor = AgentUsageMonitor()
         bindManagers()
     }
 
@@ -197,6 +201,7 @@ final class AppState {
         clipboardEntries = clipboardManager.entries
         hubNotifications = notificationHub.recentNotifications
         applyNotificationSettings()
+        applyAgentUsagePolling()
 
         if settings.localAPIEnabled {
             do {
@@ -223,6 +228,10 @@ final class AppState {
 
         notificationCenterObserver.setEnabled(notificationsEnabled, callsPriority: false)
         notifyLiveActivityChange()
+    }
+
+    func applyAgentUsagePolling() {
+        agentUsageMonitor.setEnabled(hasAgentsAddon && settings.agentUsagePollingEnabled)
     }
 
     func answerIncomingCall() {
@@ -361,6 +370,7 @@ final class AppState {
             self.licenseStatus = status
             self.settings.isPremiumEnabled = self.isPremium
             self.applyNotificationSettings()
+            self.applyAgentUsagePolling()
         }
 
         callManager.onStateChange = { [weak self] in
@@ -372,6 +382,15 @@ final class AppState {
         agentSessionManager.onStateChange = { [weak self] in
             guard let self else { return }
             self.agentLiveActivityRevision += 1
+            self.notifyLiveActivityChange()
+            if self.hasAgentsAddon, self.settings.agentUsagePollingEnabled {
+                Task { await self.agentUsageMonitor.refresh(force: false) }
+            }
+        }
+
+        agentUsageMonitor.onChange = { [weak self] in
+            guard let self else { return }
+            self.agentUsageRevision += 1
             self.notifyLiveActivityChange()
         }
 

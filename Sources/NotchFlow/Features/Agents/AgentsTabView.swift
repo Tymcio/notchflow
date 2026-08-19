@@ -17,13 +17,32 @@ struct AgentsTabView: View {
         VStack(alignment: .leading, spacing: 10) {
             if !appState.hasAgentsAddon {
                 lockedState
-            } else if sessions.isEmpty {
-                emptyState
             } else {
-                sessionList
+                let _ = appState.agentUsageRevision
+                if appState.settings.agentUsagePollingEnabled {
+                    usageMeters
+                }
+                if sessions.isEmpty {
+                    emptyState
+                } else {
+                    sessionList
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .task(id: appState.hasAgentsAddon) {
+            guard appState.hasAgentsAddon else { return }
+            await appState.agentUsageMonitor.refresh(force: false)
+        }
+    }
+
+    private var usageMeters: some View {
+        AgentUsageMetersView(
+            snapshots: appState.agentUsageMonitor.snapshots,
+            isRefreshing: appState.agentUsageMonitor.isRefreshing
+        ) {
+            Task { await appState.agentUsageMonitor.refresh(force: true) }
+        }
     }
 
     private var lockedState: some View {

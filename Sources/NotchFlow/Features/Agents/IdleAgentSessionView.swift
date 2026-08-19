@@ -8,6 +8,7 @@ struct IdleAgentSessionView: View {
     var onAllow: (() -> Void)?
     var onDeny: (() -> Void)?
     var onJump: (() -> Void)?
+    var usageHint: AgentUsageIdleHint?
 
     @State private var pulse = false
 
@@ -88,6 +89,9 @@ struct IdleAgentSessionView: View {
                         .buttonStyle(.plain)
                         .padding(.trailing, 10)
                         .accessibilityLabel(loc("Jump to agent"))
+                    } else if let hint = usageHint {
+                        remainingBadge(hint)
+                            .padding(.trailing, 10)
                     } else {
                         AgentTypingIndicator(color: accent)
                             .padding(.trailing, 10)
@@ -99,6 +103,26 @@ struct IdleAgentSessionView: View {
                 .onTapGesture { onJump?() }
             }
         )
+    }
+
+    private func remainingBadge(_ hint: AgentUsageIdleHint) -> some View {
+        let color: Color = {
+            switch hint.tightness {
+            case .normal: accent
+            case .warning: Color.orange
+            case .critical: Color.red
+            }
+        }()
+        return Text(locFormat("%lld%%", hint.remainingPercent))
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundStyle(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(color.opacity(0.16))
+            )
+            .accessibilityLabel(locFormat("%lld percent left", hint.remainingPercent))
     }
 
     @ViewBuilder

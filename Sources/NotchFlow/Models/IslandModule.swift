@@ -73,7 +73,7 @@ enum IslandModule: String, CaseIterable, Identifiable, Sendable {
         case .shelf: 132
         case .focus: 188
         case .notes: 156
-        case .agents: 200
+        case .agents: 248
         case .mirror: 196
         case .clipboard: NotchFlowConstants.maximumExpandedContentHeight
         }

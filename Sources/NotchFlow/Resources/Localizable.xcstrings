@@ -6964,6 +6964,454 @@
           }
         }
       }
+    },
+    "Usage": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zużycie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzung"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilizzo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uso"
+          }
+        }
+      }
+    },
+    "Refresh usage": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odśwież zużycie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzung aktualisieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiorna utilizzo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualizar uso"
+          }
+        }
+      }
+    },
+    "5h": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 godz."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 Std."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5h"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 h"
+          }
+        }
+      }
+    },
+    "7d": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 dni"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 T."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7g"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 d"
+          }
+        }
+      }
+    },
+    "Extra": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra"
+          }
+        }
+      }
+    },
+    "%lld%% left": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zostało %lld%%"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %% übrig"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% rimasti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Queda %lld%%"
+          }
+        }
+      }
+    },
+    "%lld%%": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%%"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %%"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%%"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%%"
+          }
+        }
+      }
+    },
+    "%lld percent left": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zostało %lld procent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Prozent übrig"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld percento rimanente"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Queda un %lld por ciento"
+          }
+        }
+      }
+    },
+    "%@ %lld percent left": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: zostało %lld procent"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %lld Prozent übrig"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %lld percento rimanente"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: queda un %lld por ciento"
+          }
+        }
+      }
+    },
+    "Sign in with Claude Code to see limits": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaloguj się w Claude Code, aby zobaczyć limity"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melde dich bei Claude Code an, um Limits zu sehen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accedi a Claude Code per vedere i limiti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicia sesión en Claude Code para ver los límites"
+          }
+        }
+      }
+    },
+    "Sign in with Codex to see limits": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaloguj się w Codex, aby zobaczyć limity"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melde dich bei Codex an, um Limits zu sehen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accedi a Codex per vedere i limiti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicia sesión en Codex para ver los límites"
+          }
+        }
+      }
+    },
+    "Usage paused — retrying shortly": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zużycie wstrzymane — ponowię wkrótce"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzung pausiert — neuer Versuch in Kürze"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilizzo in pausa — nuovo tentativo a breve"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uso en pausa: se reintentará en breve"
+          }
+        }
+      }
+    },
+    "Limits unavailable": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limity niedostępne"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limits nicht verfügbar"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limiti non disponibili"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Límites no disponibles"
+          }
+        }
+      }
+    },
+    "Show Claude and Codex usage": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokazuj zużycie Claude i Codex"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude- und Codex-Nutzung anzeigen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra l’utilizzo di Claude e Codex"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar uso de Claude y Codex"
+          }
+        }
+      }
+    },
+    "Hooks stay on your Mac. Usage limits reuse the Claude Code / Codex login already on this Mac and ask those providers only. Cursor is not supported.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooki zostają na Macu. Limity zużycia używają logowania Claude Code / Codex już na tym Macu i pytają tylko tych dostawców. Cursor nie jest obsługiwany."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooks bleiben auf dem Mac. Nutzungslimits verwenden die bereits vorhandene Claude-Code-/Codex-Anmeldung und fragen nur diese Anbieter. Cursor wird nicht unterstützt."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gli hook restano sul Mac. I limiti di utilizzo riusano l’accesso Claude Code / Codex già presente e interrogano solo quei provider. Cursor non è supportato."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los hooks se quedan en el Mac. Los límites reutilizan el inicio de sesión de Claude Code / Codex de este Mac y consultan solo a esos proveedores. Cursor no está admitido."
+          }
+        }
+      }
+    },
+    "Network access is used for license verification, updates, optional lyrics, and Claude/Codex usage when the Agents addon is enabled.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sieć służy do weryfikacji licencji, aktualizacji, opcjonalnego tekstu piosenek oraz zużycia Claude/Codex przy włączonym addonie Agents."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Netzwerkzugriff dient der Lizenzprüfung, Updates, optionalen Songtexten und der Claude-/Codex-Nutzung bei aktiviertem Agents-Addon."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’accesso di rete serve per la verifica della licenza, gli aggiornamenti, i testi opzionali e l’utilizzo Claude/Codex con l’addon Agents attivo."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El acceso de red se usa para verificar la licencia, actualizaciones, letras opcionales y el uso de Claude/Codex con el complemento Agents activado."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

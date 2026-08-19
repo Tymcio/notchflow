@@ -112,6 +112,11 @@ struct IntegrationsSettingsTab: View {
                         NSWorkspace.shared.activateFileViewerSelecting([url])
                     }
 
+                    Toggle(loc("Show Claude and Codex usage"), isOn: $appState.settings.agentUsagePollingEnabled)
+                        .onChange(of: appState.settings.agentUsagePollingEnabled) { _, _ in
+                            appState.applyAgentUsagePolling()
+                        }
+
                     VStack(alignment: .leading, spacing: 6) {
                         Text(loc("How to connect Cursor"))
                             .font(.headline)
@@ -144,7 +149,7 @@ struct IntegrationsSettingsTab: View {
             } header: {
                 Text(loc("Agents addon"))
             } footer: {
-                Text(loc("Hooks stay on your Mac. No agent code or prompts are sent to NotchFlow servers."))
+                Text(loc("Hooks stay on your Mac. Usage limits reuse the Claude Code / Codex login already on this Mac and ask those providers only. Cursor is not supported."))
                     .font(.caption)
             }
         }

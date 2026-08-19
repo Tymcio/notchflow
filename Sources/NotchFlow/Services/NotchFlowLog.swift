@@ -9,4 +9,5 @@ enum NotchFlowLog {
     static let license = Logger(subsystem: subsystem, category: "License")
     static let storage = Logger(subsystem: subsystem, category: "Storage")
     static let hover = Logger(subsystem: subsystem, category: "Hover")
+    static let agents = Logger(subsystem: subsystem, category: "Agents")
 }

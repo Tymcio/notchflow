@@ -19,6 +19,7 @@ struct IdleLiveActivityView: View {
     /// Global hover state from the panel controller — SwiftUI onHover alone is
     /// unreliable inside the borderless idle panel.
     var isWingHoverActive: Bool = false
+    var agentUsageHint: AgentUsageIdleHint?
 
     var body: some View {
         switch activity {
@@ -47,7 +48,8 @@ struct IdleLiveActivityView: View {
                 wingLayout: wingLayout,
                 onAllow: onAllowAgent,
                 onDeny: onDenyAgent,
-                onJump: onJumpAgent
+                onJump: onJumpAgent,
+                usageHint: agentUsageHint
             )
         case .timer(let timer):
             IdleTimerView(

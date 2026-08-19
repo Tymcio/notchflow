@@ -34,6 +34,11 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(localAPIEnabled, forKey: Keys.localAPIEnabled) }
     }
 
+    /// Poll Claude Code / Codex usage APIs using the login already on this Mac.
+    var agentUsagePollingEnabled: Bool {
+        didSet { UserDefaults.standard.set(agentUsagePollingEnabled, forKey: Keys.agentUsagePollingEnabled) }
+    }
+
     var avoidMenuOverlap: Bool {
         didSet {
             UserDefaults.standard.set(avoidMenuOverlap, forKey: Keys.avoidMenuOverlap)
@@ -90,6 +95,7 @@ final class NotchSettings {
         static let hiddenAppBundleIDs = "hiddenAppBundleIDs"
         static let clipboardMonitoringEnabled = "clipboardMonitoringEnabled"
         static let localAPIEnabled = "localAPIEnabled"
+        static let agentUsagePollingEnabled = "agentUsagePollingEnabled"
         static let avoidMenuOverlap = "avoidMenuOverlap"
         static let urlSchemeAutomationEnabled = "urlSchemeAutomationEnabled"
         static let lyricsSharingEnabled = "lyricsSharingEnabled"
@@ -123,6 +129,7 @@ final class NotchSettings {
         hiddenAppBundleIDs = defaults.stringArray(forKey: Keys.hiddenAppBundleIDs) ?? []
         clipboardMonitoringEnabled = defaults.bool(forKey: Keys.clipboardMonitoringEnabled)
         localAPIEnabled = defaults.object(forKey: Keys.localAPIEnabled) as? Bool ?? false
+        agentUsagePollingEnabled = defaults.object(forKey: Keys.agentUsagePollingEnabled) as? Bool ?? true
         avoidMenuOverlap = defaults.object(forKey: Keys.avoidMenuOverlap) as? Bool ?? true
         urlSchemeAutomationEnabled = defaults.bool(forKey: Keys.urlSchemeAutomationEnabled)
         lyricsSharingEnabled = defaults.bool(forKey: Keys.lyricsSharingEnabled)

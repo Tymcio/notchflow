@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.36] - 2026-08-19
+
+### Added
+
+- Agents addon: remaining Claude Code and Codex 5-hour / 7-day usage in the island, using the login already on this Mac
+
 ## [1.0.35] - 2026-07-30
 
 ### Fixed
