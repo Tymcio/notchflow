@@ -22,6 +22,9 @@ let package = Package(
             path: "Sources/NotchFlow",
             resources: [
                 .process("Resources")
+            ],
+            linkerSettings: [
+                .linkedLibrary("sqlite3")
             ]
         ),
         .testTarget(

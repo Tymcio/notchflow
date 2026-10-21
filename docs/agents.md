@@ -28,7 +28,7 @@ Cursor hooks are **monitor-only** (`sessionStart`, `stop`, `postToolUse`, …). 
 
 With the Agents addon, the island can show **remaining 5-hour and 7-day quota** for Claude Code and Codex — the same windows `/usage` reports.
 
-- Reuses the login already on this Mac (`~/.claude/.credentials.json` or Keychain, `~/.codex/auth.json`).
+- Reuses the login already on this Mac (Claude Code Keychain or `~/.claude/.credentials.json`, Claude Desktop’s local login, `~/.codex/auth.json`). Desktop’s login is read-only: NotchFlow never uses or rotates its refresh token.
 - Asks Anthropic / OpenAI usage endpoints only. Tokens are not stored by NotchFlow and are not sent to NotchFlow servers.
 - Toggle in **Settings → Integrations**. Off = no usage network calls.
 - **Cursor is not supported** (no public usage API).

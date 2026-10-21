@@ -17,10 +17,10 @@
   <meta property="og:description" content="Natywna aplikacja macOS dla MacBooków Apple Silicon. Lekka, przezroczysta, dbająca o prywatność." />
   <meta property="og:image" content="https://notchflow.eu/assets/og-image.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="stylesheet" href="../styles.css?v=20260714-2002" />
-  <script src="../consent-init.js?v=20260714-2002"></script>
-  <script src="../analytics-config.js?v=20260714-2002"></script>
-  <script src="../theme-init.js?v=20260714-2002"></script>
+  <link rel="stylesheet" href="../styles.css?v=20260719-demo12" />
+  <script src="../consent-init.js?v=20260719-demo12"></script>
+  <script src="../analytics-config.js?v=20260719-demo12"></script>
+  <script src="../theme-init.js?v=20260719-demo12"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Przejdź do treści</a>
@@ -34,7 +34,7 @@
       <nav>
         <ul class="nav-links" id="nav">
           <li><a href="#features">Funkcje</a></li>
-          <li><a href="#screenshots">Zrzuty ekranu</a></li>
+          <li><a href="#demo">Demo</a></li>
           <li><a href="#why">Dlaczego NotchFlow?</a></li>
           <li><a href="#faq">FAQ</a></li>
           <li class="nav-lang">
@@ -71,21 +71,183 @@
           <p class="hero-lead">NotchFlow zamienia niewykorzystaną przestrzeń notcha w centrum kontroli — muzyka, pliki, kalendarz, powiadomienia i więcej, dokładnie tam, gdzie ich potrzebujesz.</p>
           <div class="hero-cta">
             <a class="btn btn-primary btn-lg" href="#download">Pobierz za darmo</a>
-            <a class="btn btn-ghost btn-lg" href="#features">Zobacz funkcje</a>
+            <a class="btn btn-ghost btn-lg" href="#demo">Wypróbuj demo</a>
           </div>
           <div class="hero-badge">
             <span class="hero-badge-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M3.172 5.172a4 4 0 0 1 5.656 0L10 6.343l1.172-1.171a4 4 0 1 1 5.656 5.656L10 17.657l-6.828-6.829a4 4 0 0 1 0-5.656z"/></svg></span>
             Stworzony dla macOS z miłości do szczegółów
           </div>
         </div>
-        <div class="hero-macbook" aria-hidden="true">
-          <img
-            src="../assets/hero-macbook.png"
-            alt=""
-            width="900"
-            height="584"
-            decoding="async"
-          />
+        <div class="hero-demo">
+      <div class="notch-demo" data-notch-demo data-notch-mode="autoplay" data-active-module="media" data-uid="hero" aria-label="Interaktywny podgląd NotchFlow" aria-expanded="false">
+        <div class="notch-demo-stage">
+          <div class="notch-demo-wallpaper" aria-hidden="true"></div>
+          <div class="notch-demo-menubar" aria-hidden="true">
+            <span class="mb-apple"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></span>
+            <span class="mb-item w-56"></span>
+            <span class="mb-item w-32"></span>
+            <span class="mb-spacer"></span>
+            <span class="mb-time">21:37</span>
+          </div>
+          <div class="notch-island" data-state="idle">
+            <div class="notch-idle" aria-hidden="false">
+              <span class="notch-idle-bar" aria-hidden="true"></span>
+            </div>
+            <div class="notch-expanded" aria-hidden="true">
+              <div class="notch-tabbar" role="tablist" aria-label="Moduły NotchFlow">
+            <div class="notch-tab-group notch-tab-group-leading"><button type="button" class="notch-demo-tab is-active" role="tab" aria-selected="true" aria-controls="hero-panel-media" id="hero-tab-media" data-module-tab="media" data-module="media" tabindex="0" aria-label="Muzyka"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 3v10.27A4 4 0 1 0 11 17V7h6V3H9z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="hero-panel-calendar" id="hero-tab-calendar" data-module-tab="calendar" data-module="calendar" tabindex="-1" aria-label="Kalendarz"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zm12 8H5v9h14v-9zM5 8h14V6H5v2z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="hero-panel-shelf" id="hero-tab-shelf" data-module-tab="shelf" data-module="shelf" tabindex="-1" aria-label="Półka"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5a1 1 0 0 1 1 1V9h2.3a.75.75 0 0 1 .53 1.28l-3.3 3.3a.75.75 0 0 1-1.06 0l-3.3-3.3A.75.75 0 0 1 8.7 9H11V3.5a1 1 0 0 1 1-1zM3.5 14h4.1l1.2 1.6a1.5 1.5 0 0 0 1.2.6h4a1.5 1.5 0 0 0 1.2-.6l1.2-1.6h4.1a.5.5 0 0 1 .5.5V18a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18v-3.5a.5.5 0 0 1 .5-.5z"/></svg></button></div>
+            <div class="notch-tab-spacer" aria-hidden="true"></div>
+            <div class="notch-tab-group notch-tab-group-trailing"><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="hero-panel-focus" id="hero-tab-focus" data-module-tab="focus" data-module="focus" tabindex="-1" aria-label="Minutnik"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 1.75h6a.75.75 0 0 1 0 1.5h-1.1l.35 1.05A8.5 8.5 0 1 1 7.75 5.3l.35-1.05H7a.75.75 0 0 1 0-1.5h2zm3 4.75a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zm.75 2a.75.75 0 0 0-1.5 0v4.1c0 .2.08.39.22.53l2.5 2.5a.75.75 0 1 0 1.06-1.06l-2.28-2.28V8.5z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="hero-panel-notes" id="hero-tab-notes" data-module-tab="notes" data-module="notes" tabindex="-1" aria-label="Notatki"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.5 2.5A2.5 2.5 0 0 0 4 5v14a2.5 2.5 0 0 0 2.5 2.5h11A2.5 2.5 0 0 0 20 19V8.4L14.6 2.5H6.5zM14 3.9 18.1 8H14V3.9zM8 12.25h8a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5zm0 3.5h8a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5zm0-7h5a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="hero-panel-clipboard" id="hero-tab-clipboard" data-module-tab="clipboard" data-module="clipboard" tabindex="-1" aria-label="Schowek"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 2A1.5 1.5 0 0 0 8 3.5V4H6.5A2.5 2.5 0 0 0 4 6.5v13A2.5 2.5 0 0 0 6.5 22H14a2.5 2.5 0 0 0 2.5-2.5V18H17.5A2.5 2.5 0 0 0 20 15.5v-9A2.5 2.5 0 0 0 17.5 4H16v-.5A1.5 1.5 0 0 0 14.5 2h-5zM10 4h4v1.25a.75.75 0 0 1-.75.75h-2.5A.75.75 0 0 1 10 5.25V4zm4.5 15.5H6.5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1H8v.75c0 .97.78 1.75 1.75 1.75h2.5c.97 0 1.75-.78 1.75-1.75V4.5h1.5a1 1 0 0 1 1 1v2H12.5A2.5 2.5 0 0 0 10 10v7.5a2.5 2.5 0 0 0 2.5 2.5h2v.5a1 1 0 0 1-1 1zM12.5 11.5h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="hero-panel-agents" id="hero-tab-agents" data-module-tab="agents" data-module="agents" tabindex="-1" aria-label="Agenci"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 2.25a.75.75 0 0 1 .75.75v1.5h4.5V3a.75.75 0 0 1 1.5 0v1.5H17.5A2.75 2.75 0 0 1 20.25 7.25v1.5H21.5a.75.75 0 0 1 0 1.5h-1.25v4.5H21.5a.75.75 0 0 1 0 1.5h-1.25v1.5A2.75 2.75 0 0 1 17.5 20.5h-1.75V22a.75.75 0 0 1-1.5 0v-1.5h-4.5V22a.75.75 0 0 1-1.5 0v-1.5H6.5A2.75 2.75 0 0 1 3.75 17.75v-1.5H2.5a.75.75 0 0 1 0-1.5h1.25v-4.5H2.5a.75.75 0 0 1 0-1.5h1.25v-1.5A2.75 2.75 0 0 1 6.5 4.5h1.75V3A.75.75 0 0 1 9 2.25zM6.5 6a1.25 1.25 0 0 0-1.25 1.25v9.5c0 .69.56 1.25 1.25 1.25h11c.69 0 1.25-.56 1.25-1.25v-9.5C18.75 6.56 18.19 6 17.5 6h-11zm2.25 3.25h6.5a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75h-6.5a.75.75 0 0 1-.75-.75v-6.5a.75.75 0 0 1 .75-.75z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="hero-panel-mirror" id="hero-tab-mirror" data-module-tab="mirror" data-module="mirror" tabindex="-1" aria-label="Lustro"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.4 3.5a1.5 1.5 0 0 0-1.2.6L7.2 5.5H5A2.5 2.5 0 0 0 2.5 8v9A2.5 2.5 0 0 0 5 19.5h14a2.5 2.5 0 0 0 2.5-2.5V8A2.5 2.5 0 0 0 19 5.5h-2.2l-1-1.4a1.5 1.5 0 0 0-1.2-.6H9.4zM12 9.25a3.75 3.75 0 1 1 0 7.5 3.75 3.75 0 0 1 0-7.5z"/></svg></button></div>
+          </div>
+              <div class="notch-panels">
+            <div class="notch-panel is-active" role="tabpanel" id="hero-panel-media" data-module-panel="media" aria-labelledby="hero-tab-media">
+              <div class="notch-ui">
+                <div class="media-top">
+                  <div class="art" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></div>
+                  <div class="track-info">
+                    <span class="track-title">Forever Young</span>
+                    <span class="track-artist">LABACK</span>
+                  </div>
+                  <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                </div>
+                <div class="scrubber" aria-hidden="true"><span class="scrubber-fill"></span></div>
+                <div class="scrub-times" aria-hidden="true"><span>2:57</span><span>3:08</span></div>
+                <div class="transport" aria-hidden="true">
+                  <span class="t-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6L11 18zM20 18V6l-8.5 6L20 18z"/></svg></span>
+                  <span class="t-btn play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5h3v14H8zM13 5h3v14h-3z"/></svg></span>
+                  <span class="t-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 6v12l8.5-6L13 6zM4 6v12l8.5-6L4 6z"/></svg></span>
+                </div>
+              </div>
+            </div>
+            <div class="notch-panel" role="tabpanel" id="hero-panel-calendar" data-module-panel="calendar" aria-labelledby="hero-tab-calendar" hidden>
+              <div class="notch-ui">
+                <div class="cal-head" aria-hidden="true">
+                  <svg class="cal-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02z" clip-rule="evenodd"/></svg>
+                  <span class="cal-month">lipiec 2026</span>
+                  <svg class="cal-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02z" clip-rule="evenodd"/></svg>
+                </div>
+                <div class="cal-grid" aria-hidden="true">
+                  <span class="day-header">M</span><span class="day-header">T</span><span class="day-header">W</span><span class="day-header">T</span><span class="day-header">F</span><span class="day-header">S</span><span class="day-header">S</span>
+                  <span class="day muted">29</span><span class="day muted">30</span><span class="day">1</span><span class="day">2</span><span class="day">3</span><span class="day">4</span><span class="day">5</span>
+                  <span class="day">6</span><span class="day">7</span><span class="day">8</span><span class="day">9</span><span class="day">10</span><span class="day today">11</span><span class="day">12</span>
+                  <span class="day">13</span><span class="day">14</span><span class="day">15</span><span class="day">16</span><span class="day">17</span><span class="day">18</span><span class="day">19</span>
+                </div>
+              </div>
+            </div>
+            <div class="notch-panel" role="tabpanel" id="hero-panel-shelf" data-module-panel="shelf" aria-labelledby="hero-tab-shelf" hidden>
+              <div class="notch-ui">
+                <div class="shelf-head">
+                  <span class="shelf-label"><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-3-5 3V4z"/></svg>Przypięte</span>
+                  <span class="shelf-count">3/20</span>
+                </div>
+                <div class="shelf-tiles" aria-hidden="true">
+                  <div class="shelf-tile"><svg class="tile-glyph" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5z"/></svg><span class="tile-ext">.zip</span></div>
+                  <div class="shelf-tile"><svg class="tile-glyph" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5z"/></svg><span class="tile-ext">.pdf</span></div>
+                  <div class="shelf-tile"><svg class="tile-glyph" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5z"/></svg><span class="tile-ext">.key</span></div>
+                  <div class="shelf-tile add"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg><span>Dodaj</span></div>
+                </div>
+                <div class="shelf-drop" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v10m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Upuść pliki na wyspę</div>
+              </div>
+            </div>
+            <div class="notch-panel" role="tabpanel" id="hero-panel-focus" data-module-panel="focus" aria-labelledby="hero-tab-focus" hidden>
+              <div class="notch-ui">
+                <div class="focus-picker" role="tablist" aria-label="Tryby minutnika">
+                  <button type="button" class="is-active" role="tab" aria-selected="true" data-focus-mode="countdown">Minutnik</button>
+                  <button type="button" role="tab" aria-selected="false" data-focus-mode="stopwatch">Stoper</button>
+                  <button type="button" role="tab" aria-selected="false" data-focus-mode="pomodoro">Pomodoro</button>
+                </div>
+                <div class="focus-view is-active" data-focus-view="countdown">
+                  <div class="focus-time">24:59</div>
+                  <p class="focus-hint">Odliczanie w toku</p>
+                  <div class="focus-ruler" data-focus-ruler role="slider" tabindex="0" aria-valuemin="1" aria-valuemax="90" aria-valuenow="25" aria-label="Czas minutnika">
+                  <div class="focus-ruler-window">
+                    <div class="focus-ruler-ticks" data-focus-ruler-ticks></div>
+                  </div>
+                  <div class="focus-ruler-marker" aria-hidden="true"></div>
+                </div>
+                <div class="focus-actions" aria-hidden="true"><span>Pauza</span><span>Reset</span></div>
+                </div>
+                <div class="focus-view" data-focus-view="stopwatch" hidden>
+                  <div class="focus-time">03:42.18</div>
+                  <p class="focus-hint">Stoper działa</p>
+                  <div class="focus-actions" aria-hidden="true"><span>Okrążenie</span><span>Stop</span></div>
+                </div>
+                <div class="focus-view" data-focus-view="pomodoro" hidden>
+                  <div class="focus-time">18:20</div>
+                  <p class="focus-hint">Sesja skupienia w toku</p>
+                  <div class="focus-actions" aria-hidden="true"><span>Pauza</span><span>Pomiń</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="notch-panel" role="tabpanel" id="hero-panel-notes" data-module-panel="notes" aria-labelledby="hero-tab-notes" hidden>
+              <div class="notch-ui">
+                <div class="note-row"><span class="note-dot" aria-hidden="true"></span><div><span class="note-title">Landing z demem</span><span class="note-body">Interaktywny notch na stronie</span></div></div>
+                <div class="note-row"><span class="note-dot" aria-hidden="true"></span><div><span class="note-title">Zadzwoń do Ady</span><span class="note-body">Jutro 10:00</span></div></div>
+              </div>
+            </div>
+            <div class="notch-panel" role="tabpanel" id="hero-panel-clipboard" data-module-panel="clipboard" aria-labelledby="hero-tab-clipboard" hidden>
+              <div class="notch-ui">
+                <div class="clip-search" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm11.7 18.3-4.2-4.2"/></svg>Szukaj w schowku</div>
+                <div class="clip-row"><span class="clip-badge">TXT</span><div><span class="note-title">Notatki ze spotkania</span><span class="note-body">Skopiowano 2 min temu</span></div></div>
+                <div class="clip-row"><span class="clip-badge">URL</span><div><span class="note-title">notchflow.eu</span><span class="note-body">Skopiowano przed chwilą</span></div></div>
+              </div>
+            </div>
+            <div class="notch-panel" role="tabpanel" id="hero-panel-agents" data-module-panel="agents" aria-labelledby="hero-tab-agents" hidden>
+              <div class="notch-ui agents-ui">
+                <div class="agent-row agent-claude" data-agent-claude data-agent-state="pending">
+                  <span class="agent-avatar claude" aria-hidden="true">✦</span>
+                  <div class="agent-copy">
+                    <span class="agent-title">Claude Code</span>
+                    <span class="agent-phase">Wymaga zatwierdzenia</span>
+                    <span class="agent-body">Zapis do Package.swift?</span>
+                  </div>
+                  <div class="agent-actions">
+                    <button type="button" class="deny" data-agent-decide="deny">Odrzuć</button>
+                    <button type="button" class="allow" data-agent-decide="allow">Zezwól</button>
+                  </div>
+                </div>
+                <div class="agent-row agent-cursor">
+                  <span class="agent-avatar" aria-hidden="true">C</span>
+                  <div class="agent-copy">
+                    <span class="agent-title">Cursor</span>
+                    <span class="agent-phase">Wymaga zatwierdzenia</span>
+                    <span class="agent-body">Edycja index.html</span>
+                  </div>
+                  <span class="agent-jump" title="Przejdź do Cursor" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg></span>
+                </div>
+              </div>
+            </div>
+            <div class="notch-panel" role="tabpanel" id="hero-panel-mirror" data-module-panel="mirror" aria-labelledby="hero-tab-mirror" hidden>
+              <div class="notch-ui">
+                <div class="mirror-frame" aria-hidden="true">
+                  <svg class="mirror-person" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="80" cy="118" rx="54" ry="14" fill="#000" opacity="0.22"/>
+                    <path d="M32 120c4-28 22-44 48-44s44 16 48 44" fill="#5B7FFF"/>
+                    <path d="M40 120c3-22 18-34 40-34s37 12 40 34" fill="#7C9AFF"/>
+                    <circle cx="80" cy="48" r="28" fill="#F0C7A8"/>
+                    <path d="M52 44c2-22 14-34 28-34s26 12 28 34c-6-10-16-16-28-16S58 34 52 44Z" fill="#3D2A1F"/>
+                    <path d="M54 38c8-14 20-20 26-20 4 0 8 1 12 4-10 2-18 8-24 16-5 0-10 0-14 0Z" fill="#2A1C14"/>
+                    <ellipse cx="69" cy="50" rx="3.2" ry="3.6" fill="#2A2118"/>
+                    <ellipse cx="91" cy="50" rx="3.2" ry="3.6" fill="#2A2118"/>
+                    <circle cx="70.2" cy="49" r="1" fill="#fff" opacity="0.85"/>
+                    <circle cx="92.2" cy="49" r="1" fill="#fff" opacity="0.85"/>
+                    <path d="M74 60c2.5 3.5 9.5 3.5 12 0" stroke="#C47A6A" stroke-width="2" stroke-linecap="round"/>
+                    <ellipse cx="62" cy="56" rx="5" ry="3" fill="#E8A090" opacity="0.55"/>
+                    <ellipse cx="98" cy="56" rx="5" ry="3" fill="#E8A090" opacity="0.55"/>
+                    <path d="M66 42c3-3 7-4 10-3" stroke="#3D2A1F" stroke-width="1.6" stroke-linecap="round"/>
+                    <path d="M84 39c3-1 7 0 10 3" stroke="#3D2A1F" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <span class="mirror-live"><i></i>Na żywo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+            </div>
+          </div>
+        </div>
+        
+        <p class="notch-demo-hint">Idle notch — najedź na notcha, żeby rozwinąć.</p>
+      </div>
         </div>
       </div>
     </section>
@@ -119,7 +281,7 @@
       <div class="container">
         <div class="section-header">
           <h2>Wszystko, czego potrzebujesz. Dokładnie tam, gdzie potrzebujesz.</h2>
-          <p>Muzyka, kalendarz, półka i powiadomienia w jednej wyspie. Najedź na środek górnej krawędzi ekranu, aby rozwinąć.</p>
+          <p>Muzyka, kalendarz, półka, minutnik, notatki, schowek, agenci, lustro i powiadomienia — wszystko w jednej wyspie.</p>
         </div>
         <div class="showcase-grid">
           <article class="showcase-card">
@@ -213,71 +375,273 @@
               <p class="notify-foot">Wybrane aplikacje pojawiają się w notchu. Opcjonalnie: ukryj treść wiadomości i zamknij systemowy baner.</p>
             </div>
           </article>
+
+          <article class="showcase-card">
+            <h3>Minutnik i focus.</h3>
+            <div class="showcase-ui focus" aria-hidden="true">
+              <div class="focus-picker">
+                <span class="is-active">Minutnik</span>
+                <span>Stoper</span>
+                <span>Pomodoro</span>
+              </div>
+              <div class="focus-time">24:59</div>
+              <p class="focus-hint">Odliczanie w toku</p>
+              <div class="focus-ruler" aria-hidden="true">
+                <div class="focus-ruler-window"><div class="focus-ruler-ticks" style="width:540px;transform:translateX(calc(50% - 150px))"><span class="focus-ruler-tick is-major" style="left:0px"><i>0</i></span><span class="focus-ruler-tick" style="left:6px"></span><span class="focus-ruler-tick" style="left:12px"></span><span class="focus-ruler-tick" style="left:18px"></span><span class="focus-ruler-tick" style="left:24px"></span><span class="focus-ruler-tick is-major" style="left:30px"><i>5</i></span><span class="focus-ruler-tick" style="left:36px"></span><span class="focus-ruler-tick" style="left:42px"></span><span class="focus-ruler-tick" style="left:48px"></span><span class="focus-ruler-tick" style="left:54px"></span><span class="focus-ruler-tick is-major" style="left:60px"><i>10</i></span><span class="focus-ruler-tick" style="left:66px"></span><span class="focus-ruler-tick" style="left:72px"></span><span class="focus-ruler-tick" style="left:78px"></span><span class="focus-ruler-tick" style="left:84px"></span><span class="focus-ruler-tick is-major" style="left:90px"><i>15</i></span><span class="focus-ruler-tick" style="left:96px"></span><span class="focus-ruler-tick" style="left:102px"></span><span class="focus-ruler-tick" style="left:108px"></span><span class="focus-ruler-tick" style="left:114px"></span><span class="focus-ruler-tick is-major" style="left:120px"><i>20</i></span><span class="focus-ruler-tick" style="left:126px"></span><span class="focus-ruler-tick" style="left:132px"></span><span class="focus-ruler-tick" style="left:138px"></span><span class="focus-ruler-tick" style="left:144px"></span><span class="focus-ruler-tick is-major" style="left:150px"><i>25</i></span><span class="focus-ruler-tick" style="left:156px"></span><span class="focus-ruler-tick" style="left:162px"></span><span class="focus-ruler-tick" style="left:168px"></span><span class="focus-ruler-tick" style="left:174px"></span><span class="focus-ruler-tick is-major" style="left:180px"><i>30</i></span><span class="focus-ruler-tick" style="left:186px"></span><span class="focus-ruler-tick" style="left:192px"></span><span class="focus-ruler-tick" style="left:198px"></span><span class="focus-ruler-tick" style="left:204px"></span><span class="focus-ruler-tick is-major" style="left:210px"><i>35</i></span><span class="focus-ruler-tick" style="left:216px"></span><span class="focus-ruler-tick" style="left:222px"></span><span class="focus-ruler-tick" style="left:228px"></span><span class="focus-ruler-tick" style="left:234px"></span><span class="focus-ruler-tick is-major" style="left:240px"><i>40</i></span><span class="focus-ruler-tick" style="left:246px"></span><span class="focus-ruler-tick" style="left:252px"></span><span class="focus-ruler-tick" style="left:258px"></span><span class="focus-ruler-tick" style="left:264px"></span><span class="focus-ruler-tick is-major" style="left:270px"><i>45</i></span><span class="focus-ruler-tick" style="left:276px"></span><span class="focus-ruler-tick" style="left:282px"></span><span class="focus-ruler-tick" style="left:288px"></span><span class="focus-ruler-tick" style="left:294px"></span><span class="focus-ruler-tick is-major" style="left:300px"><i>50</i></span><span class="focus-ruler-tick" style="left:306px"></span><span class="focus-ruler-tick" style="left:312px"></span><span class="focus-ruler-tick" style="left:318px"></span><span class="focus-ruler-tick" style="left:324px"></span><span class="focus-ruler-tick is-major" style="left:330px"><i>55</i></span><span class="focus-ruler-tick" style="left:336px"></span><span class="focus-ruler-tick" style="left:342px"></span><span class="focus-ruler-tick" style="left:348px"></span><span class="focus-ruler-tick" style="left:354px"></span><span class="focus-ruler-tick is-major" style="left:360px"><i>60</i></span><span class="focus-ruler-tick" style="left:366px"></span><span class="focus-ruler-tick" style="left:372px"></span><span class="focus-ruler-tick" style="left:378px"></span><span class="focus-ruler-tick" style="left:384px"></span><span class="focus-ruler-tick is-major" style="left:390px"><i>65</i></span><span class="focus-ruler-tick" style="left:396px"></span><span class="focus-ruler-tick" style="left:402px"></span><span class="focus-ruler-tick" style="left:408px"></span><span class="focus-ruler-tick" style="left:414px"></span><span class="focus-ruler-tick is-major" style="left:420px"><i>70</i></span><span class="focus-ruler-tick" style="left:426px"></span><span class="focus-ruler-tick" style="left:432px"></span><span class="focus-ruler-tick" style="left:438px"></span><span class="focus-ruler-tick" style="left:444px"></span><span class="focus-ruler-tick is-major" style="left:450px"><i>75</i></span><span class="focus-ruler-tick" style="left:456px"></span><span class="focus-ruler-tick" style="left:462px"></span><span class="focus-ruler-tick" style="left:468px"></span><span class="focus-ruler-tick" style="left:474px"></span><span class="focus-ruler-tick is-major" style="left:480px"><i>80</i></span><span class="focus-ruler-tick" style="left:486px"></span><span class="focus-ruler-tick" style="left:492px"></span><span class="focus-ruler-tick" style="left:498px"></span><span class="focus-ruler-tick" style="left:504px"></span><span class="focus-ruler-tick is-major" style="left:510px"><i>85</i></span><span class="focus-ruler-tick" style="left:516px"></span><span class="focus-ruler-tick" style="left:522px"></span><span class="focus-ruler-tick" style="left:528px"></span><span class="focus-ruler-tick" style="left:534px"></span><span class="focus-ruler-tick is-major" style="left:540px"><i>90</i></span></div></div>
+                <div class="focus-ruler-marker"></div>
+              </div>
+              <div class="focus-actions"><span>Pauza</span><span>Reset</span></div>
+            </div>
+          </article>
+          <article class="showcase-card">
+            <h3>Szybkie notatki.</h3>
+            <div class="showcase-ui notes" aria-hidden="true">
+              <div class="note-row"><span class="note-dot"></span><div><span class="note-title">Landing z demem</span><span class="note-body">Interaktywny notch na stronie</span></div></div>
+              <div class="note-row"><span class="note-dot"></span><div><span class="note-title">Zadzwoń do Ady</span><span class="note-body">Jutro 10:00</span></div></div>
+            </div>
+          </article>
+          <article class="showcase-card">
+            <h3>Historia schowka.</h3>
+            <div class="showcase-ui clipboard" aria-hidden="true">
+              <div class="clip-search"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm8.3 14.9 3.4 3.4"/></svg>Szukaj w schowku</div>
+              <div class="clip-row"><span class="clip-badge">TXT</span><div><span class="note-title">Notatki ze spotkania</span><span class="note-body">Skopiowano 2 min temu</span></div></div>
+              <div class="clip-row"><span class="clip-badge">URL</span><div><span class="note-title">notchflow.eu</span><span class="note-body">Skopiowano przed chwilą</span></div></div>
+            </div>
+          </article>
+          <article class="showcase-card">
+            <h3>Agenci kodujący.</h3>
+            <div class="showcase-ui agents" aria-hidden="true">
+              <div class="agent-row agent-claude" data-agent-claude data-agent-state="pending">
+                <span class="agent-avatar claude">✦</span>
+                <div class="agent-copy">
+                  <span class="agent-title">Claude Code</span>
+                  <span class="agent-phase">Wymaga zatwierdzenia</span>
+                  <span class="agent-body">Zapis do Package.swift?</span>
+                </div>
+                <div class="agent-actions">
+                    <button type="button" class="deny" data-agent-decide="deny">Odrzuć</button>
+                    <button type="button" class="allow" data-agent-decide="allow">Zezwól</button>
+                  </div>
+              </div>
+              <div class="agent-row agent-cursor">
+                <span class="agent-avatar">C</span>
+                <div class="agent-copy">
+                  <span class="agent-title">Cursor</span>
+                  <span class="agent-phase">Wymaga zatwierdzenia</span>
+                  <span class="agent-body">Edycja index.html</span>
+                </div>
+                <span class="agent-jump"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg></span>
+              </div>
+            </div>
+          </article>
+          <article class="showcase-card">
+            <h3>Lustro kamery.</h3>
+            <div class="showcase-ui mirror" aria-hidden="true">
+              <div class="mirror-frame" aria-hidden="true">
+                  <svg class="mirror-person" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="80" cy="118" rx="54" ry="14" fill="#000" opacity="0.22"/>
+                    <path d="M32 120c4-28 22-44 48-44s44 16 48 44" fill="#5B7FFF"/>
+                    <path d="M40 120c3-22 18-34 40-34s37 12 40 34" fill="#7C9AFF"/>
+                    <circle cx="80" cy="48" r="28" fill="#F0C7A8"/>
+                    <path d="M52 44c2-22 14-34 28-34s26 12 28 34c-6-10-16-16-28-16S58 34 52 44Z" fill="#3D2A1F"/>
+                    <path d="M54 38c8-14 20-20 26-20 4 0 8 1 12 4-10 2-18 8-24 16-5 0-10 0-14 0Z" fill="#2A1C14"/>
+                    <ellipse cx="69" cy="50" rx="3.2" ry="3.6" fill="#2A2118"/>
+                    <ellipse cx="91" cy="50" rx="3.2" ry="3.6" fill="#2A2118"/>
+                    <circle cx="70.2" cy="49" r="1" fill="#fff" opacity="0.85"/>
+                    <circle cx="92.2" cy="49" r="1" fill="#fff" opacity="0.85"/>
+                    <path d="M74 60c2.5 3.5 9.5 3.5 12 0" stroke="#C47A6A" stroke-width="2" stroke-linecap="round"/>
+                    <ellipse cx="62" cy="56" rx="5" ry="3" fill="#E8A090" opacity="0.55"/>
+                    <ellipse cx="98" cy="56" rx="5" ry="3" fill="#E8A090" opacity="0.55"/>
+                    <path d="M66 42c3-3 7-4 10-3" stroke="#3D2A1F" stroke-width="1.6" stroke-linecap="round"/>
+                    <path d="M84 39c3-1 7 0 10 3" stroke="#3D2A1F" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <span class="mirror-live"><i></i>Na żywo</span>
+                </div>
+            </div>
+          </article>
+
         </div>
       </div>
     </section>
 
-    <section class="screenshots-section" id="screenshots">
+        <section class="demo-section" id="demo">
       <div class="container">
         <div class="section-header">
-          <h2>Zobacz w akcji</h2>
-          <p>Najedź na notch. Rozwiń wyspę. Wszystko zaczyna się na górze ekranu.</p>
+          <h2>Wypróbuj wyspę.</h2>
+          <p>Najedź na notcha, żeby rozwinąć — tak samo jak na MacBooku.</p>
         </div>
-
-        <div class="screenshot-showcase" data-screenshot-showcase>
-          <div class="screenshot-tabs" role="tablist" aria-label="Moduły NotchFlow">
-            <button type="button" class="screenshot-tab is-active" role="tab" aria-selected="true" aria-controls="shot-music" id="tab-music" data-shot="shot-music">Muzyka</button>
-            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-calendar" id="tab-calendar" data-shot="shot-calendar">Kalendarz</button>
-            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-shelf" id="tab-shelf" data-shot="shot-shelf">Półka</button>
-            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-timer" id="tab-timer" data-shot="shot-timer">Minutnik</button>
-            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-stopwatch" id="tab-stopwatch" data-shot="shot-stopwatch">Stoper</button>
-            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-pomodoro" id="tab-pomodoro" data-shot="shot-pomodoro">Pomodoro</button>
-            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-notes" id="tab-notes" data-shot="shot-notes">Notatki</button>
-            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-clipboard" id="tab-clipboard" data-shot="shot-clipboard">Schowek</button>
-            <button type="button" class="screenshot-tab" role="tab" aria-selected="false" aria-controls="shot-camera" id="tab-camera" data-shot="shot-camera">Kamera</button>
-          </div>
-
-          <div class="screenshot-stage">
-            <figure class="screenshot-panel is-active" id="shot-music" role="tabpanel" aria-labelledby="tab-music">
-              <div class="screenshot-frame"><img src="../assets/screenshots/01-music.png" alt="NotchFlow — odtwarzacz muzyki" width="1600" height="660" /></div>
-              <figcaption>Muzyka — odtwarzanie, okładka i przewijanie</figcaption>
-            </figure>
-            <figure class="screenshot-panel" id="shot-calendar" role="tabpanel" aria-labelledby="tab-calendar" hidden>
-              <div class="screenshot-frame"><img src="../assets/screenshots/02-calendar.png" alt="NotchFlow — kalendarz" loading="lazy" width="1600" height="660" /></div>
-              <figcaption>Kalendarz — siatka miesiąca na pierwszy rzut oka</figcaption>
-            </figure>
-            <figure class="screenshot-panel" id="shot-shelf" role="tabpanel" aria-labelledby="tab-shelf" hidden>
-              <div class="screenshot-frame"><img src="../assets/screenshots/03-shelf.png" alt="NotchFlow — półka na pliki" loading="lazy" width="1600" height="660" /></div>
-              <figcaption>Półka — przypięte i tymczasowe pliki</figcaption>
-            </figure>
-            <figure class="screenshot-panel" id="shot-timer" role="tabpanel" aria-labelledby="tab-timer" hidden>
-              <div class="screenshot-frame"><img src="../assets/screenshots/04-timer.png" alt="NotchFlow — minutnik" loading="lazy" width="1600" height="660" /></div>
-              <figcaption>Minutnik — regulowany czas odliczania</figcaption>
-            </figure>
-            <figure class="screenshot-panel" id="shot-stopwatch" role="tabpanel" aria-labelledby="tab-stopwatch" hidden>
-              <div class="screenshot-frame"><img src="../assets/screenshots/05-stopwatch.png" alt="NotchFlow — stoper" loading="lazy" width="1600" height="660" /></div>
-              <figcaption>Stoper — mierzenie czasu</figcaption>
-            </figure>
-            <figure class="screenshot-panel" id="shot-pomodoro" role="tabpanel" aria-labelledby="tab-pomodoro" hidden>
-              <div class="screenshot-frame"><img src="../assets/screenshots/06-pomodoro.png" alt="NotchFlow — Pomodoro" loading="lazy" width="1600" height="660" /></div>
-              <figcaption>Pomodoro — cykle pracy i przerwy</figcaption>
-            </figure>
-            <figure class="screenshot-panel" id="shot-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
-              <div class="screenshot-frame"><img src="../assets/screenshots/07-notes.png" alt="NotchFlow — szybkie notatki" loading="lazy" width="1600" height="660" /></div>
-              <figcaption>Szybkie notatki — zapisuj pomysły od razu</figcaption>
-            </figure>
-            <figure class="screenshot-panel" id="shot-clipboard" role="tabpanel" aria-labelledby="tab-clipboard" hidden>
-              <div class="screenshot-frame"><img src="../assets/screenshots/08-clipboard.png" alt="NotchFlow — schowek" loading="lazy" width="1600" height="660" /></div>
-              <figcaption>Schowek — historia z wyszukiwaniem, opcjonalnie</figcaption>
-            </figure>
-            <figure class="screenshot-panel" id="shot-camera" role="tabpanel" aria-labelledby="tab-camera" hidden>
-              <div class="screenshot-frame"><img src="../assets/screenshots/09-camera.png" alt="NotchFlow — lustro kamery" loading="lazy" width="1600" height="660" /></div>
-              <figcaption>Lustro kamery — szybki podgląd przed rozmową</figcaption>
-            </figure>
-          </div>
-        </div>
+        <div class="notch-demo" data-notch-demo data-notch-mode="hover" data-active-module="media" data-uid="demo" aria-label="Interaktywne demo NotchFlow" aria-expanded="false">
+                <div class="notch-demo-stage">
+                  <div class="notch-demo-wallpaper" aria-hidden="true"></div>
+                  <div class="notch-demo-menubar" aria-hidden="true">
+                    <span class="mb-apple"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></span>
+                    <span class="mb-item w-56"></span>
+                    <span class="mb-item w-32"></span>
+                    <span class="mb-spacer"></span>
+                    <span class="mb-time">21:37</span>
+                  </div>
+                  <div class="notch-island" data-state="idle">
+                    <div class="notch-idle" aria-hidden="false">
+              <span class="notch-idle-bar" aria-hidden="true"></span>
+            </div>
+            <div class="notch-expanded" aria-hidden="true">
+                      <div class="notch-tabbar" role="tablist" aria-label="Moduły NotchFlow">
+                    <div class="notch-tab-group notch-tab-group-leading"><button type="button" class="notch-demo-tab is-active" role="tab" aria-selected="true" aria-controls="demo-panel-media" id="demo-tab-media" data-module-tab="media" data-module="media" tabindex="0" aria-label="Muzyka"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 3v10.27A4 4 0 1 0 11 17V7h6V3H9z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-calendar" id="demo-tab-calendar" data-module-tab="calendar" data-module="calendar" tabindex="-1" aria-label="Kalendarz"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zm12 8H5v9h14v-9zM5 8h14V6H5v2z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-shelf" id="demo-tab-shelf" data-module-tab="shelf" data-module="shelf" tabindex="-1" aria-label="Półka"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5a1 1 0 0 1 1 1V9h2.3a.75.75 0 0 1 .53 1.28l-3.3 3.3a.75.75 0 0 1-1.06 0l-3.3-3.3A.75.75 0 0 1 8.7 9H11V3.5a1 1 0 0 1 1-1zM3.5 14h4.1l1.2 1.6a1.5 1.5 0 0 0 1.2.6h4a1.5 1.5 0 0 0 1.2-.6l1.2-1.6h4.1a.5.5 0 0 1 .5.5V18a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18v-3.5a.5.5 0 0 1 .5-.5z"/></svg></button></div>
+                    <div class="notch-tab-spacer" aria-hidden="true"></div>
+                    <div class="notch-tab-group notch-tab-group-trailing"><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-focus" id="demo-tab-focus" data-module-tab="focus" data-module="focus" tabindex="-1" aria-label="Minutnik"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 1.75h6a.75.75 0 0 1 0 1.5h-1.1l.35 1.05A8.5 8.5 0 1 1 7.75 5.3l.35-1.05H7a.75.75 0 0 1 0-1.5h2zm3 4.75a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zm.75 2a.75.75 0 0 0-1.5 0v4.1c0 .2.08.39.22.53l2.5 2.5a.75.75 0 1 0 1.06-1.06l-2.28-2.28V8.5z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-notes" id="demo-tab-notes" data-module-tab="notes" data-module="notes" tabindex="-1" aria-label="Notatki"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.5 2.5A2.5 2.5 0 0 0 4 5v14a2.5 2.5 0 0 0 2.5 2.5h11A2.5 2.5 0 0 0 20 19V8.4L14.6 2.5H6.5zM14 3.9 18.1 8H14V3.9zM8 12.25h8a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5zm0 3.5h8a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5zm0-7h5a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1 0-1.5z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-clipboard" id="demo-tab-clipboard" data-module-tab="clipboard" data-module="clipboard" tabindex="-1" aria-label="Schowek"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 2A1.5 1.5 0 0 0 8 3.5V4H6.5A2.5 2.5 0 0 0 4 6.5v13A2.5 2.5 0 0 0 6.5 22H14a2.5 2.5 0 0 0 2.5-2.5V18H17.5A2.5 2.5 0 0 0 20 15.5v-9A2.5 2.5 0 0 0 17.5 4H16v-.5A1.5 1.5 0 0 0 14.5 2h-5zM10 4h4v1.25a.75.75 0 0 1-.75.75h-2.5A.75.75 0 0 1 10 5.25V4zm4.5 15.5H6.5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1H8v.75c0 .97.78 1.75 1.75 1.75h2.5c.97 0 1.75-.78 1.75-1.75V4.5h1.5a1 1 0 0 1 1 1v2H12.5A2.5 2.5 0 0 0 10 10v7.5a2.5 2.5 0 0 0 2.5 2.5h2v.5a1 1 0 0 1-1 1zM12.5 11.5h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-agents" id="demo-tab-agents" data-module-tab="agents" data-module="agents" tabindex="-1" aria-label="Agenci"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 2.25a.75.75 0 0 1 .75.75v1.5h4.5V3a.75.75 0 0 1 1.5 0v1.5H17.5A2.75 2.75 0 0 1 20.25 7.25v1.5H21.5a.75.75 0 0 1 0 1.5h-1.25v4.5H21.5a.75.75 0 0 1 0 1.5h-1.25v1.5A2.75 2.75 0 0 1 17.5 20.5h-1.75V22a.75.75 0 0 1-1.5 0v-1.5h-4.5V22a.75.75 0 0 1-1.5 0v-1.5H6.5A2.75 2.75 0 0 1 3.75 17.75v-1.5H2.5a.75.75 0 0 1 0-1.5h1.25v-4.5H2.5a.75.75 0 0 1 0-1.5h1.25v-1.5A2.75 2.75 0 0 1 6.5 4.5h1.75V3A.75.75 0 0 1 9 2.25zM6.5 6a1.25 1.25 0 0 0-1.25 1.25v9.5c0 .69.56 1.25 1.25 1.25h11c.69 0 1.25-.56 1.25-1.25v-9.5C18.75 6.56 18.19 6 17.5 6h-11zm2.25 3.25h6.5a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75h-6.5a.75.75 0 0 1-.75-.75v-6.5a.75.75 0 0 1 .75-.75z"/></svg></button><button type="button" class="notch-demo-tab" role="tab" aria-selected="false" aria-controls="demo-panel-mirror" id="demo-tab-mirror" data-module-tab="mirror" data-module="mirror" tabindex="-1" aria-label="Lustro"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.4 3.5a1.5 1.5 0 0 0-1.2.6L7.2 5.5H5A2.5 2.5 0 0 0 2.5 8v9A2.5 2.5 0 0 0 5 19.5h14a2.5 2.5 0 0 0 2.5-2.5V8A2.5 2.5 0 0 0 19 5.5h-2.2l-1-1.4a1.5 1.5 0 0 0-1.2-.6H9.4zM12 9.25a3.75 3.75 0 1 1 0 7.5 3.75 3.75 0 0 1 0-7.5z"/></svg></button></div>
+                  </div>
+                      <div class="notch-panels">
+                    <div class="notch-panel is-active" role="tabpanel" id="demo-panel-media" data-module-panel="media" aria-labelledby="demo-tab-media">
+                      <div class="notch-ui">
+                        <div class="media-top">
+                          <div class="art" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></div>
+                          <div class="track-info">
+                            <span class="track-title">Forever Young</span>
+                            <span class="track-artist">LABACK</span>
+                          </div>
+                          <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                        </div>
+                        <div class="scrubber" aria-hidden="true"><span class="scrubber-fill"></span></div>
+                        <div class="scrub-times" aria-hidden="true"><span>2:57</span><span>3:08</span></div>
+                        <div class="transport" aria-hidden="true">
+                          <span class="t-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6L11 18zM20 18V6l-8.5 6L20 18z"/></svg></span>
+                          <span class="t-btn play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5h3v14H8zM13 5h3v14h-3z"/></svg></span>
+                          <span class="t-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 6v12l8.5-6L13 6zM4 6v12l8.5-6L4 6z"/></svg></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="notch-panel" role="tabpanel" id="demo-panel-calendar" data-module-panel="calendar" aria-labelledby="demo-tab-calendar" hidden>
+                      <div class="notch-ui">
+                        <div class="cal-head" aria-hidden="true">
+                          <svg class="cal-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02z" clip-rule="evenodd"/></svg>
+                          <span class="cal-month">lipiec 2026</span>
+                          <svg class="cal-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02z" clip-rule="evenodd"/></svg>
+                        </div>
+                        <div class="cal-grid" aria-hidden="true">
+                          <span class="day-header">M</span><span class="day-header">T</span><span class="day-header">W</span><span class="day-header">T</span><span class="day-header">F</span><span class="day-header">S</span><span class="day-header">S</span>
+                          <span class="day muted">29</span><span class="day muted">30</span><span class="day">1</span><span class="day">2</span><span class="day">3</span><span class="day">4</span><span class="day">5</span>
+                          <span class="day">6</span><span class="day">7</span><span class="day">8</span><span class="day">9</span><span class="day">10</span><span class="day today">11</span><span class="day">12</span>
+                          <span class="day">13</span><span class="day">14</span><span class="day">15</span><span class="day">16</span><span class="day">17</span><span class="day">18</span><span class="day">19</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="notch-panel" role="tabpanel" id="demo-panel-shelf" data-module-panel="shelf" aria-labelledby="demo-tab-shelf" hidden>
+                      <div class="notch-ui">
+                        <div class="shelf-head">
+                          <span class="shelf-label"><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14l-5-3-5 3V4z"/></svg>Przypięte</span>
+                          <span class="shelf-count">3/20</span>
+                        </div>
+                        <div class="shelf-tiles" aria-hidden="true">
+                          <div class="shelf-tile"><svg class="tile-glyph" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5z"/></svg><span class="tile-ext">.zip</span></div>
+                          <div class="shelf-tile"><svg class="tile-glyph" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5z"/></svg><span class="tile-ext">.pdf</span></div>
+                          <div class="shelf-tile"><svg class="tile-glyph" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5z"/></svg><span class="tile-ext">.key</span></div>
+                          <div class="shelf-tile add"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg><span>Dodaj</span></div>
+                        </div>
+                        <div class="shelf-drop" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v10m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Upuść pliki na wyspę</div>
+                      </div>
+                    </div>
+                    <div class="notch-panel" role="tabpanel" id="demo-panel-focus" data-module-panel="focus" aria-labelledby="demo-tab-focus" hidden>
+                      <div class="notch-ui">
+                        <div class="focus-picker" role="tablist" aria-label="Tryby minutnika">
+                          <button type="button" class="is-active" role="tab" aria-selected="true" data-focus-mode="countdown">Minutnik</button>
+                          <button type="button" role="tab" aria-selected="false" data-focus-mode="stopwatch">Stoper</button>
+                          <button type="button" role="tab" aria-selected="false" data-focus-mode="pomodoro">Pomodoro</button>
+                        </div>
+                        <div class="focus-view is-active" data-focus-view="countdown">
+                          <div class="focus-time">24:59</div>
+                          <p class="focus-hint">Odliczanie w toku</p>
+                          <div class="focus-ruler" data-focus-ruler role="slider" tabindex="0" aria-valuemin="1" aria-valuemax="90" aria-valuenow="25" aria-label="Czas minutnika">
+                  <div class="focus-ruler-window">
+                    <div class="focus-ruler-ticks" data-focus-ruler-ticks></div>
+                  </div>
+                  <div class="focus-ruler-marker" aria-hidden="true"></div>
+                </div>
+                <div class="focus-actions" aria-hidden="true"><span>Pauza</span><span>Reset</span></div>
+                        </div>
+                        <div class="focus-view" data-focus-view="stopwatch" hidden>
+                          <div class="focus-time">03:42.18</div>
+                          <p class="focus-hint">Stoper działa</p>
+                          <div class="focus-actions" aria-hidden="true"><span>Okrążenie</span><span>Stop</span></div>
+                        </div>
+                        <div class="focus-view" data-focus-view="pomodoro" hidden>
+                          <div class="focus-time">18:20</div>
+                          <p class="focus-hint">Sesja skupienia w toku</p>
+                          <div class="focus-actions" aria-hidden="true"><span>Pauza</span><span>Pomiń</span></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="notch-panel" role="tabpanel" id="demo-panel-notes" data-module-panel="notes" aria-labelledby="demo-tab-notes" hidden>
+                      <div class="notch-ui">
+                        <div class="note-row"><span class="note-dot" aria-hidden="true"></span><div><span class="note-title">Landing z demem</span><span class="note-body">Interaktywny notch na stronie</span></div></div>
+                        <div class="note-row"><span class="note-dot" aria-hidden="true"></span><div><span class="note-title">Zadzwoń do Ady</span><span class="note-body">Jutro 10:00</span></div></div>
+                      </div>
+                    </div>
+                    <div class="notch-panel" role="tabpanel" id="demo-panel-clipboard" data-module-panel="clipboard" aria-labelledby="demo-tab-clipboard" hidden>
+                      <div class="notch-ui">
+                        <div class="clip-search" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm11.7 18.3-4.2-4.2"/></svg>Szukaj w schowku</div>
+                        <div class="clip-row"><span class="clip-badge">TXT</span><div><span class="note-title">Notatki ze spotkania</span><span class="note-body">Skopiowano 2 min temu</span></div></div>
+                        <div class="clip-row"><span class="clip-badge">URL</span><div><span class="note-title">notchflow.eu</span><span class="note-body">Skopiowano przed chwilą</span></div></div>
+                      </div>
+                    </div>
+                    <div class="notch-panel" role="tabpanel" id="demo-panel-agents" data-module-panel="agents" aria-labelledby="demo-tab-agents" hidden>
+                      <div class="notch-ui agents-ui">
+                <div class="agent-row agent-claude" data-agent-claude data-agent-state="pending">
+                  <span class="agent-avatar claude" aria-hidden="true">✦</span>
+                  <div class="agent-copy">
+                    <span class="agent-title">Claude Code</span>
+                    <span class="agent-phase">Wymaga zatwierdzenia</span>
+                    <span class="agent-body">Zapis do Package.swift?</span>
+                  </div>
+                  <div class="agent-actions">
+                    <button type="button" class="deny" data-agent-decide="deny">Odrzuć</button>
+                    <button type="button" class="allow" data-agent-decide="allow">Zezwól</button>
+                  </div>
+                </div>
+                <div class="agent-row agent-cursor">
+                  <span class="agent-avatar" aria-hidden="true">C</span>
+                  <div class="agent-copy">
+                    <span class="agent-title">Cursor</span>
+                    <span class="agent-phase">Wymaga zatwierdzenia</span>
+                    <span class="agent-body">Edycja index.html</span>
+                  </div>
+                  <span class="agent-jump" title="Przejdź do Cursor" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg></span>
+                </div>
+              </div>
+            </div>
+                    <div class="notch-panel" role="tabpanel" id="demo-panel-mirror" data-module-panel="mirror" aria-labelledby="demo-tab-mirror" hidden>
+                      <div class="notch-ui">
+                        <div class="mirror-frame" aria-hidden="true">
+                  <svg class="mirror-person" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="80" cy="118" rx="54" ry="14" fill="#000" opacity="0.22"/>
+                    <path d="M32 120c4-28 22-44 48-44s44 16 48 44" fill="#5B7FFF"/>
+                    <path d="M40 120c3-22 18-34 40-34s37 12 40 34" fill="#7C9AFF"/>
+                    <circle cx="80" cy="48" r="28" fill="#F0C7A8"/>
+                    <path d="M52 44c2-22 14-34 28-34s26 12 28 34c-6-10-16-16-28-16S58 34 52 44Z" fill="#3D2A1F"/>
+                    <path d="M54 38c8-14 20-20 26-20 4 0 8 1 12 4-10 2-18 8-24 16-5 0-10 0-14 0Z" fill="#2A1C14"/>
+                    <ellipse cx="69" cy="50" rx="3.2" ry="3.6" fill="#2A2118"/>
+                    <ellipse cx="91" cy="50" rx="3.2" ry="3.6" fill="#2A2118"/>
+                    <circle cx="70.2" cy="49" r="1" fill="#fff" opacity="0.85"/>
+                    <circle cx="92.2" cy="49" r="1" fill="#fff" opacity="0.85"/>
+                    <path d="M74 60c2.5 3.5 9.5 3.5 12 0" stroke="#C47A6A" stroke-width="2" stroke-linecap="round"/>
+                    <ellipse cx="62" cy="56" rx="5" ry="3" fill="#E8A090" opacity="0.55"/>
+                    <ellipse cx="98" cy="56" rx="5" ry="3" fill="#E8A090" opacity="0.55"/>
+                    <path d="M66 42c3-3 7-4 10-3" stroke="#3D2A1F" stroke-width="1.6" stroke-linecap="round"/>
+                    <path d="M84 39c3-1 7 0 10 3" stroke="#3D2A1F" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <span class="mirror-live"><i></i>Na żywo</span>
+                </div>
+                      </div>
+                    </div>
+                  </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="notch-demo-chips" role="tablist" aria-label="Moduły NotchFlow"><button type="button" class="notch-demo-chip is-active" role="tab" aria-selected="true" data-module-chip="media" data-module="media">Muzyka</button><button type="button" class="notch-demo-chip" role="tab" aria-selected="false" data-module-chip="calendar" data-module="calendar">Kalendarz</button><button type="button" class="notch-demo-chip" role="tab" aria-selected="false" data-module-chip="shelf" data-module="shelf">Półka</button><button type="button" class="notch-demo-chip" role="tab" aria-selected="false" data-module-chip="focus" data-module="focus">Minutnik</button><button type="button" class="notch-demo-chip" role="tab" aria-selected="false" data-module-chip="notes" data-module="notes">Notatki</button><button type="button" class="notch-demo-chip" role="tab" aria-selected="false" data-module-chip="clipboard" data-module="clipboard">Schowek</button><button type="button" class="notch-demo-chip" role="tab" aria-selected="false" data-module-chip="agents" data-module="agents">Agenci</button><button type="button" class="notch-demo-chip" role="tab" aria-selected="false" data-module-chip="mirror" data-module="mirror">Lustro</button></div>
+                <p class="notch-demo-hint">Najedź na notcha, żeby rozwinąć, potem wybierz moduł.</p>
+              </div>
       </div>
     </section>
+
 
     <section class="section" id="why">
       <div class="container split-grid">
@@ -369,7 +733,7 @@
         <div class="trust-grid">
           <div class="trust-card">
             <h3>Bez telemetrii</h3>
-            <p>v1.0 nic nie zbiera. Sieć tylko do walidacji licencji i aktualizacji.</p>
+            <p>v1.0 nic nie zbiera. Sieć do licencji, aktualizacji i opcjonalnych limitów Claude/Codex.</p>
           </div>
           <div class="trust-card">
             <h3>Schowek opcjonalny</h3>
@@ -458,7 +822,7 @@
           </div>
           <div class="faq-item">
             <h3>Czy NotchFlow zbiera moje dane?</h3>
-            <p>Nie. Wersja 1.0 nie wysyła żadnej telemetrii. Sieć jest używana wyłącznie do sprawdzania aktualizacji i walidacji licencji premium.</p>
+            <p>Nie. Wersja 1.0 nie wysyła żadnej telemetrii. Sieć służy do sprawdzania aktualizacji, walidacji licencji premium, opcjonalnego tekstu piosenek oraz — przy addonie Agents — limitów Claude Code / Codex u tych dostawców.</p>
           </div>
           <div class="faq-item">
             <h3>Czy mogę zbudować aplikację samodzielnie?</h3>
@@ -478,7 +842,7 @@
         <p>Otwórz DMG i przeciągnij NotchFlow na folder Aplikacje. Bez skryptów w Terminalu, bez obchodzenia kwarantanny.</p>
         <div class="cta-actions">
           <a class="btn btn-primary btn-lg" href="https://github.com/Tymcio/notchflow/releases/latest">Pobierz NotchFlow za darmo</a>
-          <a class="btn btn-ghost btn-lg" href="#features">Zobacz funkcje</a>
+          <a class="btn btn-ghost btn-lg" href="#demo">Wypróbuj demo</a>
         </div>
         <p class="cta-fineprint">Wymaga macOS 14.0 lub nowszego · Podpisane i notaryzowane · <code>spctl -a -vv /Applications/NotchFlow.app</code></p>
       </div>
@@ -502,7 +866,7 @@
         <div class="footer-col">
           <h4>Produkt</h4>
           <a href="#features">Funkcje</a>
-          <a href="#screenshots">Zrzuty ekranu</a>
+          <a href="#demo">Demo</a>
           <a href="pricing/">Cennik</a>
           <a href="https://github.com/Tymcio/notchflow/releases">Aktualizacje</a>
         </div>
@@ -526,8 +890,9 @@
     </div>
   </footer>
 
-  <script src="../checkout-urls.js?v=20260714-2002"></script>
-  <script src="../site.js?v=20260714-2002"></script>
-  <script src="../analytics.js?v=20260714-2002"></script>
+  <script src="../checkout-urls.js?v=20260719-demo12"></script>
+  <script src="../notch-demo.js?v=20260719-demo12"></script>
+  <script src="../site.js?v=20260719-demo12"></script>
+  <script src="../analytics.js?v=20260719-demo12"></script>
 </body>
 </html>

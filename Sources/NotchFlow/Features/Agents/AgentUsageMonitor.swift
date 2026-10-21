@@ -83,12 +83,12 @@ final class AgentUsageMonitor {
     private func refreshClaude(force: Bool) async {
         guard shouldFetch(.claude, current: claude, force: force, hasCredentials: AgentUsageClient.hasClaudeCredentials) else {
             if claude == nil, !AgentUsageClient.hasClaudeCredentials {
-                claude = signedOutSnapshot(agent: .claude)
+                claude = statusSnapshot(agent: .claude, status: .signedOut)
             }
             return
         }
         do {
-            claude = try await AgentUsageClient.fetchClaude()
+            claude = try await AgentUsageClient.fetchClaude(allowKeychainPrompt: force)
             nextFetchAllowedAt[.claude] = Date().addingTimeInterval(cacheTTL)
         } catch let error as AgentUsageClient.FetchError {
             apply(error, to: .claude, current: &claude)
@@ -100,7 +100,7 @@ final class AgentUsageMonitor {
     private func refreshCodex(force: Bool) async {
         guard shouldFetch(.codex, current: codex, force: force, hasCredentials: AgentUsageClient.hasCodexCredentials) else {
             if codex == nil, !AgentUsageClient.hasCodexCredentials {
-                codex = signedOutSnapshot(agent: .codex)
+                codex = statusSnapshot(agent: .codex, status: .signedOut)
             }
             return
         }
@@ -138,7 +138,13 @@ final class AgentUsageMonitor {
     ) {
         switch error {
         case .signedOut:
-            current = signedOutSnapshot(agent: agent)
+            current = statusSnapshot(agent: agent, status: .signedOut)
+            nextFetchAllowedAt[agent] = Date().addingTimeInterval(cacheTTL)
+        case .needsKeychainAccess:
+            current = statusSnapshot(agent: agent, status: .needsKeychainAccess)
+            nextFetchAllowedAt[agent] = Date().addingTimeInterval(30)
+        case .loginExpired:
+            current = statusSnapshot(agent: agent, status: .loginExpired)
             nextFetchAllowedAt[agent] = Date().addingTimeInterval(cacheTTL)
         case .rateLimited(let retryAfter):
             if var existing = current, existing.hasMeters {
@@ -174,7 +180,7 @@ final class AgentUsageMonitor {
         }
     }
 
-    private func signedOutSnapshot(agent: AgentKind) -> AgentUsageSnapshot {
+    private func statusSnapshot(agent: AgentKind, status: AgentUsageStatus) -> AgentUsageSnapshot {
         AgentUsageSnapshot(
             agent: agent,
             planName: nil,
@@ -182,7 +188,7 @@ final class AgentUsageMonitor {
             sevenDay: nil,
             extra: nil,
             fetchedAt: Date(),
-            status: .signedOut
+            status: status
         )
     }
 }

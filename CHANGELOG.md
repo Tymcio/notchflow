@@ -2,6 +2,13 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.37] - 2026-10-21
+
+### Added
+
+- Usage meters read the Claude Desktop login already on this Mac when Claude Code has no CLI credential file
+- Homepage interactive notch demo
+
 ## [1.0.36] - 2026-08-19
 
 ### Added

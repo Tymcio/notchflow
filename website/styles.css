@@ -474,6 +474,14 @@ a:hover { color: var(--accent-hover); }
     max-width: 34rem;
     padding-right: 1.5rem;
     padding-top: 1.5rem;
+    /* Let clicks reach the overlapping hero demo; restore on controls. */
+    pointer-events: none;
+  }
+
+  .hero-copy a,
+  .hero-copy .hero-cta,
+  .hero-copy .hero-badge {
+    pointer-events: auto;
   }
 }
 
@@ -573,31 +581,36 @@ a:hover { color: var(--accent-hover); }
   height: 0.9rem;
 }
 
-/* Hero MacBook */
+/* Hero notch demo */
 
-.hero-macbook {
+.hero-demo {
   position: relative;
-  width: min(100%, 400px);
+  width: min(100%, 420px);
   margin-inline: auto;
-  filter: drop-shadow(0 20px 40px rgba(15, 20, 25, 0.14));
+  z-index: 3;
+  pointer-events: auto;
 }
 
-.hero-macbook img {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: auto;
+.hero-demo::before {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 12%;
+  height: 55%;
+  background: radial-gradient(ellipse at center, rgba(91, 127, 255, 0.22), transparent 72%);
+  filter: blur(36px);
+  pointer-events: none;
+  z-index: 0;
 }
 
 @media (min-width: 960px) {
-  .hero-macbook {
+  .hero-demo {
     position: absolute;
-    top: 1.5rem;
-    right: -8vw;
-    width: clamp(600px, 58vw, 860px);
+    top: 1.25rem;
+    right: max(0px, calc((100% - var(--max-width)) / 2 - 2rem));
+    width: clamp(480px, 48vw, 640px);
     margin: 0;
-    transform: none;
   }
 }
 
@@ -610,27 +623,14 @@ a:hover { color: var(--accent-hover); }
     gap: 2rem;
   }
 
-  .hero-macbook::before {
+  .hero-demo::before {
     display: none;
   }
 }
 
-.hero-macbook::before {
-  content: "";
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 18%;
-  height: 55%;
-  background: radial-gradient(ellipse at center, rgba(91, 127, 255, 0.22), transparent 72%);
-  filter: blur(36px);
-  pointer-events: none;
-  z-index: 0;
-}
+/* Demo section */
 
-/* Screenshots showcase */
-
-.screenshots-section {
+.demo-section {
   padding: 5rem 0 5.5rem;
   background:
     radial-gradient(ellipse 80% 55% at 50% -5%, rgba(91, 127, 255, 0.14), transparent),
@@ -639,167 +639,1212 @@ a:hover { color: var(--accent-hover); }
   color: #f4f7fb;
 }
 
-.screenshots-section .section-header h2 {
+.demo-section .section-header h2 {
   color: #fff;
 }
 
-.screenshots-section .section-header p {
+.demo-section .section-header p {
   color: rgba(255, 255, 255, 0.52);
 }
 
-.screenshot-showcase {
-  max-width: 880px;
+.demo-section .notch-demo {
+  max-width: 720px;
   margin-inline: auto;
 }
 
-.screenshot-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.45rem;
-  margin-bottom: 2.25rem;
-  padding: 0.35rem;
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
+/* Interactive notch demo */
 
-.screenshot-tab {
-  padding: 0.45rem 0.95rem;
-  font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: 500;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.55);
-  background-color: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  overflow: hidden;
-  transition: color 0.2s, background 0.2s, border-color 0.2s, transform 0.15s;
-}
-
-.screenshot-tab:hover {
-  color: rgba(255, 255, 255, 0.88);
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.screenshot-tab:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px #111111, 0 0 0 4px #5B7FFF;
-}
-
-.screenshot-tab.is-active {
+.notch-demo {
   position: relative;
-  z-index: 0;
-  isolation: isolate;
-  color: #fff;
-  padding: calc(0.45rem + 1px) calc(0.95rem + 1px);
-  border: none;
-  background: transparent;
-  overflow: hidden;
-}
-
-.screenshot-tab.is-active::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--gradient);
-}
-
-.screenshot-stage {
-  position: relative;
-  min-height: 0;
-}
-
-.screenshot-stage::before {
-  content: "";
-  position: absolute;
-  left: 5%;
-  right: 5%;
-  top: 10%;
-  height: 70%;
-  background: radial-gradient(ellipse at center, rgba(91, 127, 255, 0.18), transparent 72%);
-  filter: blur(48px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.screenshot-panel {
-  margin: 0;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
   z-index: 1;
 }
 
-.screenshot-panel.is-active {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+.notch-demo-stage {
   position: relative;
-}
-
-.screenshot-panel[hidden] {
-  display: block;
-}
-
-.screenshot-frame {
-  position: relative;
-  border-radius: 20px;
   overflow: hidden;
+  border-radius: 18px;
+  min-height: clamp(220px, 42vw, 340px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    0 28px 72px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.07);
+    0 24px 64px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: #0c0e14;
+  contain: layout style;
 }
 
-.screenshot-frame::after {
-  content: "";
+.hero-demo .notch-demo-stage {
+  min-height: clamp(200px, 36vw, 300px);
+}
+
+.demo-section .notch-demo-stage {
+  min-height: clamp(280px, 48vw, 420px);
+}
+
+.notch-demo-wallpaper {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 80%, rgba(56, 120, 255, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 85% 30%, rgba(160, 90, 255, 0.28), transparent 50%),
+    linear-gradient(165deg, #1a2744 0%, #0d1528 45%, #152038 100%);
   pointer-events: none;
 }
 
-.screenshot-frame img {
+.notch-demo-menubar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: 1.55rem;
+  padding: 0 0.75rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.72);
+  pointer-events: none;
+  user-select: none;
+}
+
+.notch-demo-menubar .mb-apple {
+  display: flex;
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.notch-demo-menubar .mb-apple svg {
   width: 100%;
+  height: 100%;
+}
+
+.notch-demo-menubar .mb-item {
+  height: 0.35rem;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.notch-demo-menubar .mb-item.w-56 { width: 2.4rem; }
+.notch-demo-menubar .mb-item.w-32 { width: 1.4rem; }
+
+.notch-demo-menubar .mb-spacer {
+  flex: 1;
+}
+
+.notch-demo-menubar .mb-time {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.notch-island {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  width: min(92%, 400px);
+  color: #fff;
+  cursor: pointer;
+  transform-origin: top center;
+  transition: width 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.notch-island[data-state="idle"] {
+  width: auto;
+  min-width: 10.75rem;
+  background: #000;
+  border-radius: 0 0 16px 16px;
+}
+
+.notch-idle {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  height: 1.9rem;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  /* Hit target for hover-expand (island-only, not whole stage) */
+  pointer-events: auto;
+}
+
+/* Continuous black notch fused to the top edge (no transparent cutout gap) */
+.notch-idle-bar {
+  display: block;
+  width: 100%;
+  min-width: 10.75rem;
+  height: 100%;
+  background: #000;
+  border-radius: 0 0 16px 16px;
+  position: relative;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Concave “shoulders” where the notch meets the top bezel */
+.notch-idle-bar::before,
+.notch-idle-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  background: transparent;
+  pointer-events: none;
+}
+
+.notch-idle-bar::before {
+  left: -10px;
+  border-top-right-radius: 10px;
+  box-shadow: 5px 0 0 0 #000;
+}
+
+.notch-idle-bar::after {
+  right: -10px;
+  border-top-left-radius: 10px;
+  box-shadow: -5px 0 0 0 #000;
+}
+
+.notch-demo.is-expanded .notch-idle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.92);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.notch-expanded {
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  border-radius: 0 0 20px 20px;
+  border: 0.5px solid rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top center;
+  pointer-events: none;
+  visibility: hidden;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 1;
+  transition:
+    opacity 0.3s ease,
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.3s;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.notch-demo.is-expanded .notch-expanded {
+  position: relative;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
+  z-index: 2;
+}
+
+.notch-demo.is-expanded .notch-island {
+  cursor: default;
+  width: min(92%, 400px);
+}
+
+.notch-wing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 0.65rem;
+  background: #000;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  min-width: 3.4rem;
+}
+
+.notch-wing-left {
+  border-radius: 0 0 0 10px;
+  /* Square against the cutout — matches hardware notch join */
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.notch-wing-right {
+  border-radius: 0 0 10px 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.notch-wing .wing-art {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #e879f9, #7C5CFF);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+}
+
+.notch-wing .wing-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 0.85rem;
+}
+
+.notch-wing .wing-eq i {
+  width: 2.5px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.92);
+  animation: eq-bounce 1.1s ease-in-out infinite;
+}
+
+.notch-wing .wing-eq i:nth-child(1) { height: 40%; }
+.notch-wing .wing-eq i:nth-child(2) { height: 85%; animation-delay: 0.15s; }
+.notch-wing .wing-eq i:nth-child(3) { height: 55%; animation-delay: 0.3s; }
+.notch-wing .wing-eq i:nth-child(4) { height: 70%; animation-delay: 0.08s; }
+
+.notch-demo:not(.is-in-view) .wing-eq i,
+.notch-demo:not(.is-expanded) .notch-panel:not(.is-active) .eq i {
+  animation-play-state: paused;
+}
+
+.notch-cutout {
+  width: clamp(4.75rem, 14vw, 6.5rem);
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.notch-tabbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding: 0.45rem 0.55rem 0.2rem;
+  min-height: 2.15rem;
+  position: relative;
+  z-index: 3;
+}
+
+.notch-tab-group {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.notch-tab-spacer {
+  width: clamp(3.75rem, 12vw, 5.75rem);
+  flex-shrink: 0;
+  height: 1.15rem;
+  /* Keep the island visually continuous (no wallpaper “hole”) */
+  background: #000;
+  align-self: flex-start;
+  border-radius: 0 0 8px 8px;
+}
+
+.notch-demo-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.notch-demo-tab svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  display: block;
+}
+
+.notch-demo-tab:hover {
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.notch-demo-tab.is-active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.notch-demo-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #111, 0 0 0 4px #5B7FFF;
+}
+
+.notch-tab-group-trailing {
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 46%;
+}
+
+.notch-tab-group-trailing::-webkit-scrollbar {
+  display: none;
+}
+
+.notch-panels {
+  position: relative;
+  padding: 0.45rem 0.9rem 0.75rem;
+  min-height: 7.5rem;
+  z-index: 1;
+}
+
+.notch-panel {
+  margin: 0;
+  display: none;
+}
+
+.notch-panel.is-active {
+  display: block;
+}
+
+.notch-panel[hidden] {
+  display: none !important;
+}
+
+/* Panel content (inside island) */
+
+.notch-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.notch-ui .media-top {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.notch-ui .art {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e879f9, #7C5CFF);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.notch-ui .art svg { width: 1.1rem; height: 1.1rem; }
+
+.notch-ui .track-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.notch-ui .track-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notch-ui .track-artist {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.notch-ui .eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.notch-ui .eq i {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--gradient);
+  animation: eq-bounce 1.1s ease-in-out infinite;
+}
+
+.notch-ui .eq i:nth-child(1) { height: 45%; }
+.notch-ui .eq i:nth-child(2) { height: 90%; animation-delay: 0.2s; }
+.notch-ui .eq i:nth-child(3) { height: 60%; animation-delay: 0.4s; }
+.notch-ui .eq i:nth-child(4) { height: 80%; animation-delay: 0.1s; }
+
+.notch-panel:not(.is-active) .eq i {
+  animation-play-state: paused;
+}
+
+.notch-ui .scrubber {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.notch-ui .scrubber-fill {
+  display: block;
+  height: 100%;
+  width: 72%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.notch-ui .scrub-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.55rem;
+  font-family: var(--font-mono);
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: -0.25rem;
+}
+
+.notch-ui .transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+}
+
+.notch-ui .t-btn {
+  display: flex;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.notch-ui .t-btn svg { width: 1rem; height: 1rem; }
+
+.notch-ui .t-btn.play {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.notch-ui .cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notch-ui .cal-month {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.notch-ui .cal-chevron {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.notch-ui .cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.2rem;
+}
+
+.notch-ui .day-header {
+  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+  font-weight: 600;
+}
+
+.notch-ui .day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.58rem;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.notch-ui .day.muted { color: rgba(255, 255, 255, 0.25); }
+
+.notch-ui .day.today {
+  background: var(--gradient);
+  color: #fff;
+  font-weight: 700;
+}
+
+.notch-ui .shelf-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.notch-ui .shelf-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+
+.notch-ui .shelf-label svg { width: 0.75rem; height: 0.75rem; }
+
+.notch-ui .shelf-tiles {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.notch-ui .shelf-tile {
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 1;
+  max-width: 3.4rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  position: relative;
+}
+
+.notch-ui .shelf-tile .tile-glyph {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.notch-ui .shelf-tile .tile-ext {
+  font-size: 0.48rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.notch-ui .shelf-tile.add {
+  border-style: dashed;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.5rem;
+}
+
+.notch-ui .shelf-tile.add svg { width: 0.9rem; height: 0.9rem; }
+
+.notch-ui .shelf-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.62rem;
+}
+
+.notch-ui .shelf-drop svg { width: 0.85rem; height: 0.85rem; }
+
+.notch-ui .focus-picker {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.notch-ui .focus-picker button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 0.35rem 0.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.notch-ui .focus-picker button.is-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.notch-ui .focus-view {
+  text-align: center;
+  padding: 0.35rem 0 0.15rem;
+}
+
+.notch-ui .focus-view[hidden] {
+  display: none !important;
+}
+
+.notch-ui .focus-time {
+  font-size: 1.65rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.notch-ui .focus-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.notch-ui .focus-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.notch-ui .focus-actions span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+/* Focus time ruler (matches FocusTimeRuler in the app) */
+.notch-ui .focus-ruler,
+.showcase-ui.focus .focus-ruler {
+  position: relative;
+  height: 2.65rem;
+  margin-top: 0.45rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.5px solid rgba(91, 127, 255, 0.22);
+  overflow: hidden;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.notch-ui .focus-ruler-window,
+.showcase-ui.focus .focus-ruler-window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.notch-ui .focus-ruler-ticks,
+.showcase-ui.focus .focus-ruler-ticks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  will-change: transform;
+}
+
+.notch-ui .focus-ruler-tick,
+.showcase-ui.focus .focus-ruler-tick {
+  position: absolute;
+  top: 58%;
+  width: 0;
+  height: 4px;
+  margin-top: -2px;
+  border-left: 0.6px solid rgba(255, 255, 255, 0.28);
+  transform: translateX(-50%);
+}
+
+.notch-ui .focus-ruler-tick.is-major,
+.showcase-ui.focus .focus-ruler-tick.is-major {
+  height: 10px;
+  margin-top: -5px;
+  border-left-width: 1px;
+  border-left-color: rgba(255, 255, 255, 0.55);
+}
+
+.notch-ui .focus-ruler-tick i,
+.showcase-ui.focus .focus-ruler-tick i {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-style: normal;
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.notch-ui .focus-ruler-marker,
+.showcase-ui.focus .focus-ruler-marker {
+  position: absolute;
+  left: 50%;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 1.5px;
+  transform: translateX(-50%);
+  background: rgba(91, 127, 255, 0.9);
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(91, 127, 255, 0.45);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.notch-ui .focus-ruler-marker::before,
+.showcase-ui.focus .focus-ruler-marker::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  border-top: 4px solid #5B7FFF;
+}
+
+.notch-ui .focus-view[data-focus-view="stopwatch"] .focus-ruler,
+.notch-ui .focus-view[data-focus-view="pomodoro"] .focus-ruler {
+  display: none;
+}
+
+.notch-ui .agent-row,
+.notch-ui .note-row,
+.notch-ui .clip-row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.45rem 0.5rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.notch-ui .agent-row {
+  align-items: center;
+}
+
+.notch-ui .agent-row + .agent-row,
+.notch-ui .note-row + .note-row,
+.notch-ui .clip-row + .clip-row {
+  margin-top: 0.35rem;
+}
+
+.notch-ui.agents-ui {
+  gap: 0.4rem;
+}
+
+.notch-demo[data-module="agents"] .notch-demo-stage,
+.notch-demo[data-active-module="agents"] .notch-demo-stage {
+  min-height: clamp(260px, 48vw, 380px);
+}
+
+.hero-demo .notch-demo[data-active-module="agents"] .notch-demo-stage {
+  min-height: clamp(240px, 42vw, 340px);
+}
+
+.notch-ui .agent-cursor {
+  box-shadow: inset 0 0 0 1px rgba(255, 149, 0, 0.35);
+  background: rgba(255, 149, 0, 0.08);
+}
+
+.notch-ui .agent-avatar {
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #22d3ee, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.notch-ui .agent-avatar.claude {
+  background: linear-gradient(135deg, #d4a574, #c4784a);
+  font-size: 0.7rem;
+}
+
+.notch-ui .agent-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.notch-ui .agent-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.notch-ui .agent-phase {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: rgba(255, 180, 80, 0.9);
+  letter-spacing: 0.02em;
+}
+
+.notch-ui .agent-body {
+  display: block;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.58rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notch-ui .agent-jump {
+  flex-shrink: 0;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 8px;
+  background: rgba(255, 149, 0, 0.28);
+  color: #ffb340;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notch-ui .agent-jump svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.notch-ui .agent-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.notch-ui .agent-actions span,
+.notch-ui .agent-actions button,
+.showcase-ui .agent-actions span,
+.showcase-ui .agent-actions button {
+  padding: 0.28rem 0.5rem;
+  border-radius: 7px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  font: inherit;
+  font-size: 0.55rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.notch-ui .agent-actions .deny,
+.showcase-ui .agent-actions .deny {
+  background: rgba(255, 69, 58, 0.22);
+  color: #ff8a80;
+}
+
+.notch-ui .agent-actions .allow,
+.showcase-ui .agent-actions .allow {
+  background: rgba(52, 199, 89, 0.28);
+  color: #6eef8a;
+}
+
+.notch-ui .agent-actions .deny:hover {
+  background: rgba(255, 69, 58, 0.35);
+}
+
+.notch-ui .agent-actions .allow:hover {
+  background: rgba(52, 199, 89, 0.4);
+}
+
+.notch-ui .agent-row[data-agent-state="allowed"],
+.notch-ui .agent-row[data-agent-state="denied"] {
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.notch-ui .agent-row[data-agent-state="allowed"] {
+  background: rgba(52, 199, 89, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(52, 199, 89, 0.28);
+}
+
+.notch-ui .agent-row[data-agent-state="allowed"] .agent-phase {
+  color: rgba(110, 239, 138, 0.95);
+}
+
+.notch-ui .agent-row[data-agent-state="denied"] {
+  background: rgba(255, 69, 58, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 69, 58, 0.28);
+}
+
+.notch-ui .agent-row[data-agent-state="denied"] .agent-phase {
+  color: rgba(255, 138, 128, 0.95);
+}
+
+.notch-ui .agent-row[data-agent-state="allowed"] .agent-actions,
+.notch-ui .agent-row[data-agent-state="denied"] .agent-actions {
+  display: none;
+}
+
+.notch-ui .agent-row[data-agent-state="pending"] {
+  box-shadow: inset 0 0 0 1px rgba(255, 149, 0, 0.35);
+  background: rgba(255, 149, 0, 0.08);
+}
+
+.notch-ui .note-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background: #5B7FFF;
+  flex-shrink: 0;
+}
+
+.notch-ui .note-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.notch-ui .note-body {
+  display: block;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.6rem;
+  margin-top: 0.1rem;
+}
+
+.notch-ui .clip-search {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.62rem;
+  margin-bottom: 0.35rem;
+}
+
+.notch-ui .clip-search svg { width: 0.75rem; height: 0.75rem; }
+
+.notch-ui .clip-badge {
+  flex-shrink: 0;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  background: rgba(91, 127, 255, 0.25);
+  color: #9bb4ff;
+}
+
+.notch-ui .mirror-frame,
+.showcase-ui .mirror-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 38%, #3a4558 0%, #1c2433 70%, #121820 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.58rem;
+  font-weight: 600;
+}
+
+.notch-ui .mirror-person,
+.showcase-ui .mirror-person {
+  width: 72%;
+  max-width: 11rem;
   height: auto;
   display: block;
-  vertical-align: top;
+  margin-bottom: -0.15rem;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
 }
 
-.screenshot-panel figcaption {
-  margin-top: 1.35rem;
-  text-align: center;
-  font-size: 0.88rem;
+.notch-ui .mirror-live,
+.showcase-ui .mirror-live {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.notch-ui .mirror-live i,
+.showcase-ui .mirror-live i {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: #ff453a;
+  box-shadow: 0 0 6px rgba(255, 69, 58, 0.8);
+  animation: mirror-live-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes mirror-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notch-ui .mirror-live i,
+  .showcase-ui .mirror-live i {
+    animation: none;
+  }
+}
+
+.notch-demo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+}
+
+.notch-demo-chip {
+  padding: 0.4rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.78rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.42);
-  letter-spacing: 0.01em;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
 }
 
-@media (max-width: 640px) {
-  .screenshot-tabs {
+.hero-demo .notch-demo-chip {
+  color: var(--muted);
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.hero-demo .notch-demo-chip.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: var(--gradient);
+}
+
+.notch-demo-chip:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-demo .notch-demo-chip:hover {
+  color: var(--text);
+  background: var(--surface-2, var(--surface));
+}
+
+.notch-demo-chip.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: var(--gradient);
+}
+
+.notch-demo-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #111, 0 0 0 4px #5B7FFF;
+}
+
+.notch-demo-hint {
+  margin: 0.9rem 0 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.hero-demo .notch-demo-hint {
+  color: var(--muted);
+}
+
+.hero-demo .notch-demo-chips {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .hero-demo .notch-demo-hint {
+    display: block;
+  }
+}
+
+@media (max-width: 639px) {
+  .notch-demo-chips {
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
-    padding-bottom: 0.35rem;
-    margin-inline: -0.5rem;
-    padding-inline: 0.5rem;
+    margin-inline: -0.25rem;
+    padding-inline: 0.25rem;
+    padding-bottom: 0.25rem;
     scrollbar-width: none;
   }
 
-  .screenshot-tabs::-webkit-scrollbar {
+  .notch-demo-chips::-webkit-scrollbar {
     display: none;
   }
 
-  .screenshot-tab {
+  .notch-demo-chip {
     flex-shrink: 0;
+  }
+
+  .notch-tabbar {
+    padding-inline: 0.35rem;
+  }
+
+  .notch-demo-tab {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+
+  .notch-ui .focus-time {
+    font-size: 1.35rem;
+  }
+
+  .notch-island[data-state="idle"] {
+    width: auto;
+    min-width: 9.5rem;
+  }
+
+  .notch-idle-bar {
+    min-width: 9.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notch-idle,
+  .notch-expanded,
+  .notch-panel,
+  .notch-ui .eq i,
+  .notch-wing .wing-eq i {
+    transition: none !important;
+    animation: none !important;
   }
 }
 
@@ -1216,6 +2261,229 @@ a:hover { color: var(--accent-hover); }
   font-size: 0.68rem;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.42);
+}
+
+/* Focus / notes / clipboard / agents / mirror showcase cards */
+
+.showcase-ui.focus {
+  gap: 0.65rem;
+  justify-content: center;
+  text-align: center;
+}
+
+.showcase-ui.focus .focus-picker {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.showcase-ui.focus .focus-picker span {
+  flex: 1;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.35rem 0.25rem;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.showcase-ui.focus .focus-picker span.is-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.showcase-ui.focus .focus-time {
+  font-size: 1.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.showcase-ui.focus .focus-hint {
+  margin: 0;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.showcase-ui.focus .focus-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.showcase-ui.focus .focus-actions span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.showcase-ui.focus .focus-ruler {
+  cursor: default;
+  margin-top: 0.35rem;
+}
+
+.showcase-ui.notes,
+.showcase-ui.clipboard,
+.showcase-ui.agents {
+  gap: 0.45rem;
+  justify-content: center;
+}
+
+.showcase-ui .note-row,
+.showcase-ui .clip-row,
+.showcase-ui .agent-row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.5rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+}
+
+.showcase-ui .note-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #5B7FFF;
+  flex-shrink: 0;
+}
+
+.showcase-ui .note-title,
+.showcase-ui .agent-title {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.showcase-ui .note-body,
+.showcase-ui .agent-body {
+  display: block;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 0.1rem;
+}
+
+.showcase-ui .agent-phase {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: rgba(255, 180, 80, 0.9);
+}
+
+.showcase-ui .clip-search {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.68rem;
+}
+
+.showcase-ui .clip-search svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.showcase-ui .clip-badge {
+  flex-shrink: 0;
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  background: rgba(91, 127, 255, 0.25);
+  color: #9bb4ff;
+}
+
+.showcase-ui .agent-avatar {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #22d3ee, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.showcase-ui .agent-avatar.claude {
+  background: linear-gradient(135deg, #d4a574, #c4784a);
+  font-size: 0.7rem;
+}
+
+.showcase-ui .agent-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.showcase-ui .agent-cursor {
+  box-shadow: inset 0 0 0 1px rgba(255, 149, 0, 0.35);
+  background: rgba(255, 149, 0, 0.08);
+}
+
+.showcase-ui .agent-jump {
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 8px;
+  background: rgba(255, 149, 0, 0.28);
+  color: #ffb340;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.showcase-ui .agent-jump svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.showcase-ui .agent-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.showcase-ui .agent-actions span {
+  padding: 0.28rem 0.5rem;
+  border-radius: 7px;
+  font-size: 0.55rem;
+  font-weight: 700;
+}
+
+.showcase-ui .agent-actions .deny {
+  background: rgba(255, 69, 58, 0.22);
+  color: #ff8a80;
+}
+
+.showcase-ui .agent-actions .allow {
+  background: rgba(52, 199, 89, 0.28);
+  color: #6eef8a;
+}
+
+.showcase-ui.mirror {
+  justify-content: center;
+}
+
+.showcase-ui .mirror-frame {
+  aspect-ratio: 16 / 10;
 }
 
 /* Split section */

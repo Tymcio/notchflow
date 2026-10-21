@@ -7217,6 +7217,62 @@
         }
       }
     },
+    "Allow Keychain access for Claude, then tap refresh": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zezwól na dostęp do pęku kluczy Claude, potem stuknij odświeżanie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaube den Schlüsselbundzugriff für Claude und tippe dann auf Aktualisieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consenti l’accesso al Portachiavi per Claude, poi tocca aggiorna"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permite el acceso al Llavero para Claude y luego pulsa actualizar"
+          }
+        }
+      }
+    },
+    "Open Claude to refresh the login": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otwórz Claude, żeby odświeżyć logowanie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffne Claude, um die Anmeldung zu aktualisieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri Claude per aggiornare l’accesso"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre Claude para actualizar el inicio de sesión"
+          }
+        }
+      }
+    },
     "Sign in with Claude Code to see limits": {
       "localizations": {
         "pl": {

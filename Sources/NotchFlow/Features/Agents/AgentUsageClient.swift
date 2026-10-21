@@ -12,21 +12,63 @@ enum AgentUsageClient {
 
     enum FetchError: Error {
         case signedOut
+        case needsKeychainAccess
+        case loginExpired
         case rateLimited(retryAfter: TimeInterval?)
         case http(Int)
         case invalidResponse
     }
 
     static var hasClaudeCredentials: Bool {
-        claudeCredentialData() != nil
+        claudeCredentialData() != nil || ClaudeDesktopCredentials.hasCredentialMaterial
+    }
+
+    static func claudePlanName(subscriptionType: String?, rateLimitTier: String?) -> String? {
+        formatClaudePlan(subscriptionType: subscriptionType, rateLimitTier: rateLimitTier)
     }
 
     static var hasCodexCredentials: Bool {
         (try? loadCodexCredentials()) != nil
     }
 
-    static func fetchClaude() async throws -> AgentUsageSnapshot {
-        let creds = try loadClaudeCredentials()
+    static func fetchClaude(allowKeychainPrompt: Bool = false) async throws -> AgentUsageSnapshot {
+        if let creds = loadCLIClaudeCredentials() {
+            do {
+                return try await requestClaudeUsage(creds, source: "cli")
+            } catch FetchError.signedOut {
+                NotchFlowLog.agents.info("Claude CLI usage unauthorized, trying Desktop login")
+            }
+        }
+
+        let desktop: ClaudeDesktopCredentials.Login
+        do {
+            desktop = try ClaudeDesktopCredentials.load(allowKeychainPrompt: allowKeychainPrompt)
+        } catch let error as ClaudeDesktopCredentials.LoadError {
+            switch error {
+            case .needsKeychainAccess:
+                throw FetchError.needsKeychainAccess
+            case .expired:
+                throw FetchError.loginExpired
+            case .notFound:
+                throw FetchError.signedOut
+            case .unreadable:
+                throw FetchError.invalidResponse
+            }
+        } catch {
+            throw FetchError.invalidResponse
+        }
+
+        do {
+            return try await requestClaudeUsage(
+                ClaudeCredentials(accessToken: desktop.accessToken, planName: desktop.planName, expiresAt: nil),
+                source: "desktop"
+            )
+        } catch FetchError.signedOut {
+            throw FetchError.loginExpired
+        }
+    }
+
+    private static func requestClaudeUsage(_ creds: ClaudeCredentials, source: String) async throws -> AgentUsageSnapshot {
         var request = URLRequest(url: claudeUsageURL)
         request.httpMethod = "GET"
         request.timeoutInterval = 20
@@ -39,6 +81,9 @@ enum AgentUsageClient {
         var snapshot = AgentUsageParser.parseClaude(json)
         snapshot.planName = creds.planName
         snapshot.status = snapshot.hasMeters ? .ready : .unavailable
+        let fiveHour = snapshot.fiveHour.map { Int($0.remainingPercent.rounded()) } ?? -1
+        let sevenDay = snapshot.sevenDay.map { Int($0.remainingPercent.rounded()) } ?? -1
+        NotchFlowLog.agents.info("Claude usage source=\(source, privacy: .public) 5hLeft=\(fiveHour, privacy: .public) 7dLeft=\(sevenDay, privacy: .public)")
         return snapshot
     }
 
@@ -105,12 +150,16 @@ enum AgentUsageClient {
     private struct ClaudeCredentials {
         let accessToken: String
         let planName: String?
+        let expiresAt: Date?
     }
 
-    private static func loadClaudeCredentials() throws -> ClaudeCredentials {
+    private static func loadCLIClaudeCredentials() -> ClaudeCredentials? {
         guard let data = claudeCredentialData(),
               let creds = decodeClaudeCredentials(data) else {
-            throw FetchError.signedOut
+            return nil
+        }
+        if let expiresAt = creds.expiresAt, expiresAt <= Date() {
+            return nil
         }
         return creds
     }
@@ -168,7 +217,8 @@ enum AgentUsageClient {
             planName: formatClaudePlan(
                 subscriptionType: oauth["subscriptionType"] as? String,
                 rateLimitTier: oauth["rateLimitTier"] as? String
-            )
+            ),
+            expiresAt: AgentUsageParser.parseResetDate(oauth["expiresAt"])
         )
     }
 

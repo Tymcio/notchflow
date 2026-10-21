@@ -1,0 +1,19 @@
+---
+description: Zawsze przebuduj NotchFlow po zmianach w kodzie Swift
+alwaysApply: true
+---
+
+# Przebudowa po zmianach
+
+Użytkownik testuje aplikację uruchamianą z `build/NotchFlow.app` — samo `swift build` NIE aktualizuje tego bundle'a. Po każdej edycji plików źródłowych w tym projekcie (Swift, Package.swift, zasoby aplikacji) **zawsze przebuduj bundle i zrestartuj aplikację** przed zakończeniem odpowiedzi:
+
+```bash
+cd "/Users/marcin/Library/CloudStorage/SynologyDrive-MT/Drive/Z maczka/notchflow" && ./Scripts/compile_and_run.sh
+```
+
+Skrypt buduje release, pakuje `build/NotchFlow.app`, ubija starą instancję (`pkill`) i otwiera nową. Wymaga uruchomienia poza sandboxem (permissions: all).
+
+- Jeśli build się nie powiedzie, napraw błędy przed oddaniem pracy.
+- Gdy użytkownik prosi tylko o „zbuduj” / „przebuduj”, wykonaj powyższy skrypt i podaj wynik.
+- Nie pomijaj przebudowy nawet przy małych zmianach — użytkownik testuje binarkę lokalnie po każdej iteracji.
+- Do szybkiej weryfikacji kompilacji w trakcie pracy można używać `swift build`, ale na koniec odpowiedzi zawsze musi polecieć `compile_and_run.sh`.

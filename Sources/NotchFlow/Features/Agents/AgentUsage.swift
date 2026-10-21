@@ -24,6 +24,8 @@ struct AgentUsageWindow: Equatable, Sendable {
 enum AgentUsageStatus: Equatable, Sendable {
     case ready
     case signedOut
+    case needsKeychainAccess
+    case loginExpired
     case rateLimited
     case unavailable
 }

@@ -131,11 +131,11 @@
         return;
       }
 
-      const screenshotTab = event.target.closest(".screenshot-tab");
-      if (screenshotTab) {
+      const demoTab = event.target.closest("[data-module-tab], [data-module-chip]");
+      if (demoTab) {
         track("select_content", {
-          content_type: "screenshot_tab",
-          item_id: screenshotTab.getAttribute("data-shot") || screenshotTab.textContent?.trim(),
+          content_type: "demo_module",
+          item_id: demoTab.getAttribute("data-module") || demoTab.textContent?.trim(),
         });
         return;
       }

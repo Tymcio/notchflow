@@ -123,6 +123,10 @@ struct AgentUsageMetersView: View {
             snapshot.agent == .claude
                 ? loc("Sign in with Claude Code to see limits")
                 : loc("Sign in with Codex to see limits")
+        case .needsKeychainAccess:
+            loc("Allow Keychain access for Claude, then tap refresh")
+        case .loginExpired:
+            loc("Open Claude to refresh the login")
         case .rateLimited:
             loc("Usage paused — retrying shortly")
         case .unavailable, .ready:

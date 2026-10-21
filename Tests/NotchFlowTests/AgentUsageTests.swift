@@ -1,3 +1,4 @@
+import CommonCrypto
 import XCTest
 @testable import NotchFlow
 
@@ -72,7 +73,7 @@ final class AgentUsageParserTests: XCTestCase {
         XCTAssertEqual(snapshot.agent, .codex)
         XCTAssertEqual(snapshot.planName, "plus")
         XCTAssertEqual(snapshot.fiveHour?.usedPercent, 55)
-        XCTAssertEqual(snapshot.sevenDay?.usedPercent, 12.4, accuracy: 0.01)
+        XCTAssertEqual(snapshot.sevenDay?.usedPercent ?? -1, 12.4, accuracy: 0.01)
         XCTAssertEqual(snapshot.fiveHour?.remainingPercent, 45)
         XCTAssertNotNil(snapshot.fiveHour?.resetsAt)
         XCTAssertNotNil(snapshot.sevenDay?.resetsAt)
@@ -116,6 +117,130 @@ final class AgentUsageParserTests: XCTestCase {
         let parsed = AgentUsageClient.parseClaudeCredentialFile(json)
         XCTAssertEqual(parsed?.accessToken, "sk-ant-oat01-test")
         XCTAssertEqual(parsed?.planName, "Max 5×")
+    }
+
+    func testDesktopCachePrefersFullScopeProductionLogin() {
+        let organization = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let production = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+        let selection = ClaudeDesktopCredentials.select(
+            v2: [
+                cacheKey(organization: organization, scopes: "user:profile"):
+                    tokenEntry("stale-plan", expiresIn: 86_400, now: now),
+                cacheKey(organization: organization, clientID: production, scopes: "user:profile user:inference"):
+                    tokenEntry("current", expiresIn: 1_800, now: now, rateLimitTier: "default_claude_max_5x"),
+            ],
+            v1: nil,
+            organization: organization,
+            accountUUID: nil,
+            now: now
+        )
+        guard case .available(let login) = selection else {
+            return XCTFail("expected a desktop login")
+        }
+        XCTAssertEqual(login.accessToken, "current")
+        XCTAssertEqual(login.planName, "Max 5×")
+    }
+
+    func testDesktopAccountScopedEntryReplacesLegacyAndExpiredIsReported() {
+        let organization = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        let account = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let legacy = cacheKey(organization: organization)
+        let scoped = ClaudeDesktopCredentials.select(
+            v2: [
+                "acct:\(account)|\(legacy)": tokenEntry("desktop", expiresIn: 3_600, now: now),
+                legacy: tokenEntry("old", expiresIn: 9_000, now: now),
+            ],
+            v1: nil,
+            organization: organization,
+            accountUUID: account,
+            now: now
+        )
+        guard case .available(let login) = scoped else {
+            return XCTFail("expected the account-scoped token")
+        }
+        XCTAssertEqual(login.accessToken, "desktop")
+
+        let expired = ClaudeDesktopCredentials.select(
+            v2: [legacy: tokenEntry("gone", expiresIn: -1, now: now)],
+            v1: nil,
+            organization: organization,
+            accountUUID: nil,
+            now: now
+        )
+        XCTAssertEqual(expired, .expired)
+
+        let tombstone = ClaudeDesktopCredentials.select(
+            v2: [legacy: NSNull()],
+            v1: [legacy: tokenEntry("resurrected", expiresIn: 3_600, now: now)],
+            organization: organization,
+            accountUUID: nil,
+            now: now
+        )
+        XCTAssertEqual(tombstone, .notFound)
+    }
+
+    func testDesktopSafeStorageRoundTrip() throws {
+        let password = "fixture-safe-storage-password"
+        let key = try XCTUnwrap(ClaudeDesktopCredentials.deriveKey(password: password))
+        let plaintext = Data(#"{"token":"secret"}"#.utf8)
+        let encrypted = try sealDesktopValue(plaintext, key: key)
+        XCTAssertEqual(ClaudeDesktopCredentials.decrypt(encrypted, key: key), plaintext)
+        XCTAssertNil(ClaudeDesktopCredentials.decrypt(Data("v11bad".utf8), key: key))
+    }
+
+    private func cacheKey(
+        organization: String,
+        clientID: String = "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        scopes: String = "user:profile user:inference"
+    ) -> String {
+        "\(clientID):\(organization):https://api.anthropic.com:\(scopes)"
+    }
+
+    private func tokenEntry(
+        _ token: String,
+        expiresIn seconds: TimeInterval,
+        now: Date,
+        rateLimitTier: String = "default"
+    ) -> [String: Any] {
+        [
+            "token": token,
+            "expiresAt": (now.timeIntervalSince1970 + seconds) * 1000,
+            "subscriptionType": "max",
+            "rateLimitTier": rateLimitTier,
+        ]
+    }
+
+    private func sealDesktopValue(_ plaintext: Data, key: Data) throws -> Data {
+        let iv = Data(repeating: 0x20, count: kCCBlockSizeAES128)
+        var output = Data(count: plaintext.count + kCCBlockSizeAES128)
+        var outputLength = 0
+        let capacity = output.count
+        let status = output.withUnsafeMutableBytes { outputBytes in
+            plaintext.withUnsafeBytes { plaintextBytes in
+                key.withUnsafeBytes { keyBytes in
+                    iv.withUnsafeBytes { ivBytes in
+                        CCCrypt(
+                            CCOperation(kCCEncrypt),
+                            CCAlgorithm(kCCAlgorithmAES),
+                            CCOptions(kCCOptionPKCS7Padding),
+                            keyBytes.baseAddress,
+                            key.count,
+                            ivBytes.baseAddress,
+                            plaintextBytes.baseAddress,
+                            plaintext.count,
+                            outputBytes.baseAddress,
+                            capacity,
+                            &outputLength
+                        )
+                    }
+                }
+            }
+        }
+        XCTAssertTrue(status == kCCSuccess)
+        output.count = outputLength
+        return Data("v10".utf8) + output
     }
 
     func testCodexAuthParsing() {
