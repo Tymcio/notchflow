@@ -7385,6 +7385,62 @@
         }
       }
     },
+    "Own models": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Własne" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Eigene" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Propri" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Propios" } }
+      }
+    },
+    "External models": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Zewn." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Extern" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Esterni" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Externos" } }
+      }
+    },
+    "Week": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Tydzień" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Woche" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Settimana" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Semana" } }
+      }
+    },
+    "Month": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Miesiąc" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Monat" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Mese" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Mes" } }
+      }
+    },
+    "Included": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "W pakiecie" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Inklusive" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Incluso" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Incluido" } }
+      }
+    },
+    "Sign in with Cursor to see limits": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Zaloguj się w Cursorze, aby zobaczyć limity" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Melde dich bei Cursor an, um Limits zu sehen" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accedi a Cursor per vedere i limiti" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Inicia sesión en Cursor para ver los límites" } }
+      }
+    },
+    "Open Cursor to refresh the login": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Otwórz Cursor, żeby odświeżyć logowanie" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Öffne Cursor, um die Anmeldung zu aktualisieren" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Apri Cursor per aggiornare l’accesso" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Abre Cursor para actualizar el inicio de sesión" } }
+      }
+    },
     "Sign in with Codex to see limits": {
       "localizations": {
         "pl": {
@@ -7497,58 +7553,58 @@
         }
       }
     },
-    "Hooks stay on your Mac. Usage limits reuse the Claude Code / Codex login already on this Mac and ask those providers only. Cursor is not supported.": {
+    "Hooks stay on your Mac. Usage limits reuse the Claude, Codex, and Cursor logins already on this Mac and ask those providers only.": {
       "localizations": {
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hooki zostają na Macu. Limity zużycia używają logowania Claude Code / Codex już na tym Macu i pytają tylko tych dostawców. Cursor nie jest obsługiwany."
+            "value": "Hooki zostają na Macu. Limity zużycia używają logowania Claude, Codex i Cursor już na tym Macu i pytają tylko tych dostawców."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hooks bleiben auf dem Mac. Nutzungslimits verwenden die bereits vorhandene Claude-Code-/Codex-Anmeldung und fragen nur diese Anbieter. Cursor wird nicht unterstützt."
+            "value": "Hooks bleiben auf dem Mac. Nutzungslimits verwenden die bereits vorhandene Claude-, Codex- und Cursor-Anmeldung und fragen nur diese Anbieter."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gli hook restano sul Mac. I limiti di utilizzo riusano l’accesso Claude Code / Codex già presente e interrogano solo quei provider. Cursor non è supportato."
+            "value": "Gli hook restano sul Mac. I limiti di utilizzo riusano l’accesso Claude, Codex e Cursor già presente e interrogano solo quei provider."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los hooks se quedan en el Mac. Los límites reutilizan el inicio de sesión de Claude Code / Codex de este Mac y consultan solo a esos proveedores. Cursor no está admitido."
+            "value": "Los hooks se quedan en el Mac. Los límites reutilizan el inicio de sesión de Claude, Codex y Cursor de este Mac y consultan solo a esos proveedores."
           }
         }
       }
     },
-    "Network access is used for license verification, updates, optional lyrics, and Claude/Codex usage when the Agents addon is enabled.": {
+    "Network access is used for license verification, updates, optional lyrics, and Claude, Codex, and Cursor usage when the Agents addon is enabled.": {
       "localizations": {
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sieć służy do weryfikacji licencji, aktualizacji, opcjonalnego tekstu piosenek oraz zużycia Claude/Codex przy włączonym addonie Agents."
+            "value": "Sieć służy do weryfikacji licencji, aktualizacji, opcjonalnego tekstu piosenek oraz zużycia Claude, Codex i Cursor przy włączonym addonie Agents."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Netzwerkzugriff dient der Lizenzprüfung, Updates, optionalen Songtexten und der Claude-/Codex-Nutzung bei aktiviertem Agents-Addon."
+            "value": "Netzwerkzugriff dient der Lizenzprüfung, Updates, optionalen Songtexten und der Claude-, Codex- und Cursor-Nutzung bei aktiviertem Agents-Addon."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’accesso di rete serve per la verifica della licenza, gli aggiornamenti, i testi opzionali e l’utilizzo Claude/Codex con l’addon Agents attivo."
+            "value": "L’accesso di rete serve per la verifica della licenza, gli aggiornamenti, i testi opzionali e l’utilizzo di Claude, Codex e Cursor con l’addon Agents attivo."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El acceso de red se usa para verificar la licencia, actualizaciones, letras opcionales y el uso de Claude/Codex con el complemento Agents activado."
+            "value": "El acceso de red se usa para verificar la licencia, actualizaciones, letras opcionales y el uso de Claude, Codex y Cursor con el complemento Agents activado."
           }
         }
       }

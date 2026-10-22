@@ -138,7 +138,7 @@ Setup guide: [docs/raycast-integration.md](docs/raycast-integration.md)
 - No telemetry in v1.0
 - Clipboard monitoring is **opt-in** and stored locally
 - Local API binds to `127.0.0.1` only; token in Keychain
-- Network use limited to license validation (Polar), Sparkle updates, optional lyrics, and Claude/Codex usage when the Agents addon is enabled
+- Network use limited to license validation (Polar), Sparkle updates, optional lyrics, and Claude, Codex, and Cursor usage when the Agents addon is enabled
 - No Terminal install scripts — drag-to-Applications only
 
 Details: [website/privacy.html](website/privacy.html) · [website/security.html](website/security.html)

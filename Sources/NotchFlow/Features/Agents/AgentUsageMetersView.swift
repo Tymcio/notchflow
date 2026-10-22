@@ -38,7 +38,7 @@ struct AgentUsageMetersView: View {
     }
 
     private var displayedSnapshots: [AgentUsageSnapshot] {
-        let preferred: [AgentKind] = [.claude, .codex]
+        let preferred: [AgentKind] = [.claude, .codex, .cursor]
         return preferred.compactMap { kind in
             snapshots.first(where: { $0.agent == kind })
         }
@@ -63,14 +63,20 @@ struct AgentUsageMetersView: View {
             if snapshot.hasMeters {
                 TimelineView(.periodic(from: .now, by: 30)) { context in
                     VStack(alignment: .leading, spacing: 6) {
-                        if let fiveHour = snapshot.fiveHour {
-                            meterRow(label: loc("5h"), window: fiveHour, now: context.date)
-                        }
-                        if let sevenDay = snapshot.sevenDay {
-                            meterRow(label: loc("7d"), window: sevenDay, now: context.date)
-                        }
-                        if let extra = snapshot.extra {
-                            meterRow(label: loc("Extra"), window: extra, now: context.date)
+                        if snapshot.meters.isEmpty {
+                            if let fiveHour = snapshot.fiveHour {
+                                meterRow(label: loc("5h"), window: fiveHour, now: context.date)
+                            }
+                            if let sevenDay = snapshot.sevenDay {
+                                meterRow(label: loc("7d"), window: sevenDay, now: context.date)
+                            }
+                            if let extra = snapshot.extra {
+                                meterRow(label: loc("Extra"), window: extra, now: context.date)
+                            }
+                        } else {
+                            ForEach(snapshot.meters, id: \.label) { meter in
+                                meterRow(label: loc(meter.label), window: meter.window, now: context.date)
+                            }
                         }
                     }
                 }
@@ -140,13 +146,20 @@ struct AgentUsageMetersView: View {
     private func statusCopy(_ snapshot: AgentUsageSnapshot) -> String {
         switch snapshot.status {
         case .signedOut:
-            snapshot.agent == .claude
-                ? loc("Sign in with Claude Code to see limits")
-                : loc("Sign in with Codex to see limits")
+            switch snapshot.agent {
+            case .claude:
+                loc("Sign in with Claude Code to see limits")
+            case .cursor:
+                loc("Sign in with Cursor to see limits")
+            default:
+                loc("Sign in with Codex to see limits")
+            }
         case .needsKeychainAccess:
             loc("Allow Keychain access for Claude, then tap refresh")
         case .loginExpired:
-            loc("Open Claude to refresh the login")
+            snapshot.agent == .cursor
+                ? loc("Open Cursor to refresh the login")
+                : loc("Open Claude to refresh the login")
         case .rateLimited:
             loc("Usage paused — retrying shortly")
         case .unavailable, .ready:

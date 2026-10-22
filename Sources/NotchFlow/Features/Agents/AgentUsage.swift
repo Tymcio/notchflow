@@ -30,23 +30,30 @@ enum AgentUsageStatus: Equatable, Sendable {
     case unavailable
 }
 
+struct AgentUsageMeter: Equatable, Sendable {
+    /// Localization key shown beside the bar.
+    var label: String
+    var window: AgentUsageWindow
+}
+
 struct AgentUsageSnapshot: Equatable, Sendable {
     var agent: AgentKind
     var planName: String?
     var fiveHour: AgentUsageWindow?
     var sevenDay: AgentUsageWindow?
     var extra: AgentUsageWindow?
+    /// Named meters for providers that are not 5-hour / 7-day windows, such as Cursor.
+    var meters: [AgentUsageMeter] = []
     var fetchedAt: Date
     var status: AgentUsageStatus
 
     var hasMeters: Bool {
-        fiveHour != nil || sevenDay != nil || extra != nil
+        fiveHour != nil || sevenDay != nil || extra != nil || !meters.isEmpty
     }
 
     /// The window closest to the cap — what you glance at in the idle wing.
     var tightestWindow: AgentUsageWindow? {
-        [fiveHour, sevenDay, extra]
-            .compactMap { $0 }
+        ([fiveHour, sevenDay, extra].compactMap { $0 } + meters.map(\.window))
             .max { $0.usedPercent < $1.usedPercent }
     }
 }
@@ -123,6 +130,38 @@ enum AgentUsageParser {
         )
     }
 
+    /// Legacy plans expose two monthly pools (Cursor models and third-party models).
+    /// The X Subscription exposes one weekly included pool. Weekly usage resets on
+    /// `includedUsageResetsAt`, which is not the monthly billing-cycle end.
+    static func parseCursor(
+        usage: [String: Any],
+        plan: [String: Any]?,
+        fetchedAt: Date = Date()
+    ) -> AgentUsageSnapshot {
+        let planInfo = dictionary(plan, "planInfo", "plan_info") ?? plan ?? [:]
+        let period = cursorPeriod(planInfo["includedUsagePeriod"] ?? planInfo["included_usage_period"])
+        let weeklyReset = parseResetDate(planInfo["includedUsageResetsAt"] ?? planInfo["included_usage_resets_at"])
+        let cycleEnd = parseResetDate(
+            planInfo["billingCycleEnd"]
+                ?? planInfo["billing_cycle_end"]
+                ?? usage["billingCycleEnd"]
+                ?? usage["billing_cycle_end"]
+        )
+        let planUsage = dictionary(usage, "planUsage", "plan_usage") ?? [:]
+        let reset = period == .weekly ? (weeklyReset ?? cycleEnd) : (cycleEnd ?? weeklyReset)
+        let meters = cursorMeters(period: period, planUsage: planUsage, resetsAt: reset)
+        return AgentUsageSnapshot(
+            agent: .cursor,
+            planName: stringValue(planInfo["planName"] ?? planInfo["plan_name"]),
+            fiveHour: nil,
+            sevenDay: nil,
+            extra: nil,
+            meters: meters,
+            fetchedAt: fetchedAt,
+            status: .ready
+        )
+    }
+
     static func idleHint(from snapshot: AgentUsageSnapshot?) -> AgentUsageIdleHint? {
         guard let snapshot, snapshot.status == .ready || snapshot.hasMeters,
               let window = snapshot.tightestWindow else { return nil }
@@ -155,6 +194,87 @@ enum AgentUsageParser {
         let basic = ISO8601DateFormatter()
         basic.formatOptions = [.withInternetDateTime]
         return basic.date(from: raw)
+    }
+
+    private enum CursorIncludedPeriod {
+        case monthly
+        case weekly
+        case unspecified
+    }
+
+    private static func cursorMeters(
+        period: CursorIncludedPeriod,
+        planUsage: [String: Any],
+        resetsAt: Date?
+    ) -> [AgentUsageMeter] {
+        if period == .weekly {
+            guard let used = cursorIncludedUsedPercent(planUsage) else { return [] }
+            return [AgentUsageMeter(label: "Week", window: AgentUsageWindow(usedPercent: used, resetsAt: resetsAt))]
+        }
+
+        let own = cursorPoolUsedPercent(
+            spend: coerceDouble(planUsage["autoSpend"] ?? planUsage["auto_spend"]),
+            limit: coerceDouble(planUsage["autoLimit"] ?? planUsage["auto_limit"]),
+            reportedPercent: coerceDouble(planUsage["autoPercentUsed"] ?? planUsage["auto_percent_used"])
+        )
+        let external = cursorPoolUsedPercent(
+            spend: coerceDouble(planUsage["apiSpend"] ?? planUsage["api_spend"]),
+            limit: coerceDouble(planUsage["apiLimit"] ?? planUsage["api_limit"]),
+            reportedPercent: coerceDouble(planUsage["apiPercentUsed"] ?? planUsage["api_percent_used"])
+        )
+        var meters: [AgentUsageMeter] = []
+        if let own {
+            meters.append(AgentUsageMeter(label: "Own models", window: AgentUsageWindow(usedPercent: own, resetsAt: resetsAt)))
+        }
+        if let external {
+            meters.append(AgentUsageMeter(label: "External models", window: AgentUsageWindow(usedPercent: external, resetsAt: resetsAt)))
+        }
+        if meters.isEmpty, let used = cursorIncludedUsedPercent(planUsage) {
+            let label = period == .monthly ? "Month" : "Included"
+            meters.append(AgentUsageMeter(label: label, window: AgentUsageWindow(usedPercent: used, resetsAt: resetsAt)))
+        }
+        return meters
+    }
+
+    /// Prefer spend ÷ limit. Reported percents on this payload have disagreed with the allowance.
+    private static func cursorPoolUsedPercent(spend: Double?, limit: Double?, reportedPercent: Double?) -> Double? {
+        if let limit, limit > 0, let spend {
+            return min(100, max(0, spend / limit * 100))
+        }
+        return coercePercent(reportedPercent)
+    }
+
+    private static func cursorIncludedUsedPercent(_ plan: [String: Any]) -> Double? {
+        let limit = coerceDouble(plan["limit"])
+        if let limit, limit > 0 {
+            if let remaining = coerceDouble(plan["remaining"]) {
+                return min(100, max(0, (limit - remaining) / limit * 100))
+            }
+            if let included = coerceDouble(plan["includedSpend"] ?? plan["included_spend"]) {
+                return min(100, max(0, included / limit * 100))
+            }
+        }
+        return coercePercent(plan["totalPercentUsed"] ?? plan["total_percent_used"])
+    }
+
+    private static func cursorPeriod(_ any: Any?) -> CursorIncludedPeriod {
+        if let number = coerceDouble(any) {
+            if number == 2 { return .weekly }
+            if number == 1 { return .monthly }
+            return .unspecified
+        }
+        guard let raw = (any as? String)?.lowercased() else { return .unspecified }
+        if raw.contains("week") { return .weekly }
+        if raw.contains("month") { return .monthly }
+        return .unspecified
+    }
+
+    private static func dictionary(_ json: [String: Any]?, _ keys: String...) -> [String: Any]? {
+        guard let json else { return nil }
+        for key in keys {
+            if let value = json[key] as? [String: Any] { return value }
+        }
+        return nil
     }
 
     private static func parseClaudeWindow(_ any: Any?) -> AgentUsageWindow? {

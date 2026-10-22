@@ -5,6 +5,7 @@ import Foundation
 final class AgentUsageMonitor {
     private(set) var claude: AgentUsageSnapshot?
     private(set) var codex: AgentUsageSnapshot?
+    private(set) var cursor: AgentUsageSnapshot?
     private(set) var isRefreshing = false
 
     var onChange: (() -> Void)?
@@ -18,13 +19,14 @@ final class AgentUsageMonitor {
     private let defaultBackoff: TimeInterval = 5 * 60
 
     var snapshots: [AgentUsageSnapshot] {
-        [claude, codex].compactMap { $0 }
+        [claude, codex, cursor].compactMap { $0 }
     }
 
     func idleHint(for agent: AgentKind) -> AgentUsageIdleHint? {
         switch agent {
         case .claude: AgentUsageParser.idleHint(from: claude)
         case .codex: AgentUsageParser.idleHint(from: codex)
+        case .cursor: AgentUsageParser.idleHint(from: cursor)
         default: nil
         }
     }
@@ -78,6 +80,7 @@ final class AgentUsageMonitor {
         }
         await refreshClaude(force: force)
         await refreshCodex(force: force)
+        await refreshCursor(force: force)
     }
 
     private func refreshClaude(force: Bool) async {
@@ -111,6 +114,23 @@ final class AgentUsageMonitor {
             apply(error, to: .codex, current: &codex)
         } catch {
             apply(.http(-1), to: .codex, current: &codex)
+        }
+    }
+
+    private func refreshCursor(force: Bool) async {
+        guard shouldFetch(.cursor, current: cursor, force: force, hasCredentials: AgentUsageClient.hasCursorCredentials) else {
+            if cursor == nil, !AgentUsageClient.hasCursorCredentials {
+                cursor = statusSnapshot(agent: .cursor, status: .signedOut)
+            }
+            return
+        }
+        do {
+            cursor = try await AgentUsageClient.fetchCursor()
+            nextFetchAllowedAt[.cursor] = Date().addingTimeInterval(cacheTTL)
+        } catch let error as AgentUsageClient.FetchError {
+            apply(error, to: .cursor, current: &cursor)
+        } catch {
+            apply(.http(-1), to: .cursor, current: &cursor)
         }
     }
 

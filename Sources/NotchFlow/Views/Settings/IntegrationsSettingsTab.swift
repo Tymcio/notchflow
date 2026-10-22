@@ -149,7 +149,7 @@ struct IntegrationsSettingsTab: View {
             } header: {
                 Text(loc("Agents addon"))
             } footer: {
-                Text(loc("Hooks stay on your Mac. Usage limits reuse the Claude Code / Codex login already on this Mac and ask those providers only. Cursor is not supported."))
+                Text(loc("Hooks stay on your Mac. Usage limits reuse the Claude, Codex, and Cursor logins already on this Mac and ask those providers only."))
                     .font(.caption)
             }
         }

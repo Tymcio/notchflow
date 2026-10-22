@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.39] - 2026-10-22
+
+### Added
+
+- Usage meters show Cursor's included allowance: two monthly pools on a legacy plan, or one weekly pool on the newer subscription
+
 ## [1.0.38] - 2026-10-22
 
 ### Added

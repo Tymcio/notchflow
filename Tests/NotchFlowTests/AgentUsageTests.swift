@@ -103,6 +103,75 @@ final class AgentUsageParserTests: XCTestCase {
         XCTAssertEqual(AgentUsageParser.idleHint(from: snapshot)?.remainingPercent, 19)
     }
 
+    func testCursorLegacyMonthlyPoolsPreferSpendOverReportedPercent() {
+        let usage: [String: Any] = [
+            "planUsage": [
+                "limit": 7000,
+                "remaining": 2000,
+                "totalPercentUsed": 3,
+                "autoSpend": 3500,
+                "autoLimit": 5000,
+                "apiSpend": 1500,
+                "apiLimit": 2000,
+                "autoPercentUsed": 3,
+                "apiPercentUsed": 1,
+            ],
+        ]
+        let plan: [String: Any] = [
+            "planInfo": [
+                "planName": "Pro+",
+                "includedUsagePeriod": "INCLUDED_USAGE_PERIOD_MONTHLY",
+                "billingCycleEnd": "1795000000000",
+            ],
+        ]
+        let snapshot = AgentUsageParser.parseCursor(usage: usage, plan: plan)
+        XCTAssertEqual(snapshot.planName, "Pro+")
+        XCTAssertEqual(snapshot.meters.map(\.label), ["Own models", "External models"])
+        XCTAssertEqual(snapshot.meters[0].window.usedPercent, 70, accuracy: 0.01)
+        XCTAssertEqual(snapshot.meters[1].window.usedPercent, 75, accuracy: 0.01)
+        XCTAssertEqual(snapshot.meters[0].window.resetsAt, Date(timeIntervalSince1970: 1_795_000_000))
+        XCTAssertEqual(snapshot.tightestWindow?.usedPercent ?? -1, 75, accuracy: 0.01)
+    }
+
+    func testCursorWeeklyPoolUsesAllowanceAndWeeklyReset() {
+        let usage: [String: Any] = [
+            "planUsage": [
+                "limit": 1000,
+                "remaining": 250,
+                "totalPercentUsed": 3,
+                "autoSpend": 100,
+                "autoLimit": 1000,
+                "apiSpend": 50,
+                "apiLimit": 1000,
+            ],
+        ]
+        let plan: [String: Any] = [
+            "planInfo": [
+                "planName": "Premium",
+                "includedUsagePeriod": 2,
+                "includedUsageResetsAt": "1793000000000",
+                "billingCycleEnd": "1799000000000",
+            ],
+        ]
+        let snapshot = AgentUsageParser.parseCursor(usage: usage, plan: plan)
+        XCTAssertEqual(snapshot.meters.map(\.label), ["Week"])
+        XCTAssertEqual(snapshot.meters[0].window.usedPercent, 75, accuracy: 0.01)
+        XCTAssertEqual(snapshot.meters[0].window.resetsAt, Date(timeIntervalSince1970: 1_793_000_000))
+    }
+
+    func testCursorTokenExpiryUsesJwtExp() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertTrue(AgentUsageClient.cursorTokenIsExpired(jwt(exp: 1_800_000_000), now: now))
+        XCTAssertFalse(AgentUsageClient.cursorTokenIsExpired(jwt(exp: 1_800_010_000), now: now))
+        XCTAssertFalse(AgentUsageClient.cursorTokenIsExpired("not-a-jwt", now: now))
+    }
+
+    private func jwt(exp: Int) -> String {
+        let header = Data(#"{"alg":"none"}"#.utf8).base64EncodedString()
+        let payload = Data("{\"exp\":\(exp)}".utf8).base64EncodedString()
+        return "\(header).\(payload).sig"
+    }
+
     func testResetCopyFormatsFiveHourAndWeeklyWindows() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         let english = Locale(identifier: "en_US")
