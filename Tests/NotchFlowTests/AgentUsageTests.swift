@@ -103,6 +103,26 @@ final class AgentUsageParserTests: XCTestCase {
         XCTAssertEqual(AgentUsageParser.idleHint(from: snapshot)?.remainingPercent, 19)
     }
 
+    func testResetCopyFormatsFiveHourAndWeeklyWindows() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let english = Locale(identifier: "en_US")
+        let polish = Locale(identifier: "pl_PL")
+        XCTAssertEqual(
+            AgentUsageResetCopy.duration(until: now.addingTimeInterval(90 * 60), now: now, locale: english),
+            "1 hr, 30 min"
+        )
+        XCTAssertEqual(
+            AgentUsageResetCopy.duration(until: now.addingTimeInterval(3 * 86_400 + 5 * 3_600), now: now, locale: polish),
+            "3 dni i 5 godz."
+        )
+        XCTAssertEqual(
+            AgentUsageResetCopy.duration(until: now.addingTimeInterval(12 * 60), now: now, locale: english),
+            "12 min"
+        )
+        XCTAssertNil(AgentUsageResetCopy.duration(until: now.addingTimeInterval(30), now: now, locale: english))
+        XCTAssertNil(AgentUsageResetCopy.duration(until: now.addingTimeInterval(-10), now: now, locale: english))
+    }
+
     func testPercentCoercionClampsAndAcceptsInts() {
         XCTAssertEqual(AgentUsageParser.coercePercent(120), 100)
         XCTAssertEqual(AgentUsageParser.coercePercent(-4), 0)

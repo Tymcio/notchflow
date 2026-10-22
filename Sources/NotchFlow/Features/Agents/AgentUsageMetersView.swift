@@ -61,14 +61,18 @@ struct AgentUsageMetersView: View {
             }
 
             if snapshot.hasMeters {
-                if let fiveHour = snapshot.fiveHour {
-                    meterRow(label: loc("5h"), window: fiveHour)
-                }
-                if let sevenDay = snapshot.sevenDay {
-                    meterRow(label: loc("7d"), window: sevenDay)
-                }
-                if let extra = snapshot.extra {
-                    meterRow(label: loc("Extra"), window: extra)
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    VStack(alignment: .leading, spacing: 6) {
+                        if let fiveHour = snapshot.fiveHour {
+                            meterRow(label: loc("5h"), window: fiveHour, now: context.date)
+                        }
+                        if let sevenDay = snapshot.sevenDay {
+                            meterRow(label: loc("7d"), window: sevenDay, now: context.date)
+                        }
+                        if let extra = snapshot.extra {
+                            meterRow(label: loc("Extra"), window: extra, now: context.date)
+                        }
+                    }
                 }
                 if snapshot.status == .rateLimited {
                     Text(loc("Usage paused — retrying shortly"))
@@ -89,32 +93,48 @@ struct AgentUsageMetersView: View {
         )
     }
 
-    private func meterRow(label: String, window: AgentUsageWindow) -> some View {
+    private func meterRow(label: String, window: AgentUsageWindow, now: Date) -> some View {
         let remaining = Int(window.remainingPercent.rounded())
-        return HStack(spacing: 8) {
-            Text(label)
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(IslandStyle.secondaryText)
-                .frame(width: 36, alignment: .leading)
+        let resetPhrase = window.resetsAt.map { AgentUsageResetCopy.phrase(until: $0, now: now) }
+        return VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 8) {
+                Text(label)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(IslandStyle.secondaryText)
+                    .fixedSize()
 
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.08))
-                    Capsule(style: .continuous)
-                        .fill(barColor(window.tightness))
-                        .frame(width: max(3, geo.size.width * CGFloat(window.remainingPercent / 100)))
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                        Capsule(style: .continuous)
+                            .fill(barColor(window.tightness))
+                            .frame(width: max(3, geo.size.width * CGFloat(window.remainingPercent / 100)))
+                    }
                 }
-            }
-            .frame(height: 5)
+                .frame(height: 5)
 
-            Text(locFormat("%lld%% left", remaining))
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(labelColor(window.tightness))
-                .frame(width: 58, alignment: .trailing)
+                Text(locFormat("%lld%% left", remaining))
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(labelColor(window.tightness))
+                    .fixedSize()
+            }
+
+            if let resetPhrase {
+                Text(resetPhrase)
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .foregroundStyle(IslandStyle.tertiaryText)
+                    .lineLimit(1)
+            }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(locFormat("%@ %lld percent left", label, remaining))
+        .accessibilityLabel(meterAccessibilityLabel(label: label, remaining: remaining, resetPhrase: resetPhrase))
+    }
+
+    private func meterAccessibilityLabel(label: String, remaining: Int, resetPhrase: String?) -> String {
+        let quota = locFormat("%@ %lld percent left", label, remaining)
+        guard let resetPhrase else { return quota }
+        return quota + ". " + resetPhrase
     }
 
     private func statusCopy(_ snapshot: AgentUsageSnapshot) -> String {

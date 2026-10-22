@@ -56,6 +56,43 @@ struct AgentUsageIdleHint: Equatable, Sendable {
     var tightness: AgentUsageTightness
 }
 
+enum AgentUsageResetCopy {
+    /// Localized “resets in …” line for a usage window. Nil resets stay hidden by the caller.
+    static func phrase(until reset: Date, now: Date = Date()) -> String {
+        let locale = Locale(identifier: LanguageResolver.languageCode)
+        if let duration = duration(until: reset, now: now, locale: locale) {
+            return locFormat("Resets in %@", duration)
+        }
+        if reset.timeIntervalSince(now) <= 0 {
+            return loc("Resets now")
+        }
+        return loc("Resets in less than a minute")
+    }
+
+    static func duration(until reset: Date, now: Date, locale: Locale) -> String? {
+        let remaining = reset.timeIntervalSince(now)
+        guard remaining >= 60 else { return nil }
+        let formatter = DateComponentsFormatter()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = locale
+        formatter.calendar = calendar
+        formatter.unitsStyle = .short
+        formatter.maximumUnitCount = 2
+        formatter.zeroFormattingBehavior = .dropAll
+        formatter.allowedUnits = units(for: remaining)
+        let text = formatter.string(from: remaining)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let text, !text.isEmpty else { return nil }
+        return text
+    }
+
+    private static func units(for interval: TimeInterval) -> NSCalendar.Unit {
+        if interval >= 86_400 { return [.day, .hour] }
+        if interval >= 3_600 { return [.hour, .minute] }
+        return .minute
+    }
+}
+
 enum AgentUsageParser {
     static func parseClaude(_ json: [String: Any], fetchedAt: Date = Date()) -> AgentUsageSnapshot {
         AgentUsageSnapshot(
