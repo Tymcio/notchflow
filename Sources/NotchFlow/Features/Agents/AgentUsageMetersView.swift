@@ -38,7 +38,7 @@ struct AgentUsageMetersView: View {
     }
 
     private var displayedSnapshots: [AgentUsageSnapshot] {
-        let preferred: [AgentKind] = [.claude, .codex, .cursor]
+        let preferred: [AgentKind] = [.claude, .codex, .cursor, .grok, .grokbot]
         return preferred.compactMap { kind in
             snapshots.first(where: { $0.agent == kind })
         }
@@ -151,15 +151,33 @@ struct AgentUsageMetersView: View {
                 loc("Sign in with Claude Code to see limits")
             case .cursor:
                 loc("Sign in with Cursor to see limits")
+            case .grok:
+                loc("Sign in with Grok Build to see limits")
+            case .grokbot:
+                loc("Sign in with Grok Bot to see limits")
             default:
                 loc("Sign in with Codex to see limits")
             }
         case .needsKeychainAccess:
-            loc("Allow Keychain access for Claude, then tap refresh")
+            switch snapshot.agent {
+            case .cursor:
+                loc("Allow Keychain access for Cursor, then tap refresh")
+            case .grokbot:
+                loc("Allow Keychain access for Grok Bot, then tap refresh")
+            default:
+                loc("Allow Keychain access for Claude, then tap refresh")
+            }
         case .loginExpired:
-            snapshot.agent == .cursor
-                ? loc("Open Cursor to refresh the login")
-                : loc("Open Claude to refresh the login")
+            switch snapshot.agent {
+            case .cursor:
+                loc("Sign in again in Cursor to see limits")
+            case .grok:
+                loc("Run grok login to refresh the login")
+            case .grokbot:
+                loc("Open Grok Bot to refresh the login")
+            default:
+                loc("Open Claude to refresh the login")
+            }
         case .rateLimited:
             loc("Usage paused — retrying shortly")
         case .unavailable, .ready:

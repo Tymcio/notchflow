@@ -20,9 +20,10 @@ enum AgentHooksInstaller {
         var hookScriptInstalled: Bool
         var claudeHooksInstalled: Bool
         var cursorHooksInstalled: Bool
+        var grokHooksInstalled: Bool
 
         var isReady: Bool {
-            localAPIEnabled && hookScriptInstalled && (claudeHooksInstalled || cursorHooksInstalled)
+            localAPIEnabled && hookScriptInstalled && (claudeHooksInstalled || cursorHooksInstalled || grokHooksInstalled)
         }
     }
 
@@ -32,7 +33,8 @@ enum AgentHooksInstaller {
             hookScriptInstalled: FileManager.default.isExecutableFile(atPath: hookScriptURL.path)
                 || FileManager.default.fileExists(atPath: hookScriptURL.path),
             claudeHooksInstalled: fileContainsNotchFlowHook(at: claudeSettingsURL),
-            cursorHooksInstalled: fileContainsNotchFlowHook(at: cursorHooksURL)
+            cursorHooksInstalled: fileContainsNotchFlowHook(at: cursorHooksURL),
+            grokHooksInstalled: fileContainsNotchFlowHook(at: grokHooksURL)
         )
     }
 
@@ -46,6 +48,9 @@ enum AgentHooksInstaller {
         }
         if enabledAgents.contains(.cursor) {
             try installCursorHooks()
+        }
+        if enabledAgents.contains(.grok) {
+            try installGrokHooks()
         }
         try writeGenericConfigs(for: enabledAgents)
         try writeReadme(enabledAgents: enabledAgents)
@@ -81,6 +86,11 @@ enum AgentHooksInstaller {
     private static var cursorHooksURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".cursor/hooks.json")
+    }
+
+    private static var grokHooksURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".grok/hooks/notchflow.json")
     }
 
     // MARK: - Claude
@@ -176,6 +186,32 @@ enum AgentHooksInstaller {
         try SecureFileWriter.write(out, to: hooksURL)
     }
 
+    // MARK: - Grok Build
+
+    /// Monitor-only. Grok Build keeps its own permission prompts; PreToolUse is not installed.
+    private static func installGrokHooks() throws {
+        let hooksURL = grokHooksURL
+        try FileManager.default.createDirectory(
+            at: hooksURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        var hooks: [String: Any] = [:]
+        let events = ["SessionStart", "PostToolUse", "Stop", "SessionEnd", "StopFailure", "Notification"]
+        for event in events {
+            let command = "env NOTCHFLOW_AGENT=grok NOTCHFLOW_HOOK_EVENT=\(event) '\(hookScriptURL.path)'"
+            hooks[event] = [[
+                "hooks": [[
+                    "type": "command",
+                    "command": command,
+                    "timeout": 10,
+                ] as [String: Any]],
+            ] as [String: Any]]
+        }
+        let root: [String: Any] = ["hooks": hooks]
+        let out = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
+        try SecureFileWriter.write(out, to: hooksURL)
+    }
+
     // MARK: - Shared
 
     private static func scrubHooksFile(at url: URL, isCursorFormat: Bool) throws {
@@ -253,7 +289,7 @@ enum AgentHooksInstaller {
             encoding: .utf8
         )
 
-        for agent in agents where agent != .claude && agent != .cursor {
+        for agent in agents where agent != .claude && agent != .cursor && agent != .grok && agent != .grokbot {
             let note = """
             NotchFlow Agents — \(agent.displayName)
 
@@ -292,6 +328,13 @@ enum AgentHooksInstaller {
           Hooks merged into ~/.cursor/hooks.json (monitor only — session/tool status).
           Restart Cursor after install. Cursor keeps its own permission prompts.
           NotchFlow does not block beforeShellExecution / preToolUse.
+
+        Grok Build:
+          Monitor hooks written to ~/.grok/hooks/notchflow.json.
+          Restart the grok CLI. Permission prompts stay in the terminal.
+
+        Grok Bot:
+          Weekly usage is read from the Grok Bot desktop login. No hooks.
 
         Other agents:
           See *.txt notes in this folder, or POST /v1/agents/events

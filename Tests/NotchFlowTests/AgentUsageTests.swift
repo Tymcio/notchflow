@@ -159,11 +159,32 @@ final class AgentUsageParserTests: XCTestCase {
         XCTAssertEqual(snapshot.meters[0].window.resetsAt, Date(timeIntervalSince1970: 1_793_000_000))
     }
 
+    func testCursorSafeStorageTokenUnwraps() throws {
+        let password = "fixture-safe-storage-password"
+        let key = try XCTUnwrap(ClaudeDesktopCredentials.deriveKey(password: password))
+        let sealed = try sealDesktopValue(Data("access-token".utf8), key: key)
+        let stored = "cursor-safe-storage:v1:" + sealed.base64EncodedString()
+        XCTAssertEqual(AgentUsageClient.unwrapCursorSafeStorageToken(stored, password: password), "access-token")
+        let v11 = Data("v11".utf8) + sealed.dropFirst(3)
+        let storedV11 = "cursor-safe-storage:v1:" + v11.base64EncodedString()
+        XCTAssertEqual(AgentUsageClient.unwrapCursorSafeStorageToken(storedV11, password: password), "access-token")
+        XCTAssertEqual(AgentUsageClient.unwrapCursorSafeStorageToken("plain-token", password: password), "plain-token")
+        XCTAssertNil(AgentUsageClient.unwrapCursorSafeStorageToken("cursor-safe-storage:v1:%%%%", password: password))
+    }
+
     func testCursorTokenExpiryUsesJwtExp() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         XCTAssertTrue(AgentUsageClient.cursorTokenIsExpired(jwt(exp: 1_800_000_000), now: now))
         XCTAssertFalse(AgentUsageClient.cursorTokenIsExpired(jwt(exp: 1_800_010_000), now: now))
         XCTAssertFalse(AgentUsageClient.cursorTokenIsExpired("not-a-jwt", now: now))
+    }
+
+    func testPreferredCursorAccessSkipsExpiredToken() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let fresh = jwt(exp: 1_800_010_000)
+        let stale = jwt(exp: 1_700_000_000)
+        XCTAssertEqual(AgentUsageClient.preferredCursorAccessToken([stale, fresh], now: now), fresh)
+        XCTAssertNil(AgentUsageClient.preferredCursorAccessToken([stale], now: now))
     }
 
     private func jwt(exp: Int) -> String {
@@ -339,5 +360,84 @@ final class AgentUsageParserTests: XCTestCase {
         let parsed = AgentUsageClient.parseCodexAuthFile(json)
         XCTAssertEqual(parsed?.accessToken, "eyJtest")
         XCTAssertEqual(parsed?.accountID, "user-123")
+    }
+
+    func testGrokBuildUsesWeeklyPoolPercent() throws {
+        let json = try jsonObject("""
+        {"config":{"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-08T01:53:09.930537+00:00","end":"2026-08-15T01:53:09.930537+00:00"},"creditUsagePercent":46.0,"productUsage":[{"product":"GrokBuild","usagePercent":41.0},{"product":"GrokChat"}]}}
+        """)
+        let snapshot = AgentUsageParser.parseGrokBuild(json)
+        XCTAssertEqual(snapshot.agent, .grok)
+        XCTAssertEqual(snapshot.sevenDay?.usedPercent, 46)
+        XCTAssertEqual(snapshot.sevenDay?.remainingPercent, 54)
+        XCTAssertNotNil(snapshot.sevenDay?.resetsAt)
+        XCTAssertEqual(AgentUsageParser.idleHint(from: snapshot)?.remainingPercent, 54)
+        XCTAssertNil(snapshot.fiveHour)
+    }
+
+    func testGrokBuildMissingPercentOnWeeklyPeriodIsUnused() throws {
+        let json = try jsonObject("""
+        {"config":{"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-08T01:53:09Z","end":"2026-08-15T01:53:09Z"}}}
+        """)
+        let snapshot = AgentUsageParser.parseGrokBuild(json)
+        XCTAssertEqual(snapshot.sevenDay?.usedPercent, 0)
+        XCTAssertEqual(snapshot.sevenDay?.remainingPercent, 100)
+    }
+
+    func testGrokBuildFallsBackToProductSlice() throws {
+        let json = try jsonObject("""
+        {"config":{"productUsage":[{"product":"GrokBuild","usagePercent":41}]}}
+        """)
+        let snapshot = AgentUsageParser.parseGrokBuild(json)
+        XCTAssertEqual(snapshot.sevenDay?.usedPercent, 41)
+    }
+
+    func testGrokBuildWithoutWeeklyPeriodOrPercentHasNoMeter() throws {
+        let json = try jsonObject("""
+        {"config":{"currentPeriod":{"type":"USAGE_PERIOD_TYPE_DAILY","end":"2026-08-09T00:00:00Z"}}}
+        """)
+        let snapshot = AgentUsageParser.parseGrokBuild(json)
+        XCTAssertFalse(snapshot.hasMeters)
+    }
+
+    func testGrokBotWeeklyIncludedUsage() throws {
+        let json = try jsonObject("""
+        {"currentPeriodStart":"2026-09-11T18:43:19.645Z","nextResetTimestampUtc":"2026-09-18T18:43:19.645Z","usagePercent":12,"hasAvailableUsage":true,"hasNonZeroIncludedLimit":true,"grokPlanLabel":"Grok Bot Plan","cursorPlanName":"Pro"}
+        """)
+        let snapshot = AgentUsageParser.parseGrokBot(json)
+        XCTAssertEqual(snapshot.agent, .grokbot)
+        XCTAssertEqual(snapshot.planName, "Grok Bot Plan")
+        XCTAssertEqual(snapshot.sevenDay?.usedPercent, 12)
+        XCTAssertEqual(snapshot.sevenDay?.remainingPercent, 88)
+        XCTAssertNotNil(snapshot.sevenDay?.resetsAt)
+    }
+
+    func testGrokBotWithoutIncludedLimitHasNoMeter() throws {
+        let json = try jsonObject("""
+        {"hasNonZeroIncludedLimit":false,"nextResetTimestampUtc":"2026-09-18T18:43:19Z"}
+        """)
+        let snapshot = AgentUsageParser.parseGrokBot(json)
+        XCTAssertFalse(snapshot.hasMeters)
+    }
+
+    func testGrokBuildAuthPrefersUnexpiredOIDCKey() throws {
+        let future = try jsonObject("""
+        {"https://auth.x.ai::openid":{"key":"oidc-token","refresh_token":"r","expires_at":"2026-12-01T00:00:00Z"},"api":{"key":"xai-mgmt","expires_at":"2026-12-01T00:00:00Z"}}
+        """)
+        let now = Date(timeIntervalSince1970: 1_780_000_000)
+        XCTAssertEqual(AgentUsageClient.selectGrokBuildToken(future, now: now), "oidc-token")
+        XCTAssertEqual(AgentUsageClient.grokBuildLoginState(future, now: now), "ready")
+
+        let expired = try jsonObject("""
+        {"https://auth.x.ai::openid":{"key":"old","refresh_token":"r","expires_at":"2020-01-01T00:00:00Z"}}
+        """)
+        XCTAssertNil(AgentUsageClient.selectGrokBuildToken(expired, now: now))
+        XCTAssertEqual(AgentUsageClient.grokBuildLoginState(expired, now: now), "expired")
+        XCTAssertEqual(AgentUsageClient.grokBuildLoginState([:], now: now), "missing")
+    }
+
+    private func jsonObject(_ raw: String) throws -> [String: Any] {
+        let data = try XCTUnwrap(raw.data(using: .utf8))
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 }

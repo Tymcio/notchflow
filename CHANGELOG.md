@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.40] - 2026-10-29
+
+### Fixed
+
+- Cursor usage limits load again after signing in. Cursor 3.27 stores the login encrypted, and NotchFlow unlocks it from the Keychain instead of treating that sealed value as an expired session
+
 ## [1.0.39] - 2026-10-22
 
 ### Added

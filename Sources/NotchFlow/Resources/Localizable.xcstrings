@@ -7301,6 +7301,34 @@
         }
       }
     },
+    "Allow Keychain access for Cursor, then tap refresh": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zezwól na dostęp do pęku kluczy Cursor, potem stuknij odświeżanie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaube den Schlüsselbundzugriff für Cursor und tippe dann auf Aktualisieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consenti l’accesso al Portachiavi per Cursor, poi tocca aggiorna"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permite el acceso al Llavero para Cursor y luego pulsa actualizar"
+          }
+        }
+      }
+    },
     "Allow Keychain access for Claude, then tap refresh": {
       "localizations": {
         "pl": {
@@ -7439,6 +7467,14 @@
         "de": { "stringUnit": { "state": "translated", "value": "Öffne Cursor, um die Anmeldung zu aktualisieren" } },
         "it": { "stringUnit": { "state": "translated", "value": "Apri Cursor per aggiornare l’accesso" } },
         "es": { "stringUnit": { "state": "translated", "value": "Abre Cursor para actualizar el inicio de sesión" } }
+      }
+    },
+    "Sign in again in Cursor to see limits": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Zaloguj się ponownie w Cursorze, aby zobaczyć limity" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Melde dich in Cursor erneut an, um Limits zu sehen" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accedi di nuovo a Cursor per vedere i limiti" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Vuelve a iniciar sesión en Cursor para ver los límites" } }
       }
     },
     "Sign in with Codex to see limits": {
@@ -7607,6 +7643,86 @@
             "value": "El acceso de red se usa para verificar la licencia, actualizaciones, letras opcionales y el uso de Claude, Codex y Cursor con el complemento Agents activado."
           }
         }
+      }
+    },
+    "Sign in with Grok Build to see limits": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Zaloguj się w Grok Build, aby zobaczyć limity" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Melde dich bei Grok Build an, um Limits zu sehen" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accedi a Grok Build per vedere i limiti" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Inicia sesión en Grok Build para ver los límites" } }
+      }
+    },
+    "Sign in with Grok Bot to see limits": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Zaloguj się w Grok Bot, aby zobaczyć limity" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Melde dich bei Grok Bot an, um Limits zu sehen" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accedi a Grok Bot per vedere i limiti" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Inicia sesión en Grok Bot para ver los límites" } }
+      }
+    },
+    "Open Grok Bot to refresh the login": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Otwórz Grok Bot, żeby odświeżyć logowanie" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Öffne Grok Bot, um die Anmeldung zu aktualisieren" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Apri Grok Bot per aggiornare l’accesso" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Abre Grok Bot para actualizar el inicio de sesión" } }
+      }
+    },
+    "Run grok login to refresh the login": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Uruchom grok login, żeby odświeżyć logowanie" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Führe grok login aus, um die Anmeldung zu aktualisieren" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Esegui grok login per aggiornare l’accesso" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Ejecuta grok login para actualizar el inicio de sesión" } }
+      }
+    },
+    "Allow Keychain access for Grok Bot, then tap refresh": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Zezwól na dostęp do pęku kluczy Grok Bot, potem stuknij odświeżanie" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Erlaube den Schlüsselbundzugriff für Grok Bot und tippe dann auf Aktualisieren" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Consenti l’accesso al Portachiavi per Grok Bot, poi tocca aggiorna" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Permite el acceso al Llavero para Grok Bot y luego pulsa actualizar" } }
+      }
+    },
+    "Show Claude, Codex, Cursor, and Grok usage": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Pokazuj zużycie Claude, Codex, Cursor i Grok" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Claude-, Codex-, Cursor- und Grok-Nutzung anzeigen" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Mostra l’utilizzo di Claude, Codex, Cursor e Grok" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Mostrar uso de Claude, Codex, Cursor y Grok" } }
+      }
+    },
+    "Connect agents (Claude, Cursor, Grok)": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Połącz agentów (Claude, Cursor, Grok)" } },
+        "de": { "stringUnit": { "state": "translated", "value": "Agenten verbinden (Claude, Cursor, Grok)" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Collega gli agenti (Claude, Cursor, Grok)" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Conectar agentes (Claude, Cursor, Grok)" } }
+      }
+    },
+    "Grok Build: session status in the notch. Allow and Deny stay in the terminal. Restart the grok CLI after connecting. Grok Bot shows its weekly limit only.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Grok Build: status sesji w notchu. Pozwól i Odmów zostają w terminalu. Po połączeniu uruchom ponownie grok CLI. Grok Bot pokazuje tylko tygodniowy limit." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Grok Build: Sitzungsstatus in der Notch. Erlauben und Ablehnen bleiben im Terminal. Starte die grok-CLI nach dem Verbinden neu. Grok Bot zeigt nur das Wochenlimit." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Grok Build: stato della sessione nel notch. Consenti e Nega restano nel terminale. Riavvia la CLI grok dopo la connessione. Grok Bot mostra solo il limite settimanale." } },
+        "es": { "stringUnit": { "state": "translated", "value": "Grok Build: estado de la sesión en el notch. Permitir y Denegar se quedan en la terminal. Reinicia la CLI grok después de conectar. Grok Bot muestra solo el límite semanal." } }
+      }
+    },
+    "Hooks stay on your Mac. Usage limits reuse the Claude, Codex, Cursor, Grok Build, and Grok Bot logins already on this Mac and ask those providers only.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Hooki zostają na Macu. Limity zużycia używają logowania Claude, Codex, Cursor, Grok Build i Grok Bot już na tym Macu i pytają tylko tych dostawców." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Hooks bleiben auf dem Mac. Nutzungslimits verwenden die bereits vorhandene Anmeldung von Claude, Codex, Cursor, Grok Build und Grok Bot und fragen nur diese Anbieter." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Gli hook restano sul Mac. I limiti di utilizzo riusano l’accesso Claude, Codex, Cursor, Grok Build e Grok Bot già presente e interrogano solo quei provider." } },
+        "es": { "stringUnit": { "state": "translated", "value": "Los hooks se quedan en el Mac. Los límites reutilizan el inicio de sesión de Claude, Codex, Cursor, Grok Build y Grok Bot de este Mac y consultan solo a esos proveedores." } }
+      }
+    },
+    "Network access is used for license verification, updates, optional lyrics, and Claude, Codex, Cursor, Grok Build, and Grok Bot usage when the Agents addon is enabled.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "Sieć służy do weryfikacji licencji, aktualizacji, opcjonalnego tekstu piosenek oraz zużycia Claude, Codex, Cursor, Grok Build i Grok Bot przy włączonym addonie Agents." } },
+        "de": { "stringUnit": { "state": "translated", "value": "Netzwerkzugriff dient der Lizenzprüfung, Updates, optionalen Songtexten und der Nutzung von Claude, Codex, Cursor, Grok Build und Grok Bot bei aktiviertem Agents-Addon." } },
+        "it": { "stringUnit": { "state": "translated", "value": "L’accesso di rete serve per la verifica della licenza, gli aggiornamenti, i testi opzionali e l’utilizzo di Claude, Codex, Cursor, Grok Build e Grok Bot con l’addon Agents attivo." } },
+        "es": { "stringUnit": { "state": "translated", "value": "El acceso de red se usa para verificar la licencia, actualizaciones, letras opcionales y el uso de Claude, Codex, Cursor, Grok Build y Grok Bot con el complemento Agents activado." } }
       }
     }
   },

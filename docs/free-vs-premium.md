@@ -92,8 +92,9 @@ Separate Polar product — not included in Premium. Unlock with a `NOTCHFLOW_AGE
 | Allow / Deny permission prompts in the notch | — | ✓ |
 | Claude Code hooks (auto-install) | — | ✓ |
 | Codex, Cursor, OpenCode, Gemini CLI, Kimi, DeepSeek | — | ✓ (via hooks / Local API) |
+| Grok Build session status | — | ✓ (monitor hooks) |
 | Jump to terminal / IDE | — | ✓ (app activation) |
-| Claude, Codex, and Cursor remaining quota | — | ✓ |
+| Claude, Codex, Cursor, Grok Build, and Grok Bot remaining quota | — | ✓ |
 
 ## Planned features (roadmap)
 

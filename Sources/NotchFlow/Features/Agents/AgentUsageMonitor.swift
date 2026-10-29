@@ -6,6 +6,8 @@ final class AgentUsageMonitor {
     private(set) var claude: AgentUsageSnapshot?
     private(set) var codex: AgentUsageSnapshot?
     private(set) var cursor: AgentUsageSnapshot?
+    private(set) var grok: AgentUsageSnapshot?
+    private(set) var grokBot: AgentUsageSnapshot?
     private(set) var isRefreshing = false
 
     var onChange: (() -> Void)?
@@ -19,7 +21,7 @@ final class AgentUsageMonitor {
     private let defaultBackoff: TimeInterval = 5 * 60
 
     var snapshots: [AgentUsageSnapshot] {
-        [claude, codex, cursor].compactMap { $0 }
+        [claude, codex, cursor, grok, grokBot].compactMap { $0 }
     }
 
     func idleHint(for agent: AgentKind) -> AgentUsageIdleHint? {
@@ -27,6 +29,8 @@ final class AgentUsageMonitor {
         case .claude: AgentUsageParser.idleHint(from: claude)
         case .codex: AgentUsageParser.idleHint(from: codex)
         case .cursor: AgentUsageParser.idleHint(from: cursor)
+        case .grok: AgentUsageParser.idleHint(from: grok)
+        case .grokbot: AgentUsageParser.idleHint(from: grokBot)
         default: nil
         }
     }
@@ -81,6 +85,8 @@ final class AgentUsageMonitor {
         await refreshClaude(force: force)
         await refreshCodex(force: force)
         await refreshCursor(force: force)
+        await refreshGrokBuild(force: force)
+        await refreshGrokBot(force: force)
     }
 
     private func refreshClaude(force: Bool) async {
@@ -125,12 +131,46 @@ final class AgentUsageMonitor {
             return
         }
         do {
-            cursor = try await AgentUsageClient.fetchCursor()
+            cursor = try await AgentUsageClient.fetchCursor(allowKeychainPrompt: force)
             nextFetchAllowedAt[.cursor] = Date().addingTimeInterval(cacheTTL)
         } catch let error as AgentUsageClient.FetchError {
             apply(error, to: .cursor, current: &cursor)
         } catch {
             apply(.http(-1), to: .cursor, current: &cursor)
+        }
+    }
+
+    private func refreshGrokBuild(force: Bool) async {
+        guard shouldFetch(.grok, current: grok, force: force, hasCredentials: AgentUsageClient.hasGrokBuildCredentials) else {
+            if grok == nil, !AgentUsageClient.hasGrokBuildCredentials {
+                grok = statusSnapshot(agent: .grok, status: .signedOut)
+            }
+            return
+        }
+        do {
+            grok = try await AgentUsageClient.fetchGrokBuild()
+            nextFetchAllowedAt[.grok] = Date().addingTimeInterval(cacheTTL)
+        } catch let error as AgentUsageClient.FetchError {
+            apply(error, to: .grok, current: &grok)
+        } catch {
+            apply(.http(-1), to: .grok, current: &grok)
+        }
+    }
+
+    private func refreshGrokBot(force: Bool) async {
+        guard shouldFetch(.grokbot, current: grokBot, force: force, hasCredentials: AgentUsageClient.hasGrokBotCredentials) else {
+            if grokBot == nil, !AgentUsageClient.hasGrokBotCredentials {
+                grokBot = statusSnapshot(agent: .grokbot, status: .signedOut)
+            }
+            return
+        }
+        do {
+            grokBot = try await AgentUsageClient.fetchGrokBot(allowKeychainPrompt: force)
+            nextFetchAllowedAt[.grokbot] = Date().addingTimeInterval(cacheTTL)
+        } catch let error as AgentUsageClient.FetchError {
+            apply(error, to: .grokbot, current: &grokBot)
+        } catch {
+            apply(.http(-1), to: .grokbot, current: &grokBot)
         }
     }
 

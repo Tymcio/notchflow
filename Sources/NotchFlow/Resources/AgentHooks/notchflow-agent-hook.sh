@@ -30,11 +30,13 @@ except Exception:
 
 forced = os.environ.get("FORCED_EVENT") or ""
 hint = (os.environ.get("AGENT_HINT") or "").strip().lower()
-event = forced or d.get("hook_event_name") or d.get("event") or d.get("hook_event") or "update"
+event = forced or d.get("hook_event_name") or d.get("hookEventName") or d.get("event") or d.get("hook_event") or "update"
 
 # Detect agent from payload shape when env hint is missing.
 agent = hint
-if not agent:
+if os.environ.get("GROK_SESSION_ID") or os.environ.get("GROK_HOOK_EVENT"):
+    agent = "grok"
+elif not agent:
     if d.get("conversation_id") or d.get("generation_id") or forced in {
         "sessionStart", "sessionEnd", "beforeShellExecution", "afterShellExecution",
         "preToolUse", "postToolUse", "stop", "afterFileEdit",
@@ -48,12 +50,13 @@ if not agent:
 # Prefer stable conversation id. Never key sessions by generation_id alone
 # (changes every turn). Cursor `stop` often omits ids — leave empty then.
 session = (
-    d.get("conversation_id") or d.get("session_id") or d.get("sessionId") or ""
+    d.get("conversation_id") or d.get("session_id") or d.get("sessionId")
+    or os.environ.get("GROK_SESSION_ID") or ""
 )
 finish_all = False
 ev_l = str(event).lower()
 if not session:
-    if ev_l in {"stop", "sessionend", "session_end"}:
+    if ev_l in {"stop", "sessionend", "session_end", "stopfailure"}:
         finish_all = True
     else:
         session = d.get("generation_id") or ""
@@ -62,7 +65,7 @@ if not session:
             session = hashlib.sha1(f"{agent}:{event}:{raw}".encode()).hexdigest()[:12]
 
 tool = d.get("tool_name") or d.get("toolName") or d.get("tool_type") or d.get("tool") or ""
-cwd = d.get("cwd") or ""
+cwd = d.get("cwd") or d.get("workspaceRoot") or os.environ.get("GROK_WORKSPACE_ROOT") or ""
 wr = d.get("workspace_roots")
 if not cwd and isinstance(wr, list) and wr:
     cwd = wr[0]
@@ -116,7 +119,7 @@ NF_EVENT="progress"
 case "$EVENT_NAME" in
   PermissionRequest)
     # Claude Code only — Cursor must never block here.
-    if [[ "$AGENT" == "cursor" ]]; then
+    if [[ "$AGENT" == "cursor" || "$AGENT" == "grok" ]]; then
       NF_EVENT="tool"
     else
       NF_EVENT="permission"
@@ -142,7 +145,7 @@ case "$EVENT_NAME" in
     fi
     ;;
   SessionStart|sessionStart) NF_EVENT="session.started" ;;
-  SessionEnd|sessionEnd|Stop|stop) NF_EVENT="done" ;;
+  SessionEnd|sessionEnd|Stop|stop|StopFailure) NF_EVENT="done" ;;
   Notification) NF_EVENT="progress" ;;
   PostToolUse|postToolUse|afterShellExecution|afterFileEdit) NF_EVENT="tool" ;;
   *) NF_EVENT="progress" ;;
@@ -158,6 +161,8 @@ case "$AGENT" in
   gemini) TITLE="Gemini CLI" ;;
   kimi) TITLE="Kimi Code" ;;
   deepseek) TITLE="DeepSeek" ;;
+  grok) TITLE="Grok Build" ;;
+  grokbot) TITLE="Grok Bot" ;;
 esac
 
 DETAIL="$SUMMARY"
@@ -211,6 +216,11 @@ print(json.dumps({
   -H "Authorization: Bearer ${TOKEN}" \
   -H "Content-Type: application/json" \
   -d "$PAYLOAD" >/dev/null 2>&1 || true
+
+# Grok Build keeps its own prompts. Never wait, and never print an allow/deny decision.
+if [[ "$AGENT" == "grok" ]]; then
+  exit 0
+fi
 
 # Cursor (and any before* observe hooks): never block the agent loop.
 if [[ "$AGENT" == "cursor" ]]; then

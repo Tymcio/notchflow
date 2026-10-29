@@ -162,6 +162,49 @@ enum AgentUsageParser {
         )
     }
 
+    /// Grok Build's `/usage` weekly pool. `creditUsagePercent` is already consumed.
+    /// A missing percent is 0% only when the payload still describes a weekly period.
+    static func parseGrokBuild(_ json: [String: Any], fetchedAt: Date = Date()) -> AgentUsageSnapshot {
+        let config = dictionary(json, "config") ?? json
+        let period = dictionary(config, "currentPeriod", "current_period")
+        let reset = parseResetDate(period?["end"] ?? config["billingPeriodEnd"] ?? config["billing_period_end"])
+        var used = coercePercent(config["creditUsagePercent"] ?? config["credit_usage_percent"])
+        if used == nil {
+            used = grokBuildProductPercent(config["productUsage"] ?? config["product_usage"])
+        }
+        if used == nil, isWeeklyGrokPeriod(period) {
+            used = 0
+        }
+        return AgentUsageSnapshot(
+            agent: .grok,
+            planName: nil,
+            fiveHour: nil,
+            sevenDay: used.map { AgentUsageWindow(usedPercent: $0, resetsAt: reset) },
+            extra: nil,
+            fetchedAt: fetchedAt,
+            status: .ready
+        )
+    }
+
+    /// Grok Bot's weekly included pool from `GetSandUsageStatus`. `usagePercent` is already consumed.
+    static func parseGrokBot(_ json: [String: Any], fetchedAt: Date = Date()) -> AgentUsageSnapshot {
+        let allowanceFlag = json["hasNonZeroIncludedLimit"] ?? json["has_non_zero_included_limit"]
+        let allowanceDenied = allowanceFlag != nil && !boolValue(allowanceFlag)
+        let reported = coercePercent(json["usagePercent"] ?? json["usage_percent"])
+        let reset = parseResetDate(json["nextResetTimestampUtc"] ?? json["next_reset_timestamp_utc"])
+        let used: Double? = allowanceDenied ? nil : (reported ?? (reset == nil ? nil : 0))
+        let plan = stringValue(json["grokPlanLabel"] ?? json["grok_plan_label"])
+        return AgentUsageSnapshot(
+            agent: .grokbot,
+            planName: plan,
+            fiveHour: nil,
+            sevenDay: used.map { AgentUsageWindow(usedPercent: $0, resetsAt: reset) },
+            extra: nil,
+            fetchedAt: fetchedAt,
+            status: .ready
+        )
+    }
+
     static func idleHint(from snapshot: AgentUsageSnapshot?) -> AgentUsageIdleHint? {
         guard let snapshot, snapshot.status == .ready || snapshot.hasMeters,
               let window = snapshot.tightestWindow else { return nil }
@@ -191,9 +234,23 @@ enum AgentUsageParser {
         let fractional = ISO8601DateFormatter()
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = fractional.date(from: raw) { return date }
+        if let shortened = shortenFractionalSeconds(raw), let date = fractional.date(from: shortened) {
+            return date
+        }
         let basic = ISO8601DateFormatter()
         basic.formatOptions = [.withInternetDateTime]
         return basic.date(from: raw)
+    }
+
+    /// Foundation accepts three fractional digits. Grok sends six.
+    private static func shortenFractionalSeconds(_ raw: String) -> String? {
+        guard let dot = raw.firstIndex(of: ".") else { return nil }
+        let afterDot = raw.index(after: dot)
+        let rest = raw[afterDot...]
+        let digits = rest.prefix { $0.isNumber }
+        guard digits.count > 3 else { return nil }
+        let suffix = rest.dropFirst(digits.count)
+        return String(raw[..<afterDot]) + String(digits.prefix(3)) + suffix
     }
 
     private enum CursorIncludedPeriod {
@@ -267,6 +324,26 @@ enum AgentUsageParser {
         if raw.contains("week") { return .weekly }
         if raw.contains("month") { return .monthly }
         return .unspecified
+    }
+
+    private static func grokBuildProductPercent(_ any: Any?) -> Double? {
+        guard let products = any as? [Any] else { return nil }
+        for item in products {
+            guard let product = item as? [String: Any] else { continue }
+            let name = (product["product"] as? String)?.lowercased() ?? ""
+            guard name == "grokbuild" || name == "grok_build" else { continue }
+            if let percent = coercePercent(product["usagePercent"] ?? product["usage_percent"]) {
+                return percent
+            }
+        }
+        return nil
+    }
+
+    private static func isWeeklyGrokPeriod(_ period: [String: Any]?) -> Bool {
+        guard let period else { return false }
+        let type = ((period["type"] as? String) ?? "").uppercased()
+        guard type.contains("WEEKLY") else { return false }
+        return parseResetDate(period["start"]) != nil && parseResetDate(period["end"]) != nil
     }
 
     private static func dictionary(_ json: [String: Any]?, _ keys: String...) -> [String: Any]? {

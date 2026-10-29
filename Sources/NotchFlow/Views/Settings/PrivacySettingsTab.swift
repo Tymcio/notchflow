@@ -31,7 +31,7 @@ struct PrivacySettingsTab: View {
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
                     SettingsFooterCaption("NotchFlow does not collect telemetry in version 1.0.")
-                    SettingsFooterCaption("Network access is used for license verification, updates, optional lyrics, and Claude, Codex, and Cursor usage when the Agents addon is enabled.")
+                    SettingsFooterCaption("Network access is used for license verification, updates, optional lyrics, and Claude, Codex, Cursor, Grok Build, and Grok Bot usage when the Agents addon is enabled.")
                 }
             }
         }

@@ -9,6 +9,8 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
     case gemini
     case kimi
     case deepseek
+    case grok
+    case grokbot
 
     var id: String { rawValue }
 
@@ -21,6 +23,8 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case .gemini: "Gemini CLI"
         case .kimi: "Kimi Code"
         case .deepseek: "DeepSeek"
+        case .grok: "Grok Build"
+        case .grokbot: "Grok Bot"
         }
     }
 
@@ -34,6 +38,8 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case .gemini: "Gemini"
         case .kimi: "Kimi"
         case .deepseek: "DeepSeek"
+        case .grok: "Grok"
+        case .grokbot: "Grok Bot"
         }
     }
 
@@ -46,6 +52,8 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case .gemini: "sparkle"
         case .kimi: "moon.stars"
         case .deepseek: "waveform"
+        case .grok: "wand.and.stars"
+        case .grokbot: "desktopcomputer"
         }
     }
 
@@ -66,6 +74,10 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
             ["com.googlecode.iterm2", "com.apple.Terminal"]
         case .deepseek:
             ["com.googlecode.iterm2", "com.apple.Terminal"]
+        case .grok:
+            ["com.googlecode.iterm2", "com.apple.Terminal", "com.mitchellh.ghostty"]
+        case .grokbot:
+            ["com.anysphere.sand"]
         }
     }
 
@@ -80,6 +92,8 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case "gemini-cli", "antigravity": return .gemini
         case "kimi-code", "moonshot": return .kimi
         case "deep-seek", "deepseek-cli": return .deepseek
+        case "grok-build", "grok_build", "xai": return .grok
+        case "grok-bot", "grok_bot", "grokbot", "sand": return .grokbot
         default: return .claude
         }
     }

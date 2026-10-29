@@ -101,8 +101,11 @@ struct IntegrationsSettingsTab: View {
                     LabeledContent("Cursor") {
                         Text(agentsSetup.cursorHooksInstalled ? loc("Connected") : loc("Not connected"))
                     }
+                    LabeledContent("Grok Build") {
+                        Text(agentsSetup.grokHooksInstalled ? loc("Connected") : loc("Not connected"))
+                    }
 
-                    Button(isInstallingAgents ? loc("Connecting…") : loc("Connect agents (Claude + Cursor)")) {
+                    Button(isInstallingAgents ? loc("Connecting…") : loc("Connect agents (Claude, Cursor, Grok)")) {
                         installAgents()
                     }
                     .disabled(isInstallingAgents)
@@ -112,7 +115,7 @@ struct IntegrationsSettingsTab: View {
                         NSWorkspace.shared.activateFileViewerSelecting([url])
                     }
 
-                    Toggle(loc("Show Claude and Codex usage"), isOn: $appState.settings.agentUsagePollingEnabled)
+                    Toggle(loc("Show Claude, Codex, Cursor, and Grok usage"), isOn: $appState.settings.agentUsagePollingEnabled)
                         .onChange(of: appState.settings.agentUsagePollingEnabled) { _, _ in
                             appState.applyAgentUsagePolling()
                         }
@@ -132,6 +135,9 @@ struct IntegrationsSettingsTab: View {
                         Text(loc("Claude Code: Allow / Deny in the notch. Cursor: keeps its own Skip/Run — the notch pulses on likely consent moments; tap to jump (no auto-focus)."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        Text(loc("Grok Build: session status in the notch. Allow and Deny stay in the terminal. Restart the grok CLI after connecting. Grok Bot shows its weekly limit only."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.top, 4)
 
@@ -149,7 +155,7 @@ struct IntegrationsSettingsTab: View {
             } header: {
                 Text(loc("Agents addon"))
             } footer: {
-                Text(loc("Hooks stay on your Mac. Usage limits reuse the Claude, Codex, and Cursor logins already on this Mac and ask those providers only."))
+                Text(loc("Hooks stay on your Mac. Usage limits reuse the Claude, Codex, Cursor, Grok Build, and Grok Bot logins already on this Mac and ask those providers only."))
                     .font(.caption)
             }
         }
