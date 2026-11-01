@@ -2,6 +2,12 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.41] - 2026-11-01
+
+### Fixed
+
+- Claude usage no longer asks for the Keychain password on every action. The Claude Code login is read quietly, and macOS asks only when you refresh usage
+
 ## [1.0.40] - 2026-10-29
 
 ### Fixed

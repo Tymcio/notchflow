@@ -1,7 +1,6 @@
 import CommonCrypto
 import CryptoKit
 import Foundation
-import LocalAuthentication
 import Security
 import SQLite3
 
@@ -192,9 +191,7 @@ enum ClaudeDesktopCredentials {
             query[kSecAttrAccount as String] = account
         }
         if !allowPrompt {
-            let context = LAContext()
-            context.interactionNotAllowed = true
-            query[kSecUseAuthenticationContext as String] = context
+            KeychainAccessPrompt.suppress(in: &query)
         }
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)

@@ -90,8 +90,12 @@ final class AgentUsageMonitor {
     }
 
     private func refreshClaude(force: Bool) async {
-        guard shouldFetch(.claude, current: claude, force: force, hasCredentials: AgentUsageClient.hasClaudeCredentials) else {
-            if claude == nil, !AgentUsageClient.hasClaudeCredentials {
+        if !force, !isFetchDue(.claude, current: claude) {
+            return
+        }
+        let hasCredentials = AgentUsageClient.hasClaudeCredentials
+        guard hasCredentials else {
+            if claude == nil {
                 claude = statusSnapshot(agent: .claude, status: .signedOut)
             }
             return
@@ -172,6 +176,18 @@ final class AgentUsageMonitor {
         } catch {
             apply(.http(-1), to: .grokbot, current: &grokBot)
         }
+    }
+
+    /// False while a recent result or backoff is still in force. Checked before
+    /// any credential lookup so a Claude session tick cannot touch Keychain.
+    private func isFetchDue(_ agent: AgentKind, current: AgentUsageSnapshot?) -> Bool {
+        if let until = nextFetchAllowedAt[agent], until > Date() {
+            return false
+        }
+        if let current, current.hasMeters, Date().timeIntervalSince(current.fetchedAt) < cacheTTL {
+            return false
+        }
+        return true
     }
 
     private func shouldFetch(

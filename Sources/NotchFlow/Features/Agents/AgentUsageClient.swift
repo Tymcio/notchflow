@@ -1,11 +1,10 @@
 import CryptoKit
 import Foundation
-import LocalAuthentication
 import Security
 import SQLite3
 
 /// Reads the Claude Code / Codex login already on this Mac and asks the provider
-/// for 5-hour / 7-day usage. Tokens stay in memory for the request only.
+/// for 5-hour / 7-day usage. Tokens stay in memory.
 enum AgentUsageClient {
     private static let claudeUsageURL = URL(string: "https://api.anthropic.com/api/oauth/usage")!
     private static let claudeBeta = "oauth-2025-04-20"
@@ -22,7 +21,12 @@ enum AgentUsageClient {
     }
 
     static var hasClaudeCredentials: Bool {
-        claudeCredentialData() != nil || ClaudeDesktopCredentials.hasCredentialMaterial
+        switch cliClaudeCredentials(allowKeychainPrompt: false) {
+        case .ready, .needsKeychainAccess:
+            return true
+        case .missing:
+            return ClaudeDesktopCredentials.hasCredentialMaterial
+        }
     }
 
     static func claudePlanName(subscriptionType: String?, rateLimitTier: String?) -> String? {
@@ -34,11 +38,21 @@ enum AgentUsageClient {
     }
 
     static func fetchClaude(allowKeychainPrompt: Bool = false) async throws -> AgentUsageSnapshot {
-        if let creds = loadCLIClaudeCredentials() {
+        var cli = cliClaudeCredentials(allowKeychainPrompt: allowKeychainPrompt)
+        if case .ready(let creds) = cli {
             do {
                 return try await requestClaudeUsage(creds, source: "cli")
             } catch FetchError.signedOut {
                 NotchFlowLog.agents.info("Claude CLI usage unauthorized, trying Desktop login")
+                invalidateClaudeKeychainCache()
+                cli = cliClaudeCredentials(allowKeychainPrompt: false)
+                if case .ready(let refreshed) = cli, refreshed.accessToken != creds.accessToken {
+                    do {
+                        return try await requestClaudeUsage(refreshed, source: "cli")
+                    } catch FetchError.signedOut {
+                        cli = .missing
+                    }
+                }
             }
         }
 
@@ -52,8 +66,14 @@ enum AgentUsageClient {
             case .expired:
                 throw FetchError.loginExpired
             case .notFound:
+                if case .needsKeychainAccess = cli {
+                    throw FetchError.needsKeychainAccess
+                }
                 throw FetchError.signedOut
             case .unreadable:
+                if case .needsKeychainAccess = cli {
+                    throw FetchError.needsKeychainAccess
+                }
                 throw FetchError.invalidResponse
             }
         } catch {
@@ -267,20 +287,69 @@ enum AgentUsageClient {
         let expiresAt: Date?
     }
 
-    private static func loadCLIClaudeCredentials() -> ClaudeCredentials? {
-        guard let data = claudeCredentialData(),
-              let creds = decodeClaudeCredentials(data) else {
-            return nil
-        }
-        if let expiresAt = creds.expiresAt, expiresAt <= Date() {
-            return nil
-        }
-        return creds
+    private enum CLIClaudeCredentials {
+        case ready(ClaudeCredentials)
+        case needsKeychainAccess
+        case missing
     }
 
-    private static func claudeCredentialData() -> Data? {
+    private enum KeychainSecret {
+        case data(Data)
+        case missing
+        case interactionRequired
+    }
+
+    /// Last Claude Code secret read this process. Re-reading the login item on
+    /// every session update raises the Keychain dialog again: Claude replaces
+    /// the item when it refreshes the login, which drops "Always Allow".
+    private static var cachedClaudeKeychainPayload: Data?
+    private static var claudeKeychainNeedsUnlock = false
+
+    private static func invalidateClaudeKeychainCache() {
+        cachedClaudeKeychainPayload = nil
+        claudeKeychainNeedsUnlock = false
+    }
+
+    private static func cliClaudeCredentials(allowKeychainPrompt: Bool) -> CLIClaudeCredentials {
+        guard let data = claudeCredentialData(allowKeychainPrompt: allowKeychainPrompt) else {
+            return claudeKeychainNeedsUnlock ? .needsKeychainAccess : .missing
+        }
+        guard let creds = decodeClaudeCredentials(data) else { return .missing }
+        if let expiresAt = creds.expiresAt, expiresAt <= Date() {
+            return .missing
+        }
+        return .ready(creds)
+    }
+
+    private static func claudeCredentialData(allowKeychainPrompt: Bool) -> Data? {
         if let data = claudeCredentialsFileData() { return data }
-        return claudeKeychainData(allowPrompt: false)
+        if let cached = freshClaudeKeychainPayload() { return cached }
+        if !allowKeychainPrompt, claudeKeychainNeedsUnlock { return nil }
+
+        switch copyClaudeKeychain(allowPrompt: allowKeychainPrompt) {
+        case .data(let data):
+            cachedClaudeKeychainPayload = data
+            claudeKeychainNeedsUnlock = false
+            let fresh = freshClaudeKeychainPayload()
+            if fresh == nil {
+                // Expired or unreadable. Don't ask Keychain again until a manual refresh.
+                claudeKeychainNeedsUnlock = true
+            }
+            return fresh
+        case .missing:
+            return nil
+        case .interactionRequired:
+            claudeKeychainNeedsUnlock = true
+            return nil
+        }
+    }
+
+    /// Keeps a granted secret until it expires so later polls do not touch Keychain.
+    private static func freshClaudeKeychainPayload() -> Data? {
+        guard let cached = cachedClaudeKeychainPayload else { return nil }
+        guard let creds = decodeClaudeCredentials(cached) else { return nil }
+        if let expiresAt = creds.expiresAt, expiresAt <= Date() { return nil }
+        return cached
     }
 
     private static func claudeCredentialsFileData() -> Data? {
@@ -295,7 +364,7 @@ enum AgentUsageClient {
         return try? Data(contentsOf: url)
     }
 
-    private static func claudeKeychainData(allowPrompt: Bool) -> Data? {
+    private static func copyClaudeKeychain(allowPrompt: Bool) -> KeychainSecret {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: claudeKeychainService,
@@ -304,14 +373,27 @@ enum AgentUsageClient {
             kSecAttrSynchronizable as String: kSecAttrSynchronizableAny,
         ]
         if !allowPrompt {
-            let context = LAContext()
-            context.interactionNotAllowed = true
-            query[kSecUseAuthenticationContext as String] = context
+            KeychainAccessPrompt.suppress(in: &query)
         }
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
-        guard status == errSecSuccess, let data = item as? Data else { return nil }
-        return data
+        switch status {
+        case errSecSuccess:
+            guard let data = item as? Data else { return .missing }
+            return .data(data)
+        case errSecItemNotFound:
+            return .missing
+        case errSecInteractionNotAllowed, errSecAuthFailed, errSecUserCanceled:
+            if allowPrompt {
+                NotchFlowLog.agents.info("Claude Code keychain prompt was not granted (\(status, privacy: .public))")
+            } else {
+                NotchFlowLog.agents.info("Claude Code keychain needs access; prompt suppressed")
+            }
+            return .interactionRequired
+        default:
+            NotchFlowLog.agents.info("Claude Code keychain status \(status, privacy: .public)")
+            return .missing
+        }
     }
 
     static func parseClaudeCredentialFile(_ data: Data) -> (accessToken: String, planName: String?)? {
@@ -964,9 +1046,7 @@ enum AgentUsageClient {
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
         if !allowPrompt {
-            let context = LAContext()
-            context.interactionNotAllowed = true
-            query[kSecUseAuthenticationContext as String] = context
+            KeychainAccessPrompt.suppress(in: &query)
         }
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
@@ -1074,5 +1154,14 @@ enum AgentUsageClient {
         }
         let rotated = (json["refresh_token"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? refreshToken
         return RefreshedGrokBotToken(accessToken: access, refreshToken: rotated)
+    }
+}
+
+enum KeychainAccessPrompt {
+    /// Suppresses the login-keychain password dialog for another app's item.
+    /// `LAContext.interactionNotAllowed` does not. `kSecUseAuthenticationUIFail`
+    /// does, and its value is `u_AuthUIF`; the symbol itself is deprecated.
+    static func suppress(in query: inout [String: Any]) {
+        query[kSecUseAuthenticationUI as String] = "u_AuthUIF"
     }
 }
