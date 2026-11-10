@@ -28,11 +28,33 @@ For Premium products, add a **License Keys** benefit:
 
 For **Agents**, add a separate **License Keys** benefit:
 
-- Prefix: `NOTCHFLOW_AGENTS_` (required — app detects Agents keys by this prefix / product metadata containing “agent”)
+- Prefix: `NOTCHFLOW_AGENTS_` (kept for builds without benefit IDs — see below)
 - **Activation limit: 2**
 - Optional metadata: `addon=agents`
 
 The app stores Premium and Agents keys separately — a user can own both.
+
+### Benefit IDs (how the app tells Premium from Agents)
+
+Every Polar license key carries the `benefit_id` of the License Keys benefit that issued it. Release builds decide the product from that ID, not from key prefixes or product names:
+
+1. In Polar, open **Benefits** and copy the ID of each License Keys benefit.
+2. Set them for packaging (comma-separated; several IDs are fine, e.g. old and new benefits):
+
+   ```bash
+   export POLAR_PREMIUM_BENEFIT_IDS="<annual-benefit-id>,<lifetime-benefit-id>"
+   export POLAR_AGENTS_BENEFIT_IDS="<agents-benefit-id>"
+   ```
+
+   `Scripts/package_app.sh` writes them to `Info.plist` as `PolarPremiumBenefitIDs` / `PolarAgentsBenefitIDs`. In CI they come from the `POLAR_PREMIUM_BENEFIT_IDS` and `POLAR_AGENTS_BENEFIT_IDS` repository secrets (`.github/workflows/release.yml`). For local runs without packaging, the same environment variables are read at launch.
+
+Rules once IDs are configured:
+
+- A key whose benefit is in the Agents list unlocks the Agents addon; one in the Premium list unlocks Premium. Prefixes and names are ignored.
+- With **both** lists set, a key from any other benefit is rejected as invalid. With only one list set, any other benefit counts as the other product — set both.
+- Annual vs Lifetime is still shown from `expires_at` (no expiry = Lifetime). It only changes the label; access is enforced by expiry and Polar validation.
+
+When no IDs are configured (e.g. local `compile_and_run.sh` builds), the app falls back to the old guess: the `NOTCHFLOW_AGENTS_` prefix, `addon`/`product` metadata, or a product/benefit name containing “agent”. `package_app.sh` prints a warning for license-enforcing builds without IDs.
 
 ## 3. Checkout integration (website)
 
@@ -105,6 +127,8 @@ Set organization ID for license validation (public, safe in the app):
 
 ```bash
 export POLAR_ORGANIZATION_ID="your-uuid-here"
+export POLAR_PREMIUM_BENEFIT_IDS="premium-benefit-uuid[,another]"
+export POLAR_AGENTS_BENEFIT_IDS="agents-benefit-uuid"
 ENFORCE_LICENSE=1 Scripts/package_app.sh
 ```
 
@@ -124,7 +148,7 @@ Or inject into `Info.plist` via `package_app.sh` (automatic when `POLAR_ORGANIZA
 2. Copy license key from Polar customer portal email
 3. NotchFlow → Settings → License → paste key → **Activate**
 4. Confirm premium features unlock
-5. Quit app, disable network briefly — grace period (14 days) should keep premium
+5. Quit app, disable network briefly — grace period (14 days) should keep premium. A cached validation dated more than a day in the future (clock rolled back, edited cache) is not trusted: it is revalidated online and grants no offline grace
 6. Activate same key on second Mac — should work
 7. Third Mac — should show activation limit error
 
