@@ -1,6 +1,34 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "in %@": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "za %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tra %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en %@"
+          }
+        }
+      }
+    },
     "\"%@\" is unavailable. Remove the shortcut from the shelf and add it again.": {
       "localizations": {
         "pl": {

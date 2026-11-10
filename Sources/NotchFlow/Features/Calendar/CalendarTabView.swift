@@ -119,8 +119,11 @@ struct CalendarTabView: View {
                         Text(event.formattedStartTime)
                             .font(.caption2.monospacedDigit())
                         if emphasized, event.startDate.timeIntervalSinceNow > 0 {
-                            Text(event.formattedCountdown)
-                                .font(.caption2)
+                            // Ticks only while the calendar tab is on screen.
+                            TimelineView(.everyMinute) { context in
+                                Text(event.formattedCountdown(at: context.date))
+                                    .font(.caption2)
+                            }
                         }
                     }
                     .foregroundStyle(IslandStyle.tertiaryText)

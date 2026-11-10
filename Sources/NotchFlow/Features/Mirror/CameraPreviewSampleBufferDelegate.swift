@@ -2,7 +2,9 @@ import AVFoundation
 import CoreImage
 import Foundation
 
-final class CameraPreviewSampleBufferDelegate: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+/// `@unchecked Sendable`: mutable state is guarded by `frameLock`, `CIContext` is thread-safe
+/// and `onFrame` is `@Sendable`; frames arrive on the capture output queue.
+final class CameraPreviewSampleBufferDelegate: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     private let ciContext = CIContext(options: [.cacheIntermediates: false])
     private let onFrame: @Sendable (CGImage) -> Void
     private let frameLock = NSLock()
