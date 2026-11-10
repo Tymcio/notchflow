@@ -2,6 +2,21 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.48] - 2026-11-10
+
+### Added
+
+- More coding agents in the notch: Codex CLI, GitHub Copilot CLI and Qwen Code (with Allow / Deny from the notch), plus Gemini CLI, OpenCode, Kilo Code, Crush and Factory Droid (status, and a pulse when they wait for you)
+- Settings → Integrations lists the agents found on this Mac with a toggle each, Connect and Disconnect. Disconnect removes only NotchFlow's entries and keeps your own hooks
+- Codex asks once to trust the new hook (`/hooks` in Codex)
+
+### Fixed
+
+- The notch no longer keeps opening and closing while Claude Code waits for permission. The prompt stays in the island's wings with Allow and Deny until you answer
+- Claude Code's follow-up notification no longer clears a waiting prompt
+- NotchFlow no longer switches to Terminal (and to another Space) when an agent asks for permission. The jump button opens the app the agent runs in, such as the Claude app, VS Code or Terminal
+- Agent hooks run in about 130 ms instead of 570 ms, and return immediately when NotchFlow is not running
+
 ## [1.0.47] - 2026-11-10
 
 ### Added
