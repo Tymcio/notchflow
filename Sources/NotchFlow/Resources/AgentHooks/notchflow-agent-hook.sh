@@ -16,7 +16,8 @@ if [[ ! -f "$API_JSON" || ! -f "$TOKEN_FILE" ]]; then
   exit 0
 fi
 
-PORT="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["port"])' "$API_JSON" 2>/dev/null || true)"
+# Plain sed, not python: this runs before every tool call in several agents.
+PORT="$(/usr/bin/sed -n 's/.*"port"[^0-9]*\([0-9][0-9]*\).*/\1/p' "$API_JSON" 2>/dev/null | /usr/bin/head -n 1 || true)"
 TOKEN="$(/bin/cat "$TOKEN_FILE" 2>/dev/null || true)"
 if [[ -z "${PORT:-}" || -z "${TOKEN:-}" ]]; then
   exit 0
@@ -181,29 +182,28 @@ if ev_l == "beforeshellexecution":
     if len(cmd) <= 280:
         wants_attention = any(n in head for n in needles)
 
-print(json.dumps({
-    "agent": str(agent),
-    "event": str(event),
-    "session": str(session),
-    "finishAll": bool(finish_all),
-    "nfEvent": str(nf_event),
-    "wantsAttention": bool(wants_attention),
-    "tool": str(tool or ""),
-    "cwd": str(cwd or ""),
-    "summary": str(summary or ""),
-}))
+# One python process for every field (it starts in ~40 ms; this used to start nine): the
+# values come back as shell-quoted assignments.
+import shlex
+fields = {
+    "AGENT": str(agent),
+    "EVENT_NAME": str(event),
+    "SESSION_ID": str(session),
+    "FINISH_ALL": "1" if finish_all else "0",
+    "NF_OVERRIDE": str(nf_event or ""),
+    "WANTS_ATTENTION": "1" if wants_attention else "0",
+    "TOOL_NAME": str(tool or ""),
+    "CWD": str(cwd or ""),
+    "SUMMARY": str(summary or ""),
+}
+for key, value in fields.items():
+    print(key + "=" + shlex.quote(value))
 '
 )"
 
-AGENT="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["agent"])')"
-EVENT_NAME="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["event"])')"
-SESSION_ID="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("session") or "")')"
-FINISH_ALL="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print("1" if json.load(sys.stdin).get("finishAll") else "0")')"
-WANTS_ATTENTION="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print("1" if json.load(sys.stdin).get("wantsAttention") else "0")')"
-TOOL_NAME="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["tool"])')"
-CWD="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["cwd"])')"
-SUMMARY="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["summary"])')"
-NF_OVERRIDE="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("nfEvent") or "")')"
+EVENT_NAME="update"; SESSION_ID=""; FINISH_ALL="0"; NF_OVERRIDE=""; WANTS_ATTENTION="0"
+TOOL_NAME=""; CWD=""; SUMMARY=""
+eval "$PARSED"
 
 # Agents whose permission prompts can be answered from the notch (Allow / Deny).
 answers_in_notch() {
