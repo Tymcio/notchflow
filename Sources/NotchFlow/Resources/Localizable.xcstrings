@@ -9070,6 +9070,108 @@
         "it": { "stringUnit": { "state": "translated", "value": "L’accesso di rete serve per la verifica della licenza, gli aggiornamenti, i testi opzionali e l’utilizzo di Claude, Codex, Cursor, Grok Build e Grok Bot con l’addon Agents attivo." } },
         "es": { "stringUnit": { "state": "translated", "value": "El acceso de red se usa para verificar la licencia, actualizaciones, letras opcionales y el uso de Claude, Codex, Cursor, Grok Build y Grok Bot con el complemento Agents activado." } }
       }
+    },
+    "No camera found.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No camera found."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie znaleziono kamery."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Kamera gefunden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna fotocamera trovata."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha encontrado ninguna cámara."
+          }
+        }
+      }
+    },
+    "Connect a webcam or use your iPhone as a Continuity Camera.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect a webcam or use your iPhone as a Continuity Camera."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podłącz kamerę internetową lub użyj iPhone’a jako Kamery w Ciągłości."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließe eine Webcam an oder verwende dein iPhone als Integrationskamera."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega una webcam o usa l’iPhone come fotocamera con Continuity."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta una webcam o usa tu iPhone como cámara de Continuidad."
+          }
+        }
+      }
+    },
+    "The camera could not be started.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The camera could not be started."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie udało się uruchomić kamery."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kamera konnte nicht gestartet werden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile avviare la fotocamera."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido iniciar la cámara."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

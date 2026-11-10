@@ -229,6 +229,8 @@ ${POLAR_PLIST}
   <string>NotchFlow shows upcoming calendar events in the notch island.</string>
   <key>NSCameraUsageDescription</key>
   <string>NotchFlow shows a live camera preview in the Camera Mirror module.</string>
+  <key>NSCameraUseContinuityCameraDeviceType</key>
+  <true/>
   <key>NFNotificationIconResolver</key>
   <string>v35</string>
 </dict>
