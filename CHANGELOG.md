@@ -2,7 +2,7 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
-## [1.0.43] - 2026-11-10
+## [1.0.44] - 2026-11-10
 
 ### Fixed
 

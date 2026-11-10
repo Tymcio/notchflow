@@ -161,7 +161,18 @@ if [[ -n "$ICNS_SRC" ]]; then
 fi
 
 sync
-hdiutil detach "$DEVICE" -force >/dev/null
+# Finder may still hold the volume right after the layout AppleScript ("Resource busy").
+for attempt in 1 2 3 4 5 6; do
+  if hdiutil detach "$DEVICE" -force >/dev/null 2>&1; then
+    break
+  fi
+  if [[ "$attempt" == 6 ]]; then
+    echo "ERROR: could not detach $DEVICE" >&2
+    exit 1
+  fi
+  echo "Volume busy, retrying detach ($attempt)..."
+  sleep 5
+done
 DEVICE=""
 
 # Compress to final UDZO.
