@@ -6,7 +6,6 @@ struct FocusTabView: View {
 
     @State private var pickerMode: FocusPickerMode = .countdown
     @State private var draftMinutes = 25
-    @State private var pulse = false
 
     private var state: FocusTimerState {
         appState.focusTimerState
@@ -20,33 +19,14 @@ struct FocusTabView: View {
         VStack(spacing: 8) {
             modeStrip
 
-            FocusTimerTimeDisplay(
-                time: displayedTime,
-                modeLabel: state.mode == .idle ? pickerMode.title : state.modeLabel,
-                isRunning: state.isRunning,
-                isFinishedMuted: state.isFinished && state.isAlertMuted,
-                accent: accent,
-                pulse: pulse
-            )
-            .frame(height: 52)
-
-            if wantsAlertSound {
-                TimelineView(.periodic(from: .now, by: 1)) { _ in
-                    if SystemOutputAudio.isSilent {
-                        mutedAlertBanner
-                    }
+            // The manager does not tick every second; only a running timer re-renders,
+            // once per displayed second.
+            if state.isRunning {
+                TimelineView(.periodic(from: tickAnchor, by: 1)) { context in
+                    timeSection(at: context.date)
                 }
-            }
-
-            if showsRuler {
-                FocusTimeRuler(
-                    minutes: $draftMinutes,
-                    accent: accent,
-                    isEnabled: canEditDuration,
-                    progressMinutes: rulerProgressMinutes
-                )
-            } else if pickerMode == .pomodoro {
-                pomodoroPhaseRow
+            } else {
+                timeSection(at: Date())
             }
 
             controlRow
@@ -54,7 +34,6 @@ struct FocusTabView: View {
         .onAppear {
             syncDraftFromState()
             syncPickerMode()
-            pulse = state.isRunning || (state.isFinished && state.isAlertMuted)
         }
         .onChange(of: state.mode) { _, _ in
             syncDraftFromState()
@@ -70,19 +49,46 @@ struct FocusTabView: View {
                 draftMinutes = pickerMode == .countdown ? state.selectedPresetMinutes : 0
             }
         }
-        .onChange(of: state.isRunning) { _, running in
-            pulse = running || (state.isFinished && state.isAlertMuted)
-        }
-        .onChange(of: state.isAlertMuted) { _, muted in
-            if state.isFinished {
-                pulse = muted
-            }
-        }
         .onChange(of: draftMinutes) { _, minutes in
             if canEditDuration {
                 appState.focusTimerManager.selectDuration(minutes: minutes)
             }
         }
+    }
+
+    @ViewBuilder
+    private func timeSection(at date: Date) -> some View {
+        FocusTimerTimeDisplay(
+            time: displayedTime(at: date),
+            modeLabel: state.mode == .idle ? pickerMode.title : state.modeLabel,
+            isFinishedMuted: state.isFinished && state.isAlertMuted,
+            accent: accent
+        )
+        .frame(height: 52)
+
+        // Kept current by the CoreAudio mute listener — no polling.
+        if wantsAlertSound, state.isOutputSilent {
+            mutedAlertBanner
+        }
+
+        if showsRuler {
+            FocusTimeRuler(
+                minutes: $draftMinutes,
+                accent: accent,
+                isEnabled: canEditDuration,
+                progressMinutes: rulerProgressMinutes(at: date)
+            )
+        } else if pickerMode == .pomodoro {
+            pomodoroPhaseRow
+        }
+    }
+
+    /// A fixed date on the same sub-second grid as the moments the shown time changes.
+    private var tickAnchor: Date {
+        if let phaseEndDate = state.phaseEndDate {
+            return phaseEndDate.addingTimeInterval(-Double(max(state.totalSeconds, 1)))
+        }
+        return state.stopwatchStartDate ?? Date()
     }
 
     private var wantsAlertSound: Bool {
@@ -117,7 +123,7 @@ struct FocusTabView: View {
         pickerMode == .countdown && state.mode != .stopwatch
     }
 
-    private var displayedTime: String {
+    private func displayedTime(at date: Date) -> String {
         if state.mode == .idle {
             switch pickerMode {
             case .stopwatch:
@@ -128,13 +134,13 @@ struct FocusTabView: View {
                 return formatMinutes(draftMinutes)
             }
         }
-        return state.formattedTime
+        return state.formattedTime(at: date)
     }
 
     /// Remaining time as fractional minutes — drives the ruler marker during countdown.
-    private var rulerProgressMinutes: CGFloat? {
+    private func rulerProgressMinutes(at date: Date) -> CGFloat? {
         guard state.mode == .countdown else { return nil }
-        return CGFloat(state.remainingSeconds) / 60
+        return CGFloat(state.remainingSeconds(at: date)) / 60
     }
 
     private func formatMinutes(_ minutes: Int) -> String {
@@ -349,14 +355,8 @@ private enum FocusPickerMode: String, CaseIterable, Identifiable {
 private struct FocusTimerTimeDisplay: View {
     let time: String
     let modeLabel: String
-    let isRunning: Bool
     let isFinishedMuted: Bool
     let accent: Color
-    let pulse: Bool
-
-    private var shouldPulse: Bool {
-        (pulse && isRunning) || isFinishedMuted
-    }
 
     private var labelTint: Color {
         isFinishedMuted ? .orange : accent.opacity(0.85)
@@ -368,11 +368,6 @@ private struct FocusTimerTimeDisplay: View {
                 .font(.system(size: 34, weight: .light, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(isFinishedMuted ? Color.orange : IslandStyle.primaryText)
-                .scaleEffect(shouldPulse ? 1.02 : 1)
-                .animation(
-                    .easeInOut(duration: isFinishedMuted ? 0.55 : 1.2).repeatForever(autoreverses: true),
-                    value: shouldPulse
-                )
 
             Text((isFinishedMuted ? loc("Sound muted") : modeLabel).uppercased())
                 .font(.system(size: 8, weight: .semibold, design: .rounded))

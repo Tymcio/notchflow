@@ -10,8 +10,6 @@ struct IdleAgentSessionView: View {
     var onJump: (() -> Void)?
     var usageHint: AgentUsageIdleHint?
 
-    @State private var pulse = false
-
     private var needsAttention: Bool { activity.needsAttention }
     private var showsNotchApproval: Bool { activity.showsNotchApproval }
 
@@ -23,13 +21,13 @@ struct IdleAgentSessionView: View {
                 HStack(spacing: 3) {
                     ZStack {
                         if needsAttention {
-                            Circle()
-                                .fill(Color.orange.opacity(0.32))
-                                .frame(width: pulse ? 18 : 13, height: pulse ? 18 : 13)
-                                .animation(
-                                    .easeInOut(duration: 0.7).repeatForever(autoreverses: true),
-                                    value: pulse
-                                )
+                            PulseHaloView(
+                                color: Color.orange.opacity(0.32),
+                                minDiameter: 13,
+                                maxDiameter: 18,
+                                duration: 0.7
+                            )
+                            .frame(width: 18, height: 18)
                         }
                         Image(systemName: activity.agent.systemImage)
                             .font(.system(size: 9, weight: .bold))
@@ -49,8 +47,6 @@ struct IdleAgentSessionView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture { onJump?() }
-                .onAppear { pulse = needsAttention }
-                .onChange(of: needsAttention) { _, value in pulse = value }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(activity.agent.displayName)
                 .accessibilityAddTraits(.isButton)
@@ -146,33 +142,19 @@ struct IdleAgentSessionView: View {
 }
 
 /// Compact “agent is thinking / typing” indicator — not a music equalizer.
+/// Animated by Core Animation (render server), static under Reduce Motion.
 private struct AgentTypingIndicator: View {
     let color: Color
-    @State private var bouncing = false
 
     var body: some View {
-        HStack(spacing: 3.5) {
-            ForEach(0..<3, id: \.self) { index in
-                Circle()
-                    .fill(color)
-                    .frame(width: 5, height: 5)
-                    .offset(y: bouncing ? -2.8 : 1.6)
-                    .opacity(bouncing ? 1 : 0.35)
-                    .animation(
-                        .easeInOut(duration: 0.38)
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(index) * 0.13),
-                        value: bouncing
-                    )
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(
-            Capsule(style: .continuous)
-                .fill(Color.white.opacity(0.08))
-        )
-        .onAppear { bouncing = true }
+        TypingDotsView(color: color)
+            .frame(width: TypingDotsLayerView.intrinsicWidth, height: 10)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.08))
+            )
     }
 }
 

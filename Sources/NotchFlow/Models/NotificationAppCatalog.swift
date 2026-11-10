@@ -534,8 +534,7 @@ enum NotificationAppCatalog {
         "com.apple.IncomingCall",
     ]
 
-    /// Processes whose *presence* means a ringing/active Continuity call UI (not daemons).
-    /// `callservicesd` / TelephonyUtilities is always running — never treat it as a ring signal.
+    /// Phone / FaceTime / CallKit UI hosts — their real app icons are allowed in the island.
     static let callUIHostBundleIDs: Set<String> = [
         "com.apple.FaceTime",
         "com.apple.mobilephone",
@@ -697,17 +696,6 @@ enum NotificationAppCatalog {
         let monthDay = #"^\d{1,2}(\s+|\.)(stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia|january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|\d{1,2})$"#
         if lower.range(of: monthDay, options: .regularExpression) != nil { return true }
         return false
-    }
-
-    /// Continuity subtitle under the caller name on Phone/FaceTime banners.
-    static func isContinuityCallSubtitle(_ text: String) -> Bool {
-        let lower = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let marks = [
-            "z twojego iphone", "z twojego iphone'a", "from your iphone",
-            "von deinem iphone", "dal tuo iphone", "desde tu iphone",
-            "iphone cellular", "calls from iphone",
-        ]
-        return marks.contains { lower.contains($0) }
     }
 
     /// Imię/numer kontaktu nadający się do UI połączenia (nie chrome NC / nie nazwa apki).

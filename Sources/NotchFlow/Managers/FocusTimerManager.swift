@@ -21,6 +21,8 @@ struct FocusTimerState: Equatable, Sendable {
     var stopwatchStartDate: Date?
     /// True when the finish alert could not be heard (system mute / volume 0).
     var isAlertMuted = false
+    /// Default output is muted or at zero volume right now (kept live by a CoreAudio listener).
+    var isOutputSilent = false
 
     var formattedTime: String {
         switch mode {
@@ -124,16 +126,24 @@ struct FocusTimerState: Equatable, Sendable {
     }
 }
 
+/// Countdown / Pomodoro / stopwatch state. Time is derived from `phaseEndDate` and
+/// `stopwatchStartDate`; views tick their own display, so the manager only wakes once per
+/// phase end (one-shot timer) instead of every second.
 @MainActor
 final class FocusTimerManager {
     var onStateChange: ((FocusTimerState) -> Void)?
 
     private(set) var state = FocusTimerState() {
-        didSet { onStateChange?(state) }
+        didSet {
+            guard state != oldValue else { return }
+            onStateChange?(state)
+        }
     }
 
-    private var timer: Timer?
-    private var muteWatchTimer: Timer?
+    private var phaseEndTimer: Timer?
+    private let outputMonitor = OutputMuteMonitor()
+    /// Sound to start once output is audible again (finished countdown while muted).
+    private var pendingAlertSound: (id: String, loops: Bool)?
     private var attentionRequestID: Int?
     private var wakeObserver: NSObjectProtocol?
 
@@ -142,24 +152,24 @@ final class FocusTimerManager {
     var longBreakSeconds = 15 * 60
     var sessionsBeforeLongBreak = 4
 
-    deinit {
-        if let wakeObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
-        }
-    }
-
     func startMonitoring() {
         requestNotificationPermission()
-        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                self.reconcileWallClock()
+        if wakeObserver == nil {
+            wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.didWakeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.reconcileWallClock()
+                }
             }
         }
+        outputMonitor.onChange = { [weak self] silent in
+            self?.handleOutputSilenceChange(silent)
+        }
+        outputMonitor.start()
+        state.isOutputSilent = outputMonitor.isSilent
     }
 
     func selectDuration(minutes: Int) {
@@ -218,8 +228,7 @@ final class FocusTimerManager {
             state.isRunning = false
             state.phaseEndDate = nil
             state.stopwatchStartDate = nil
-            timer?.invalidate()
-            timer = nil
+            cancelPhaseEndTimer()
         } else {
             state.isRunning = true
             switch state.mode {
@@ -237,26 +246,42 @@ final class FocusTimerManager {
     }
 
     func reset() {
-        timer?.invalidate()
-        timer = nil
-        stopMuteWatch()
+        cancelPhaseEndTimer()
+        pendingAlertSound = nil
         cancelUserAttention()
         TimerAlertSound.stop()
-        state = FocusTimerState(selectedPresetMinutes: state.selectedPresetMinutes)
+        state = FocusTimerState(
+            selectedPresetMinutes: state.selectedPresetMinutes,
+            isOutputSilent: state.isOutputSilent
+        )
     }
 
+    /// One timer per countdown / Pomodoro phase, fired at its end. The stopwatch needs none.
     private func startTimer() {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                self.tick()
+        cancelPhaseEndTimer()
+        guard state.isRunning, state.mode != .stopwatch, let phaseEndDate = state.phaseEndDate else { return }
+        let timer = Timer(fire: phaseEndDate, interval: 0, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.phaseEndTimerFired()
             }
         }
+        timer.tolerance = 0.05
+        RunLoop.main.add(timer, forMode: .common)
+        phaseEndTimer = timer
     }
 
-    private func tick() {
+    private func cancelPhaseEndTimer() {
+        phaseEndTimer?.invalidate()
+        phaseEndTimer = nil
+    }
+
+    private func phaseEndTimerFired() {
+        phaseEndTimer = nil
         reconcileWallClock()
+        // Fired a little early (tolerance / clock change): wait for the real end.
+        if state.isRunning, phaseEndTimer == nil {
+            startTimer()
+        }
     }
 
     private func reconcileWallClock() {
@@ -293,6 +318,7 @@ final class FocusTimerManager {
             state.remainingSeconds = state.totalSeconds
             state.isRunning = true
             state.phaseEndDate = Date().addingTimeInterval(TimeInterval(state.remainingSeconds))
+            startTimer()
             postTimerAlert(
                 title: loc("Break"),
                 body: useLongBreak ? loc("Long break.") : loc("Short break."),
@@ -304,6 +330,7 @@ final class FocusTimerManager {
             state.remainingSeconds = workDurationSeconds
             state.isRunning = true
             state.phaseEndDate = Date().addingTimeInterval(TimeInterval(state.remainingSeconds))
+            startTimer()
             postTimerAlert(title: loc("Focus"), body: loc("Next Pomodoro session."), loops: false)
         case .stopwatch, .idle:
             break
@@ -312,8 +339,7 @@ final class FocusTimerManager {
 
     private func finishCountdown(title: String, body: String) {
         state.isRunning = false
-        timer?.invalidate()
-        timer = nil
+        cancelPhaseEndTimer()
         // Loop until the user dismisses the finished 00:00 state.
         postTimerAlert(title: title, body: body, loops: true)
     }
@@ -328,9 +354,8 @@ final class FocusTimerManager {
             TimerAlertSound.stop()
             state.isAlertMuted = loops // Persist for finished-countdown idle UI.
             requestUserAttention()
-            if loops {
-                startMuteWatch(soundID: soundID, loops: true)
-            }
+            // Start the looping alert as soon as output becomes audible (CoreAudio listener).
+            pendingAlertSound = loops ? (soundID, true) : nil
             NotificationService.post(
                 title: title,
                 body: loc("Sound is muted — turn up volume to hear the alert."),
@@ -338,39 +363,22 @@ final class FocusTimerManager {
             )
         } else {
             state.isAlertMuted = false
-            stopMuteWatch()
+            pendingAlertSound = nil
             cancelUserAttention()
             TimerAlertSound.play(soundID, loops: loops)
             NotificationService.post(title: title, body: body, sound: false)
         }
     }
 
-    private func startMuteWatch(soundID: String, loops: Bool) {
-        muteWatchTimer?.invalidate()
-        muteWatchTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                self.pollMuteState(soundID: soundID, loops: loops)
-            }
-        }
-    }
-
-    private func pollMuteState(soundID: String, loops: Bool) {
+    private func handleOutputSilenceChange(_ silent: Bool) {
+        state.isOutputSilent = silent
+        guard !silent, let pending = pendingAlertSound else { return }
+        pendingAlertSound = nil
         // Dismissed / reset while waiting.
-        guard state.isFinished, state.isAlertMuted else {
-            stopMuteWatch()
-            return
-        }
-        guard !SystemOutputAudio.isSilent else { return }
+        guard state.isFinished, state.isAlertMuted else { return }
         state.isAlertMuted = false
-        stopMuteWatch()
         cancelUserAttention()
-        TimerAlertSound.play(soundID, loops: loops)
-    }
-
-    private func stopMuteWatch() {
-        muteWatchTimer?.invalidate()
-        muteWatchTimer = nil
+        TimerAlertSound.play(pending.id, loops: pending.loops)
     }
 
     private func requestUserAttention() {

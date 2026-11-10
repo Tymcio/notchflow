@@ -3,6 +3,19 @@ import ApplicationServices
 import Foundation
 
 enum AXHelpers {
+    /// Per-element IPC timeout for elements we read from other processes. The system default
+    /// is ~6 s, so a hung Notification Center would otherwise stall the caller for seconds
+    /// on every attribute read.
+    static let messagingTimeout: Float = 0.25
+
+    /// Application element for `pid` with the short messaging timeout applied.
+    static func applicationElement(pid: pid_t) -> AXUIElement {
+        let element = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(element, messagingTimeout)
+        return element
+    }
+
+    /// Children inherit the short messaging timeout (it is stored per element reference).
     static func children(of element: AXUIElement) -> [AXUIElement] {
         var childrenRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenRef) == .success,
@@ -13,7 +26,9 @@ enum AXHelpers {
         return ((childrenRef as! NSArray) as Array).compactMap { item -> AXUIElement? in
             let object = item as CFTypeRef
             guard CFGetTypeID(object) == AXUIElementGetTypeID() else { return nil }
-            return (object as! AXUIElement)
+            let child = object as! AXUIElement
+            AXUIElementSetMessagingTimeout(child, messagingTimeout)
+            return child
         }
     }
 
@@ -122,7 +137,9 @@ enum AXHelpers {
         }
         let object = valueRef as CFTypeRef
         guard CFGetTypeID(object) == AXUIElementGetTypeID() else { return nil }
-        return (object as! AXUIElement)
+        let parent = object as! AXUIElement
+        AXUIElementSetMessagingTimeout(parent, messagingTimeout)
+        return parent
     }
 
     /// Notification Center banners carry the posting app's bundle ID in `AXStackingIdentifier`
@@ -220,32 +237,13 @@ enum AXHelpers {
         "cerrar", "borrar", "eliminar"
     ]
 
-    static func runningApplication(bundleID: String) -> NSRunningApplication? {
-        NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first
-    }
-
-    static func notificationCenterPID() -> pid_t? {
-        accessibilityBannerPIDs(callsPriority: false).first
-    }
-
-    /// Banery NC/połączeń: Centrum powiadomień, a na Tahoe także Phone.app / FaceTime.
-    static func accessibilityBannerPIDs(callsPriority: Bool) -> [pid_t] {
-        var bundleIDs = [
+    /// Processes that host Notification Center banners.
+    static func notificationCenterPIDs() -> [pid_t] {
+        let bundleIDs = [
             "com.apple.notificationcenterui",
             "com.apple.notificationcenter",
             "com.apple.UserNotificationCenter",
         ]
-        if callsPriority {
-            bundleIDs.append(contentsOf: [
-                // macOS 26+: cellular Continuity rings in Phone.app / FaceTime.
-                "com.apple.mobilephone",
-                "com.apple.FaceTime",
-                "com.apple.controlcenter",
-                "com.apple.CallKitUI",
-                "com.apple.IncomingCall",
-            ])
-        }
-
         var seen = Set<pid_t>()
         var pids: [pid_t] = []
         for bundleID in bundleIDs {
@@ -255,34 +253,7 @@ enum AXHelpers {
                 pids.append(pid)
             }
         }
-
-        // Phone/FaceTime sometimes appear only while ringing — catch live UI hosts only.
-        if callsPriority {
-            for app in NSWorkspace.shared.runningApplications {
-                guard let bundleID = app.bundleIdentifier,
-                      NotificationAppCatalog.isCallUIHostBundleID(bundleID) else { continue }
-                let pid = app.processIdentifier
-                guard seen.insert(pid).inserted else { continue }
-                pids.append(pid)
-            }
-        }
-
         return pids
-    }
-
-    /// True when Phone.app / FaceTime (etc.) is running — Continuity ring or in-call UI.
-    static var isCallUIHostRunning: Bool {
-        for bundleID in NotificationAppCatalog.callUIHostBundleIDs {
-            if !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty {
-                return true
-            }
-        }
-        return false
-    }
-
-    /// Bundle ID procesu, który hostuje baner (gdy AX stacking identifier nie podaje deliverera).
-    static func bundleID(forPID pid: pid_t) -> String? {
-        NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
     }
 
     private static func point(for element: AXUIElement, attribute: CFString) -> CGPoint? {

@@ -87,10 +87,16 @@ final class EqualizerBarsView: NSView {
         }
     }
 
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        updateAnimationState()
+    }
+
     private func updateAnimationState() {
         guard barLayers.count == barCount else { return }
 
-        if isAnimating {
+        // Render-server animation only while on screen; static bars under Reduce Motion.
+        if isAnimating, window != nil, !ReduceMotion.isEnabled {
             for (index, bar) in barLayers.enumerated() {
                 guard bar.animation(forKey: animationKey(index)) == nil else { continue }
 

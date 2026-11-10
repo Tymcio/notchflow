@@ -182,8 +182,6 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func updateVisibility(hovering: Bool) {
-        appState.isIdleWingHoverActive = hovering && !isExpanded
-
         guard !displayManager.shouldHideIsland || hasPriorityLiveActivity else {
             dismissImmediately()
             return
@@ -208,13 +206,9 @@ final class NotchPanelController: ObservableObject {
                 keepIdleVisibleIfNeeded()
                 return
             }
-            // During a call or agent permission prompt, hovering reveals wing controls —
+            // During an agent permission prompt, hovering reveals wing controls —
             // auto-expanding would hide Allow/Deny before the user can click.
             switch appState.activeLiveActivity {
-            case .activeCall, .incomingCall:
-                hoverDwellTask?.cancel()
-                keepIdleVisibleIfNeeded()
-                return
             case .agentSession(let session) where session.needsAttention:
                 hoverDwellTask?.cancel()
                 keepIdleVisibleIfNeeded()
@@ -296,10 +290,10 @@ final class NotchPanelController: ObservableObject {
         displayManager.geometry?.shouldHideIdleForMenuOverlap == true
     }
 
-    /// Połączenia i krótkie peeki powiadomień omijają chowanie wyspy przez overlap menu bara.
+    /// Krótkie peeki powiadomień omijają chowanie wyspy przez overlap menu bara.
     private var hasPriorityLiveActivity: Bool {
         switch appState.activeLiveActivity {
-        case .incomingCall, .activeCall, .notification:
+        case .notification:
             return true
         case .agentSession(let session) where session.needsAttention:
             return true
@@ -442,8 +436,6 @@ final class NotchPanelController: ObservableObject {
 
     private var idleAcceptsMouseEvents: Bool {
         switch appState.activeLiveActivity {
-        case .incomingCall, .activeCall:
-            return true
         case .notification:
             return true
         case .agentSession(let session) where session.needsAttention:
