@@ -3613,6 +3613,74 @@
         }
       }
     },
+    "Displays": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Displays"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekrany"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildschirme"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schermi"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantallas"
+          }
+        }
+      }
+    },
+    "Island position on screens without a notch": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Island position on screens without a notch"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Położenie wyspy na ekranach bez notcha"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Position der Insel auf Bildschirmen ohne Notch"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posizione dell'isola sugli schermi senza notch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posición de la isla en pantallas sin notch"
+          }
+        }
+      }
+    },
     "Top center": {
       "localizations": {
         "en": {
@@ -3677,6 +3745,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Desactivada (solo icono en la barra de menús)"
+          }
+        }
+      }
+    },
+    "Show the island on": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the island on"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokazuj wyspę na"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insel anzeigen auf"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra l'isola su"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar la isla en"
           }
         }
       }
@@ -3779,6 +3881,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pantalla integrada"
+          }
+        }
+      }
+    },
+    "On Macs and displays without a notch, the island sits in the middle of the menu bar. Hover there to open it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On Macs and displays without a notch, the island sits in the middle of the menu bar. Hover there to open it."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na Macach i ekranach bez notcha wyspa jest na środku paska menu. Najedź tam kursorem, aby ją otworzyć."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf Macs und Bildschirmen ohne Notch sitzt die Insel in der Mitte der Menüleiste. Bewege den Zeiger dorthin, um sie zu öffnen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sui Mac e sugli schermi senza notch, l'isola si trova al centro della barra dei menu. Passa lì il puntatore per aprirla."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En Mac y pantallas sin notch, la isla está en el centro de la barra de menús. Pasa el puntero por ahí para abrirla."
           }
         }
       }
