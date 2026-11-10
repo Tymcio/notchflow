@@ -2,6 +2,16 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.47] - 2026-11-10
+
+### Added
+
+- Volume and brightness levels show in the notch when they change: a speaker or sun symbol and a level bar in the island's wings (General → "Show volume and brightness in the notch", on by default). Brightness reads the built-in display after the brightness keys and needs Accessibility; the macOS indicator still appears as well
+
+### Fixed
+
+- The volume and brightness overlay advertised in earlier versions never appeared; it now follows real changes instead of notifications macOS never sends
+
 ## [1.0.46] - 2026-11-10
 
 ### Added
