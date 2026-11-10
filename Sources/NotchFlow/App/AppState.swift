@@ -125,21 +125,16 @@ final class AppState {
         }
     }
 
+    /// Same height as the panel frame (`NotchGeometry.dropBannerHeight`), so no transparent,
+    /// click-catching strip is left below the banner.
     var idleDropBannerHeight: CGFloat? {
         guard idleDropBannerWidth != nil else { return nil }
-        let topInset = displayManager.geometry?.notchTopInset
-            ?? displayManager.geometry?.idleSize.height
-            ?? 32
-        return NotchFlowConstants.dropBannerHeight(
-            topInset: topInset,
-            contentHeight: NotchFlowConstants.dropBannerContentHeight
-        )
+        return displayManager.geometry?.dropBannerHeight
+            ?? NotchFlowConstants.dropBannerHeight(topInset: idleDropBannerTopInset)
     }
 
     var idleDropBannerTopInset: CGFloat {
-        displayManager.geometry?.notchTopInset
-            ?? displayManager.geometry?.idleSize.height
-            ?? 32
+        displayManager.geometry?.dropBannerTopInset ?? 32
     }
 
     var shelfBadgeCount: Int {

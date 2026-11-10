@@ -62,16 +62,11 @@ enum NotchFlowConstants {
     static let maxIdleNotificationWingWidth: CGFloat = 240
     /// Upper bound for the widened right wing during an active call (name + end button).
     static let maxIdleCallWingWidth: CGFloat = 220
-    /// Compact center-attached incoming-call banner (hangs below the cutout).
-    static let minIncomingCallBannerWidth: CGFloat = 280
-    static let maxIncomingCallBannerWidth: CGFloat = 400
-    static let incomingCallBannerHeight: CGFloat = 84
     /// Large notification / call cover over the notch (icon + presence).
     static let minNotificationBannerWidth: CGFloat = 280
     static let maxNotificationBannerWidth: CGFloat = 380
     static let dropBannerContentHeight: CGFloat = 52
     static let notificationBannerHeight: CGFloat = 84
-    static let incomingCallDropContentHeight: CGFloat = 52
 
     static func dropBannerHeight(topInset: CGFloat, contentHeight: CGFloat = dropBannerContentHeight) -> CGFloat {
         max(topInset, 12) + contentHeight

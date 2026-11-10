@@ -141,6 +141,19 @@ struct NotchGeometry: Equatable {
         }
     }
 
+    /// Band at the top of a notification drop banner kept clear of content: the part of the
+    /// banner that covers where the idle island sits (the notch, or the menu bar band around a
+    /// virtual notch). Zero when the banner already hangs below a system cutout's band.
+    /// The panel frame and the banner view both use this, so they always agree on the height.
+    var dropBannerTopInset: CGFloat {
+        let idleBottomY = idleTopY - idleSize.height
+        return max(notchTopInset, islandTopY - idleBottomY, 0)
+    }
+
+    var dropBannerHeight: CGFloat {
+        NotchFlowConstants.dropBannerHeight(topInset: dropBannerTopInset)
+    }
+
     var contentTopInset: CGFloat {
         hasPhysicalNotch ? notchTopInset : 0
     }
@@ -259,16 +272,7 @@ struct NotchGeometry: Equatable {
         if isExpanded {
             size = expandedSize
         } else if isIdle, let bannerWidth = bannerWidthOverride {
-            size = CGSize(
-                width: bannerWidth,
-                height: NotchFlowConstants.dropBannerHeight(
-                    topInset: max(notchTopInset, idleSize.height),
-                    contentHeight: max(
-                        NotchFlowConstants.dropBannerContentHeight,
-                        NotchFlowConstants.incomingCallDropContentHeight
-                    )
-                )
-            )
+            size = CGSize(width: bannerWidth, height: dropBannerHeight)
         } else if isIdle {
             let resolvedLeftWing = resolvedIdleLeftWingWidth(override: leftWingOverride)
             let resolvedRightWing = resolvedIdleRightWingWidth(override: rightWingOverride)
@@ -288,7 +292,7 @@ struct NotchGeometry: Equatable {
             y = islandTopY - size.height
             x = notchLeftX + physicalNotchCutoutWidth / 2 - size.width / 2
         } else if isIdle, bannerWidthOverride != nil {
-            // Center-attached incoming-call banner under the hardware cutout.
+            // Center-attached notification banner hanging from the (hardware or virtual) cutout.
             y = islandTopY - size.height
             if let notchLeftX {
                 x = notchLeftX + physicalNotchCutoutWidth / 2 - size.width / 2

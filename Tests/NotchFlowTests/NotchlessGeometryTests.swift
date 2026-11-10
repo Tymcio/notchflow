@@ -160,6 +160,29 @@ final class NotchlessGeometryTests: XCTestCase {
         XCTAssertNil(NotchGeometry.menuBarCapsuleSpan(for: ScreenFixtures.reservedBandWithoutAuxiliaryAreas))
     }
 
+    // MARK: Notification drop banner
+
+    /// The panel frame and the banner view share one height, so no transparent strip is left.
+    func testDropBannerFrameMatchesBannerHeightOnEveryAnchor() {
+        let cases: [(ScreenMetrics, topInset: CGFloat)] = [
+            (ScreenFixtures.macBookPro14, 32),          // notch: unchanged layout
+            (ScreenFixtures.macBookPro16, 32),
+            (ScreenFixtures.macMini1080p, 24),          // capsule: content starts below the menu bar
+            (ScreenFixtures.externalDisplay, 24),
+            (ScreenFixtures.dynamicIsland, 0),          // already hangs below the system band
+        ]
+        for (metrics, topInset) in cases {
+            let geometry = geometry(metrics)
+            XCTAssertEqual(geometry.dropBannerTopInset, topInset, metrics.identifier)
+            XCTAssertEqual(geometry.dropBannerHeight, NotchFlowConstants.dropBannerHeight(topInset: topInset), metrics.identifier)
+            let frame = geometry.frame(isExpanded: false, isIdle: true, idleBannerWidth: 300)
+            XCTAssertEqual(frame.height, geometry.dropBannerHeight, metrics.identifier)
+            XCTAssertEqual(frame.maxY, geometry.islandTopY, metrics.identifier)
+        }
+        // Notched MacBooks keep their 84 pt banner.
+        XCTAssertEqual(geometry(ScreenFixtures.macBookPro14).dropBannerHeight, 84)
+    }
+
     // MARK: Simulated no-notch
 
     func testSimulatedNoNotchTreatsNotchedMacBookAsCapsule() {
