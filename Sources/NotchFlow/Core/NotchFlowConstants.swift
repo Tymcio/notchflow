@@ -48,6 +48,9 @@ enum NotchFlowConstants {
     static let hoverProximityHysteresisPadding: CGFloat = 16
     /// Hover must linger in the notch band before expanding, so quick clicks reach the app below.
     static let hoverExpandDwellMilliseconds = 220
+    /// While an agent waits for permission the wings hold Allow / Deny: a longer rest is needed
+    /// before the island opens, so a quick click on the wing buttons is never taken away.
+    static let agentPromptHoverExpandDwellMilliseconds = 900
     /// Brief proximity loss is ignored so dwell/expand is not cancelled by pointer jitter.
     static let hoverProximityLossGraceMilliseconds = 100
     /// Extra width beyond expanded island when detecting file drags.

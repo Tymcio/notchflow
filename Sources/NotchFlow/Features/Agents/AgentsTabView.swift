@@ -5,8 +5,23 @@ import SwiftUI
 struct AgentsTabView: View {
     @Bindable var appState: AppState
 
+    /// Sessions waiting for you first, then running ones, then finished; newest first within each.
     private var sessions: [AgentSession] {
-        appState.agentSessionManager.sessions
+        AgentsTabView.ordered(appState.agentSessionManager.sessions)
+    }
+
+    static func ordered(_ sessions: [AgentSession]) -> [AgentSession] {
+        func rank(_ session: AgentSession) -> Int {
+            if session.needsAttention { return 0 }
+            if session.phase == .running { return 1 }
+            return 2
+        }
+        return sessions.enumerated()
+            .sorted { lhs, rhs in
+                let (l, r) = (rank(lhs.element), rank(rhs.element))
+                return l == r ? lhs.offset < rhs.offset : l < r
+            }
+            .map(\.element)
     }
 
     private var accent: Color {
@@ -18,14 +33,16 @@ struct AgentsTabView: View {
             if !appState.hasAgentsAddon {
                 lockedState
             } else {
-                let _ = appState.agentUsageRevision
-                if appState.settings.agentUsagePollingEnabled {
-                    usageMeters
-                }
+                // Prompts waiting for you come first: below the usage cards they were often
+                // pushed out of the island's height.
                 if sessions.isEmpty {
                     emptyState
                 } else {
                     sessionList
+                }
+                let _ = appState.agentUsageRevision
+                if appState.settings.agentUsagePollingEnabled {
+                    usageMeters
                 }
             }
         }

@@ -215,15 +215,14 @@ final class NotchPanelController: ObservableObject {
                 keepIdleVisibleIfNeeded()
                 return
             }
-            // During an agent permission prompt, hovering reveals wing controls —
-            // auto-expanding would hide Allow/Deny before the user can click.
-            switch appState.activeLiveActivity {
-            case .agentSession(let session) where session.needsAttention:
-                hoverDwellTask?.cancel()
-                keepIdleVisibleIfNeeded()
+            // During an agent prompt the wings show Allow / Deny, so a quick click there still
+            // works; resting on the island longer opens the Agents tab with the prompt on top.
+            if hasAgentAttention {
+                scheduleExpandAfterHoverDwell(
+                    milliseconds: NotchFlowConstants.agentPromptHoverExpandDwellMilliseconds,
+                    module: .agents
+                )
                 return
-            default:
-                break
             }
             scheduleExpandAfterHoverDwell()
             return
@@ -330,11 +329,33 @@ final class NotchPanelController: ObservableObject {
         }
     }
 
+    private var hasAgentAttention: Bool {
+        if case .agentSession(let session) = appState.activeLiveActivity {
+            return session.needsAttention
+        }
+        return false
+    }
+
+    private func showAgentsTabForPrompt() {
+        hideTask?.cancel()
+        if appState.activeModule != .agents {
+            appState.activeModule = .agents
+        }
+        displayManager.updateExpandedHeight(for: .agents)
+        refreshView()
+    }
+
     private var shouldSuppressIdleForMenuOverlap: Bool {
         shouldHideIdleForMenuOverlap && !hasPriorityLiveActivity
     }
 
     private func handleLiveActivityChange() {
+        // An agent prompt arriving while the island is open: keep it open on the Agents tab,
+        // where the prompt sits on top, instead of folding the island away under the pointer.
+        if isExpanded, hasAgentAttention {
+            showAgentsTabForPrompt()
+            return
+        }
         // Połączenie / powiadomienie — zawsze pokaż idle, nawet gdy wyspa była rozwinięta
         // albo minutnik zajmuje skrzydła.
         if hasPriorityLiveActivity {
@@ -516,13 +537,14 @@ final class NotchPanelController: ObservableObject {
         }
     }
 
-    private func scheduleExpandAfterHoverDwell() {
+    private func scheduleExpandAfterHoverDwell(
+        milliseconds: Int = NotchFlowConstants.hoverExpandDwellMilliseconds,
+        module: IslandModule? = nil
+    ) {
         hoverDwellTask?.cancel()
         keepIdleVisibleIfNeeded()
         hoverDwellTask = Task { @MainActor in
-            try? await Task.sleep(
-                for: .milliseconds(NotchFlowConstants.hoverExpandDwellMilliseconds)
-            )
+            try? await Task.sleep(for: .milliseconds(milliseconds))
             guard !Task.isCancelled else {
                 hoverDwellTask = nil
                 return
@@ -537,6 +559,8 @@ final class NotchPanelController: ObservableObject {
             }
             if displayManager.isFileDragInProgress && displayManager.isDragNearNotch {
                 appState.activeModule = .shelf
+            } else if let module {
+                appState.activeModule = module
             }
             presentExpanded()
             hoverDwellTask = nil
