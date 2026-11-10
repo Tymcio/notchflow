@@ -7477,6 +7477,14 @@
         "es": { "stringUnit": { "state": "translated", "value": "Vuelve a iniciar sesión en Cursor para ver los límites" } }
       }
     },
+    "macOS may ask whether NotchFlow can use “Claude Safe Storage”, “Cursor Safe Storage” or “Grok Bot Safe Storage”. That item is the key to all of that app’s encrypted data on this Mac, not only its login. NotchFlow uses it only to read the login for usage limits and keeps tokens in memory. “Always Allow” stops the question for good; “Allow” asks again next time.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "macOS może zapytać, czy NotchFlow może użyć elementu „Claude Safe Storage”, „Cursor Safe Storage” lub „Grok Bot Safe Storage”. Ten element to klucz do wszystkich zaszyfrowanych danych tej aplikacji na tym Macu, nie tylko do logowania. NotchFlow używa go wyłącznie do odczytu logowania na potrzeby limitów użycia i trzyma tokeny tylko w pamięci. „Zawsze pozwalaj” wyłącza to pytanie na stałe; „Pozwól” zapyta ponownie następnym razem." } },
+        "de": { "stringUnit": { "state": "translated", "value": "macOS fragt eventuell, ob NotchFlow „Claude Safe Storage“, „Cursor Safe Storage“ oder „Grok Bot Safe Storage“ verwenden darf. Dieses Objekt ist der Schlüssel zu allen verschlüsselten Daten dieser App auf diesem Mac, nicht nur zur Anmeldung. NotchFlow liest damit nur die Anmeldung für die Nutzungslimits und behält Tokens nur im Arbeitsspeicher. „Immer erlauben“ beendet die Abfrage dauerhaft; „Erlauben“ fragt beim nächsten Mal erneut." } },
+        "it": { "stringUnit": { "state": "translated", "value": "macOS potrebbe chiedere se NotchFlow può usare «Claude Safe Storage», «Cursor Safe Storage» o «Grok Bot Safe Storage». Quell’elemento è la chiave di tutti i dati cifrati di quell’app su questo Mac, non solo del login. NotchFlow lo usa solo per leggere il login per i limiti di utilizzo e tiene i token solo in memoria. «Consenti sempre» elimina la domanda in modo definitivo; «Consenti» la ripropone la volta successiva." } },
+        "es": { "stringUnit": { "state": "translated", "value": "macOS puede preguntar si NotchFlow puede usar «Claude Safe Storage», «Cursor Safe Storage» o «Grok Bot Safe Storage». Ese elemento es la clave de todos los datos cifrados de esa app en este Mac, no solo de su inicio de sesión. NotchFlow solo lo usa para leer el inicio de sesión para los límites de uso y guarda los tokens solo en memoria. «Permitir siempre» deja de preguntar para siempre; «Permitir» volverá a preguntar la próxima vez." } }
+      }
+    },
     "%@ is not a valid JSON settings file. NotchFlow left it unchanged. Fix or remove it, then connect agents again.": {
       "localizations": {
         "pl": { "stringUnit": { "state": "translated", "value": "%@ nie jest prawidłowym plikiem ustawień JSON. NotchFlow go nie zmienił. Popraw go lub usuń, a potem ponownie połącz agentów." } },
