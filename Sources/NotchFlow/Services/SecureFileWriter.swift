@@ -22,6 +22,10 @@ enum ExternalConfigError: LocalizedError, Equatable {
     case notJSONObject(path: String)
     /// The owning tool kept rewriting the file while NotchFlow tried to update it.
     case changedDuringWrite(path: String)
+    /// The file exists but is not UTF-8 text. It is left untouched.
+    case notText(path: String)
+    /// A file NotchFlow would write already exists and was not written by NotchFlow.
+    case notOwnedByNotchFlow(path: String)
 
     var errorDescription: String? {
         switch self {
@@ -29,11 +33,15 @@ enum ExternalConfigError: LocalizedError, Equatable {
             locFormat("%@ is not a valid JSON settings file. NotchFlow left it unchanged. Fix or remove it, then connect agents again.", path)
         case .changedDuringWrite(let path):
             locFormat("%@ changed while NotchFlow was updating it. Try again in a moment.", path)
+        case .notText(let path):
+            locFormat("%@ is not a text file. NotchFlow left it unchanged.", path)
+        case .notOwnedByNotchFlow(let path):
+            locFormat("%@ already exists and was not created by NotchFlow. NotchFlow left it unchanged. Move it away, then connect agents again.", path)
         }
     }
 }
 
-/// Edits JSON config files that belong to other tools (Claude Code, Cursor, Grok).
+/// Edits config files that belong to other tools (Claude Code, Codex, Cursor, Grok, …).
 ///
 /// - Follows symlinks and writes the real file, so a symlinked `settings.json` stays a symlink.
 /// - Keeps the file's existing permissions (new files are created owner-only).
@@ -75,14 +83,60 @@ enum ExternalConfigFile {
         attempts: Int = 3,
         _ transform: (inout [String: Any]) throws -> Void
     ) throws -> Bool {
+        try updateData(at: url, createIfMissing: createIfMissing, attempts: attempts) { original in
+            var root = try parseObject(original, displayPath: url.path)
+            try transform(&root)
+            return try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
+        }
+    }
+
+    /// Reads, transforms and rewrites a UTF-8 text config file (same guarantees as JSON files).
+    ///
+    /// `transform` receives nil for a missing file and returns the new text, or nil to leave
+    /// the file as it is.
+    @discardableResult
+    static func updateText(
+        at url: URL,
+        createIfMissing: Bool = true,
+        attempts: Int = 3,
+        _ transform: (String?) throws -> String?
+    ) throws -> Bool {
+        try updateData(at: url, createIfMissing: createIfMissing, attempts: attempts) { original in
+            var text: String?
+            if let original {
+                guard let decoded = String(data: original, encoding: .utf8) else {
+                    throw ExternalConfigError.notText(path: url.path)
+                }
+                text = decoded
+            }
+            return try transform(text).map { Data($0.utf8) }
+        }
+    }
+
+    /// Deletes a file NotchFlow created, but only when `isOwned` accepts its current text.
+    /// A missing file is fine. Returns true when something was deleted.
+    @discardableResult
+    static func removeOwnedFile(at url: URL, isOwned: (String) -> Bool) throws -> Bool {
+        let target = resolvedTarget(for: url)
+        guard let data = try readIfPresent(target) else { return false }
+        guard let text = String(data: data, encoding: .utf8), isOwned(text) else { return false }
+        try FileManager.default.removeItem(at: url)
+        return true
+    }
+
+    /// Shared read-transform-write loop. `produce` returns nil to skip writing.
+    private static func updateData(
+        at url: URL,
+        createIfMissing: Bool,
+        attempts: Int,
+        _ produce: (Data?) throws -> Data?
+    ) throws -> Bool {
         let target = resolvedTarget(for: url)
         for _ in 0..<max(attempts, 1) {
             let original = try readIfPresent(target)
             if original == nil, !createIfMissing { return false }
 
-            var root = try parseObject(original, displayPath: url.path)
-            try transform(&root)
-            let output = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
+            guard let output = try produce(original) else { return false }
             if let original, original == output { return false }
 
             try FileManager.default.createDirectory(

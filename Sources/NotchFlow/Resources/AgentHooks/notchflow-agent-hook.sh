@@ -1,6 +1,10 @@
 #!/bin/bash
-# NotchFlow Agents bridge — Claude Code + Cursor (and generic CLIs via NOTCHFLOW_AGENT).
+# NotchFlow Agents bridge — Claude Code, Codex, Copilot CLI, Qwen Code, Gemini CLI, OpenCode,
+# Kilo Code, Crush, Droid, Cursor, Grok Build (and generic CLIs via NOTCHFLOW_AGENT).
 set -euo pipefail
+# Always exit 0. A failing hook must never block the agent: Copilot CLI denies the tool when a
+# preToolUse hook fails, and Codex / Claude Code treat exit 2 as "block".
+trap 'exit 0' EXIT
 
 AGENT="${NOTCHFLOW_AGENT:-}"
 FORCED_EVENT="${NOTCHFLOW_HOOK_EVENT:-}"
@@ -71,18 +75,96 @@ if not session:
             raw = json.dumps(d, sort_keys=True, default=str)[:500]
             session = hashlib.sha1(f"{agent}:{event}:{raw}".encode()).hexdigest()[:12]
 
+# Agents NotchFlow maps here (event name -> NotchFlow event). Claude Code, Cursor and Grok
+# Build keep the shell mapping further down.
+AGENT_EVENTS = {
+    "codex": {
+        "sessionstart": "session.started", "userpromptsubmit": "session.started",
+        "pretooluse": "tool", "posttooluse": "tool", "permissionrequest": "permission",
+        "stop": "done", "sessionend": "done",
+    },
+    "qwen": {
+        "sessionstart": "session.started", "userpromptsubmit": "session.started",
+        "pretooluse": "tool", "posttooluse": "tool", "permissionrequest": "permission",
+        "notification": "notification", "stop": "done", "sessionend": "done",
+    },
+    "copilot": {
+        "sessionstart": "session.started", "userpromptsubmitted": "session.started",
+        "pretooluse": "tool", "posttooluse": "tool", "permissionrequest": "permission",
+        "notification": "notification", "agentstop": "done", "sessionend": "done",
+    },
+    "gemini": {
+        "sessionstart": "session.started", "beforeagent": "session.started",
+        "beforetool": "tool", "aftertool": "tool", "notification": "notification",
+        "afteragent": "done", "sessionend": "done",
+    },
+    "opencode": {
+        "session.busy": "session.started", "tool.execute.before": "tool",
+        "permission.asked": "attention", "permission.replied": "progress",
+        "session.idle": "done", "session.error": "error",
+    },
+    "crush": {
+        "sessionstart": "session.started", "turnstart": "session.started",
+        "pretooluse": "tool", "posttooluse": "tool", "permissionrequest": "attention",
+        "permissionresult": "progress", "turnend": "done", "stopfailure": "error",
+        "sessionend": "done",
+    },
+    "droid": {
+        "sessionstart": "session.started", "userpromptsubmit": "session.started",
+        "pretooluse": "tool", "posttooluse": "tool", "notification": "notification",
+        "stop": "done", "sessionend": "done",
+    },
+}
+AGENT_EVENTS["kilo"] = AGENT_EVENTS["opencode"]
+
+nf_event = ""
+if agent in AGENT_EVENTS:
+    nf_event = AGENT_EVENTS[agent].get(ev_l, "progress")
+    note = str(d.get("notification_type") or d.get("notificationType") or "").lower()
+    # Monitor-only consent moments: the notch pulses, the user answers in the agent.
+    if ev_l == "notification" and (
+        (agent == "gemini" and note == "toolpermission")
+        or (agent == "droid" and note == "permission_prompt")
+    ):
+        nf_event = "attention"
+    elif agent == "droid" and ev_l == "notification" and note == "idle_prompt":
+        # Droid sends this (instead of Stop) when the user cancels a turn.
+        nf_event = "done"
+    if nf_event in ("done", "error") and not d.get("conversation_id") and not (
+        d.get("session_id") or d.get("sessionId")
+    ):
+        finish_all = True
+        session = ""
+
 tool = d.get("tool_name") or d.get("toolName") or d.get("tool_type") or d.get("tool") or ""
 cwd = d.get("cwd") or d.get("workspaceRoot") or os.environ.get("GROK_WORKSPACE_ROOT") or ""
 wr = d.get("workspace_roots")
 if not cwd and isinstance(wr, list) and wr:
     cwd = wr[0]
 
-ti = d.get("tool_input") or {}
+def as_dict(value):
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str) and value.strip().startswith("{"):
+        try:
+            parsed = json.loads(value)
+        except Exception:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+# Claude-style tool_input; Copilot CLI sends toolArgs / toolInput (sometimes as a JSON string).
+ti = as_dict(d.get("tool_input")) or as_dict(d.get("toolArgs")) or as_dict(d.get("toolInput"))
 summary = ""
 if isinstance(ti, dict):
-    summary = ti.get("command") or ti.get("file_path") or ti.get("path") or ""
+    summary = ti.get("command") or ti.get("file_path") or ti.get("filePath") or ti.get("path") or ""
 if not summary:
     summary = d.get("command") or d.get("prompt") or d.get("text") or ""
+if nf_event in ("notification", "attention", "error"):
+    summary = summary or d.get("message") or ""
+elif nf_event == "session.started":
+    # A typed prompt is not shown in the notch (screen sharing); "Working..." is enough.
+    summary = ""
 
 # Cursor keeps its own Skip/Run UI. Flag only high-signal shell moments for a notch pulse
 # (no auto-jump — heuristics are noisy). Ignore MCP and unsandboxed shells by themselves.
@@ -104,6 +186,7 @@ print(json.dumps({
     "event": str(event),
     "session": str(session),
     "finishAll": bool(finish_all),
+    "nfEvent": str(nf_event),
     "wantsAttention": bool(wants_attention),
     "tool": str(tool or ""),
     "cwd": str(cwd or ""),
@@ -120,14 +203,39 @@ WANTS_ATTENTION="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys;
 TOOL_NAME="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["tool"])')"
 CWD="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["cwd"])')"
 SUMMARY="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["summary"])')"
+NF_OVERRIDE="$(printf '%s' "$PARSED" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("nfEvent") or "")')"
+
+# Agents whose permission prompts can be answered from the notch (Allow / Deny).
+answers_in_notch() {
+  case "$AGENT" in
+    claude|codex|qwen|copilot) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 PERMISSION_ID=""
 NF_EVENT="progress"
+if [[ -n "$NF_OVERRIDE" ]]; then
+  # Codex, Copilot CLI, Qwen Code, Gemini CLI, OpenCode, Kilo Code, Crush, Droid (mapped above).
+  NF_EVENT="$NF_OVERRIDE"
+  if [[ "$NF_EVENT" == "permission" ]] && ! answers_in_notch; then
+    NF_EVENT="attention"
+  fi
+  if [[ "$NF_EVENT" == "permission" ]]; then
+    PERMISSION_ID="$(/usr/bin/uuidgen)"
+    if [[ -z "$TOOL_NAME" ]]; then
+      TOOL_NAME="Permission"
+    fi
+  fi
+else
 case "$EVENT_NAME" in
   PermissionRequest)
     # Claude Code only — Cursor must never block here.
     if [[ "$AGENT" == "cursor" || "$AGENT" == "grok" ]]; then
       NF_EVENT="tool"
+    elif ! answers_in_notch; then
+      # Other CLIs wired by hand: the notch pulses, the prompt stays in the agent.
+      NF_EVENT="attention"
     else
       NF_EVENT="permission"
       # Unique per request: two prompts in the same second must never share an id,
@@ -161,6 +269,7 @@ case "$EVENT_NAME" in
   PostToolUse|postToolUse|afterShellExecution|afterFileEdit) NF_EVENT="tool" ;;
   *) NF_EVENT="progress" ;;
 esac
+fi
 
 # Prefer human title = agent name; keep tool/path in detail (avoids "Write" as headline).
 TITLE="$AGENT"
@@ -174,6 +283,11 @@ case "$AGENT" in
   deepseek) TITLE="DeepSeek" ;;
   grok) TITLE="Grok Build" ;;
   grokbot) TITLE="Grok Bot" ;;
+  copilot) TITLE="Copilot CLI" ;;
+  qwen) TITLE="Qwen Code" ;;
+  kilo) TITLE="Kilo Code" ;;
+  crush) TITLE="Crush" ;;
+  droid) TITLE="Droid" ;;
 esac
 
 DETAIL="$SUMMARY"
@@ -228,10 +342,11 @@ print(json.dumps({
 '
 )
 
-auth_header | /usr/bin/curl -sS -X POST "${BASE}/v1/agents/events" \
+POSTED=1
+auth_header | /usr/bin/curl -sS -f --max-time 5 -X POST "${BASE}/v1/agents/events" \
   -H @- \
   -H "Content-Type: application/json" \
-  -d "$PAYLOAD" >/dev/null 2>&1 || true
+  -d "$PAYLOAD" >/dev/null 2>&1 || POSTED=0
 
 # Grok Build keeps its own prompts. Never wait, and never print an allow/deny decision.
 if [[ "$AGENT" == "grok" ]]; then
@@ -252,24 +367,53 @@ if [[ "$AGENT" == "cursor" ]]; then
   exit 0
 fi
 
-if [[ "$NF_EVENT" != "permission" || -z "$PERMISSION_ID" ]]; then
+if [[ "$NF_EVENT" != "permission" || -z "$PERMISSION_ID" ]] || ! answers_in_notch; then
   exit 0
 fi
 
+# NotchFlow is not running (or the Agents addon is locked): nobody can answer in the notch,
+# so leave the prompt to the agent right away instead of waiting.
+if [[ "$POSTED" != "1" ]]; then
+  exit 0
+fi
+
+# Prints the agent's answer to its PermissionRequest hook.
+print_decision() {
+  case "$AGENT:$1" in
+    copilot:allow) printf '%s\n' '{"behavior":"allow"}' ;;
+    copilot:deny) printf '%s\n' '{"behavior":"deny","message":"Denied in NotchFlow"}' ;;
+    codex:deny|qwen:deny)
+      printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"deny","message":"Denied in NotchFlow"}}}'
+      ;;
+    *:allow)
+      printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}'
+      ;;
+    *:deny)
+      printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"deny"}}}'
+      ;;
+  esac
+}
+
+FAILURES=0
 for _ in $(seq 1 600); do
-  RESP="$(auth_header | /usr/bin/curl -sS "${BASE}/v1/agents/permission/${PERMISSION_ID}" \
-    -H @- 2>/dev/null || true)"
+  if RESP="$(auth_header | /usr/bin/curl -sS -f --max-time 5 "${BASE}/v1/agents/permission/${PERMISSION_ID}" \
+    -H @- 2>/dev/null)"; then
+    FAILURES=0
+  else
+    RESP=""
+    FAILURES=$((FAILURES + 1))
+    # NotchFlow quit while the prompt was waiting: hand it back to the agent.
+    if [[ "$FAILURES" -ge 5 ]]; then
+      exit 0
+    fi
+  fi
   DECISION="$(printf '%s' "$RESP" | /usr/bin/python3 -c 'import json,sys
 try:
   print(json.load(sys.stdin).get("decision") or "")
 except Exception:
   print("")' 2>/dev/null || true)"
-  if [[ "$DECISION" == "allow" ]]; then
-    printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}'
-    exit 0
-  fi
-  if [[ "$DECISION" == "deny" ]]; then
-    printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"deny"}}}'
+  if [[ "$DECISION" == "allow" || "$DECISION" == "deny" ]]; then
+    print_decision "$DECISION"
     exit 0
   fi
   sleep 1

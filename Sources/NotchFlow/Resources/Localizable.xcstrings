@@ -9262,6 +9262,62 @@
           }
         }
       }
+    },
+    "%@ is not a text file. NotchFlow left it unchanged.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ nie jest plikiem tekstowym. NotchFlow go nie zmienił."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ist keine Textdatei. NotchFlow hat sie nicht geändert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ non è un file di testo. NotchFlow non l’ha modificato."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ no es un archivo de texto. NotchFlow no lo ha modificado."
+          }
+        }
+      }
+    },
+    "%@ already exists and was not created by NotchFlow. NotchFlow left it unchanged. Move it away, then connect agents again.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ już istnieje i nie został utworzony przez NotchFlow. NotchFlow go nie zmienił. Przenieś go w inne miejsce i połącz agentów ponownie."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ existiert bereits und wurde nicht von NotchFlow erstellt. NotchFlow hat die Datei nicht geändert. Verschiebe sie und verbinde die Agenten erneut."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ esiste già e non è stato creato da NotchFlow. NotchFlow non l’ha modificato. Spostalo altrove, poi collega di nuovo gli agenti."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ya existe y no lo creó NotchFlow. NotchFlow no lo ha modificado. Muévelo a otro lugar y vuelve a conectar los agentes."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

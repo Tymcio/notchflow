@@ -1,11 +1,23 @@
 import Foundation
 
-/// Installs local hook scripts and wires Claude Code + Cursor configs.
+/// Installs the local hook script and wires it into each coding agent's own config.
 ///
 /// Other tools' config files go through `ExternalConfigFile`: symlinks are followed,
 /// permissions kept, a one-time `.notchflow-backup` is saved, and a file that is not a
-/// JSON object is left alone with an error instead of being replaced.
+/// JSON object (or text, for Crush) is left alone with an error instead of being replaced.
+/// Every path takes a home folder so tests can run against a temporary one.
 enum AgentHooksInstaller {
+    /// Every hook entry NotchFlow writes runs this script, so its name marks NotchFlow's entries.
+    static let hookMarker = "notchflow-agent-hook"
+
+    static var defaultHome: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+    }
+
+    static func supportDirectory(home: URL) -> URL {
+        home.appendingPathComponent("Library/Application Support/NotchFlow/Agents", isDirectory: true)
+    }
+
     private static var supportDirectory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("NotchFlow/Agents", isDirectory: true)
@@ -15,6 +27,10 @@ enum AgentHooksInstaller {
         supportDirectory.appendingPathComponent("notchflow-agent-hook.sh")
     }
 
+    static func hookScriptURL(home: URL) -> URL {
+        supportDirectory(home: home).appendingPathComponent("notchflow-agent-hook.sh")
+    }
+
     static var readmeURL: URL {
         supportDirectory.appendingPathComponent("README.txt")
     }
@@ -22,92 +38,101 @@ enum AgentHooksInstaller {
     struct SetupStatus: Equatable, Sendable {
         var localAPIEnabled: Bool
         var hookScriptInstalled: Bool
-        var claudeHooksInstalled: Bool
-        var cursorHooksInstalled: Bool
-        var grokHooksInstalled: Bool
+        var connectedAgents: Set<AgentKind>
+
+        var claudeHooksInstalled: Bool { connectedAgents.contains(.claude) }
+        var cursorHooksInstalled: Bool { connectedAgents.contains(.cursor) }
+        var grokHooksInstalled: Bool { connectedAgents.contains(.grok) }
 
         var isReady: Bool {
-            localAPIEnabled && hookScriptInstalled && (claudeHooksInstalled || cursorHooksInstalled || grokHooksInstalled)
+            localAPIEnabled && hookScriptInstalled && !connectedAgents.isEmpty
         }
     }
 
-    static func currentStatus(localAPIEnabled: Bool) -> SetupStatus {
-        SetupStatus(
+    static func currentStatus(localAPIEnabled: Bool, home: URL? = nil) -> SetupStatus {
+        let script = home.map(hookScriptURL(home:)) ?? hookScriptURL
+        let home = home ?? defaultHome
+        return SetupStatus(
             localAPIEnabled: localAPIEnabled,
-            hookScriptInstalled: FileManager.default.isExecutableFile(atPath: hookScriptURL.path)
-                || FileManager.default.fileExists(atPath: hookScriptURL.path),
-            claudeHooksInstalled: fileContainsNotchFlowHook(at: claudeSettingsURL),
-            cursorHooksInstalled: fileContainsNotchFlowHook(at: cursorHooksURL),
-            grokHooksInstalled: fileContainsNotchFlowHook(at: grokHooksURL)
+            hookScriptInstalled: FileManager.default.fileExists(atPath: script.path),
+            connectedAgents: Set(AgentKind.connectableAgents.filter { isConnected($0, home: home) })
         )
     }
 
+    /// Writes the hook script and connects each enabled agent. Returns the hooks folder.
     @discardableResult
-    static func install(enabledAgents: Set<AgentKind> = Set(AgentKind.allCases)) throws -> URL {
-        try FileManager.default.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
-        try refreshBundledScript()
+    static func install(
+        enabledAgents: Set<AgentKind> = Set(AgentKind.connectableAgents),
+        home: URL? = nil
+    ) throws -> URL {
+        let directory = home.map(supportDirectory(home:)) ?? supportDirectory
+        let script = home.map(hookScriptURL(home:)) ?? hookScriptURL
+        let home = home ?? defaultHome
+        try writeBundledScript(to: script)
 
-        if enabledAgents.contains(.claude) {
-            try installClaudeHooks()
+        for agent in AgentKind.connectableAgents where enabledAgents.contains(agent) {
+            try installHooks(for: agent, home: home, scriptPath: script.path)
         }
-        if enabledAgents.contains(.cursor) {
-            try installCursorHooks()
-        }
-        if enabledAgents.contains(.grok) {
-            try installGrokHooks()
-        }
-        try writeGenericConfigs(for: enabledAgents)
-        try writeReadme(enabledAgents: enabledAgents)
-        return supportDirectory
+        try writeReadme(in: directory, scriptPath: script.path, enabledAgents: enabledAgents)
+        return directory
     }
 
-    /// Updates the shared hook script without rewriting Claude/Cursor configs.
+    /// Removes NotchFlow's entries and files from each agent. Everything else stays.
+    static func uninstall(
+        agents: Set<AgentKind> = Set(AgentKind.connectableAgents),
+        home: URL? = nil
+    ) throws {
+        let home = home ?? defaultHome
+        var firstError: Error?
+        for agent in AgentKind.connectableAgents where agents.contains(agent) {
+            do {
+                try uninstallHooks(for: agent, home: home)
+            } catch {
+                firstError = firstError ?? error
+            }
+        }
+        if let firstError { throw firstError }
+    }
+
+    /// Updates the shared hook script without rewriting any agent's config.
     static func refreshBundledScript() throws {
-        try FileManager.default.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
-        let script = bundledHookScript()
-        try script.write(to: hookScriptURL, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o755],
-            ofItemAtPath: hookScriptURL.path
+        try writeBundledScript(to: hookScriptURL)
+    }
+
+    private static func writeBundledScript(to url: URL) throws {
+        try FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
         )
+        try bundledHookScript().write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
     }
 
-    static func uninstallClaudeHooks() throws {
-        try scrubHooksFile(at: claudeSettingsURL, isCursorFormat: false)
+    static func uninstallClaudeHooks(home: URL? = nil) throws {
+        try uninstallHooks(for: .claude, home: home ?? defaultHome)
     }
 
-    static func uninstallCursorHooks() throws {
-        try scrubHooksFile(at: cursorHooksURL, isCursorFormat: true)
+    static func uninstallCursorHooks(home: URL? = nil) throws {
+        try uninstallHooks(for: .cursor, home: home ?? defaultHome)
     }
 
-    // MARK: - Paths
+    // MARK: - Commands
 
-    static var claudeSettingsURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".claude/settings.json")
+    /// Single-quotes `value` for a POSIX shell.
+    static func shellQuote(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
-    static var cursorHooksURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".cursor/hooks.json")
-    }
-
-    static var grokHooksURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".grok/hooks/notchflow.json")
+    /// `env NOTCHFLOW_AGENT=<agent> NOTCHFLOW_HOOK_EVENT=<event> '<script>'`
+    static func envCommand(agent: AgentKind, event: String, scriptPath: String) -> String {
+        "env NOTCHFLOW_AGENT=\(agent.rawValue) NOTCHFLOW_HOOK_EVENT=\(event) \(shellQuote(scriptPath))"
     }
 
     // MARK: - Claude
 
-    private static func installClaudeHooks() throws {
-        try ExternalConfigFile.updateJSONObject(at: claudeSettingsURL) { root in
-            mergeClaudeHooks(into: &root, scriptPath: hookScriptURL.path)
-        }
-    }
-
     static func mergeClaudeHooks(into root: inout [String: Any], scriptPath: String) {
         var hooks = root["hooks"] as? [String: Any] ?? [:]
-        let command = "'\(scriptPath)'"
+        let command = shellQuote(scriptPath)
 
         for event in ["PermissionRequest", "SessionStart", "Stop", "Notification", "PostToolUse"] {
             var entries = (hooks[event] as? [Any]) ?? []
@@ -127,12 +152,6 @@ enum AgentHooksInstaller {
     }
 
     // MARK: - Cursor
-
-    private static func installCursorHooks() throws {
-        try ExternalConfigFile.updateJSONObject(at: cursorHooksURL) { root in
-            mergeCursorHooks(into: &root, scriptPath: hookScriptURL.path)
-        }
-    }
 
     static func mergeCursorHooks(into root: inout [String: Any], scriptPath: String) {
         if root["version"] == nil {
@@ -164,10 +183,8 @@ enum AgentHooksInstaller {
         for event in events {
             var entries = (hooks[event] as? [Any]) ?? []
             entries = scrubNotchFlowHooks(from: entries) as? [Any] ?? []
-            let command =
-                "env NOTCHFLOW_AGENT=cursor NOTCHFLOW_HOOK_EVENT=\(event) '\(scriptPath)'"
             entries.append([
-                "command": command,
+                "command": envCommand(agent: .cursor, event: event, scriptPath: scriptPath),
             ] as [String: Any])
             hooks[event] = entries
         }
@@ -178,157 +195,110 @@ enum AgentHooksInstaller {
     // MARK: - Grok Build
 
     /// Monitor-only. Grok Build keeps its own permission prompts; PreToolUse is not installed.
-    private static func installGrokHooks() throws {
-        // NotchFlow owns this file, but it still must not clobber something else saved there.
-        try ExternalConfigFile.updateJSONObject(at: grokHooksURL) { root in
-            root = grokHooksRoot(scriptPath: hookScriptURL.path)
-        }
-    }
-
     static func grokHooksRoot(scriptPath: String) -> [String: Any] {
         var hooks: [String: Any] = [:]
         let events = ["SessionStart", "PostToolUse", "Stop", "SessionEnd", "StopFailure", "Notification"]
         for event in events {
-            let command = "env NOTCHFLOW_AGENT=grok NOTCHFLOW_HOOK_EVENT=\(event) '\(scriptPath)'"
-            hooks[event] = [[
-                "hooks": [[
-                    "type": "command",
-                    "command": command,
-                    "timeout": 10,
-                ] as [String: Any]],
-            ] as [String: Any]]
+            hooks[event] = [nestedHookGroup(
+                command: envCommand(agent: .grok, event: event, scriptPath: scriptPath),
+                timeout: 10
+            )]
         }
         return ["hooks": hooks]
     }
 
     // MARK: - Shared
 
-    private static func scrubHooksFile(at url: URL, isCursorFormat: Bool) throws {
-        try ExternalConfigFile.updateJSONObject(at: url, createIfMissing: false) { root in
-            scrubHooks(in: &root, isCursorFormat: isCursorFormat)
-        }
+    /// `{"hooks": [{"type": "command", "command": …, "timeout": …}]}`, the matcher-group shape
+    /// shared by Claude Code, Codex, Qwen Code, Gemini CLI, Droid and Grok Build.
+    static func nestedHookGroup(command: String, timeout: Int, name: String? = nil) -> [String: Any] {
+        var hook: [String: Any] = ["type": "command", "command": command, "timeout": timeout]
+        if let name { hook["name"] = name }
+        return ["hooks": [hook]]
     }
 
     static func scrubHooks(in root: inout [String: Any], isCursorFormat: Bool) {
-        guard var hooks = root["hooks"] as? [String: Any] else { return }
-        for key in Array(hooks.keys) {
-            hooks[key] = scrubNotchFlowHooks(from: hooks[key])
-            if let entries = hooks[key] as? [Any], entries.isEmpty {
-                hooks.removeValue(forKey: key)
-            }
-        }
-        if hooks.isEmpty {
+        guard let hooks = root["hooks"] as? [String: Any] else { return }
+        let scrubbed = scrubHookMap(hooks)
+        if scrubbed.isEmpty {
             root.removeValue(forKey: "hooks")
         } else {
-            root["hooks"] = hooks
+            root["hooks"] = scrubbed
         }
         if isCursorFormat, root["version"] == nil {
             root["version"] = 1
         }
     }
 
-    private static func scrubNotchFlowHooks(from value: Any?) -> Any? {
+    /// Drops NotchFlow's entries from an `{event: [entries]}` map, and events left empty.
+    static func scrubHookMap(_ hooks: [String: Any]) -> [String: Any] {
+        var hooks = hooks
+        for key in Array(hooks.keys) {
+            guard hooks[key] is [Any] else { continue }
+            hooks[key] = scrubNotchFlowHooks(from: hooks[key])
+            if let entries = hooks[key] as? [Any], entries.isEmpty {
+                hooks.removeValue(forKey: key)
+            }
+        }
+        return hooks
+    }
+
+    static func scrubNotchFlowHooks(from value: Any?) -> Any? {
         guard let entries = value as? [Any] else { return value }
         let filtered = entries.filter { entry in
             guard let dict = entry as? [String: Any] else { return true }
             let encoded = String(describing: dict)
-            return !encoded.contains("notchflow-agent-hook")
+            return !encoded.contains(hookMarker)
         }
         return filtered
     }
 
-    private static func fileContainsNotchFlowHook(at url: URL) -> Bool {
+    static func fileContains(_ marker: String, at url: URL) -> Bool {
         guard let data = try? Data(contentsOf: url),
               let text = String(data: data, encoding: .utf8) else {
             return false
         }
-        return text.contains("notchflow-agent-hook")
+        return text.contains(marker)
     }
 
-    private static func writeGenericConfigs(for agents: Set<AgentKind>) throws {
-        let envSnippet = """
-        # NotchFlow Agents — source from your shell profile if desired
-        export NOTCHFLOW_AGENTS_HOOK="\(hookScriptURL.path)"
-        """
-        try envSnippet.write(
-            to: supportDirectory.appendingPathComponent("env.sh"),
-            atomically: true,
-            encoding: .utf8
-        )
-
-        let cursorNote = """
-        NotchFlow Agents — Cursor
-
-        Po „Połącz agentów” NotchFlow dopisuje hooki monitorujące do:
-          ~/.cursor/hooks.json
-
-        Restart Cursor (Cmd+Q → otwórz ponownie), potem Agent Chat.
-        Status sesji pojawia się w notchu. Cursor nadal pokazuje własne pytania o zgodę
-        (NotchFlow nie blokuje beforeShellExecution / preToolUse).
-
-        Claude Code: Allow / Deny w notchu działa przez PermissionRequest hooks.
-
-        Docs: https://cursor.com/docs/hooks
-        """
-        try cursorNote.write(
-            to: supportDirectory.appendingPathComponent("cursor.txt"),
-            atomically: true,
-            encoding: .utf8
-        )
-
-        for agent in agents where agent != .claude && agent != .cursor && agent != .grok && agent != .grokbot {
-            let note = """
-            NotchFlow Agents — \(agent.displayName)
-
-            Point this agent's notification / hook command at:
-              \(hookScriptURL.path)
-
-            Example:
-              env NOTCHFLOW_AGENT=\(agent.rawValue) '\(hookScriptURL.path)'
-
-            Or POST JSON to NotchFlow Local API /v1/agents/events (see README.txt).
-            """
-            try note.write(
-                to: supportDirectory.appendingPathComponent("\(agent.rawValue).txt"),
-                atomically: true,
-                encoding: .utf8
-            )
-        }
-    }
-
-    private static func writeReadme(enabledAgents: Set<AgentKind>) throws {
-        let list = enabledAgents.map(\.displayName).sorted().joined(separator: ", ")
+    private static func writeReadme(in directory: URL, scriptPath: String, enabledAgents: Set<AgentKind>) throws {
+        let list = AgentKind.connectableAgents
+            .filter { enabledAgents.contains($0) }
+            .map(\.displayName)
+            .joined(separator: ", ")
         let text = """
         NotchFlow Agents
         ================
 
-        Enabled: \(list)
+        Connected: \(list)
 
         Hook script:
-          \(hookScriptURL.path)
+          \(scriptPath)
 
-        Claude Code:
-          Hooks merged into ~/.claude/settings.json
-          Permission prompts can be answered from the NotchFlow island.
+        Allow / Deny in the notch: Claude Code, Codex, Copilot CLI, Qwen Code.
+        Status only (answer prompts in the agent): Gemini CLI, OpenCode, Kilo Code, Crush, Droid,
+        Cursor, Grok Build.
 
-        Cursor:
-          Hooks merged into ~/.cursor/hooks.json (monitor only — session/tool status).
-          Restart Cursor after install. Cursor keeps its own permission prompts.
-          NotchFlow does not block beforeShellExecution / preToolUse.
+        Codex: run /hooks in Codex once and trust the NotchFlow hook. Codex skips new hooks until then.
+        Restart running agents after connecting so they load the hooks.
 
-        Grok Build:
-          Monitor hooks written to ~/.grok/hooks/notchflow.json.
-          Restart the grok CLI. Permission prompts stay in the terminal.
+        Config NotchFlow writes (Disconnect in Settings removes only NotchFlow's entries):
+          Claude Code  ~/.claude/settings.json
+          Codex        ~/.codex/hooks.json
+          Copilot CLI  ~/.copilot/hooks/notchflow.json
+          Qwen Code    ~/.qwen/settings.json
+          Gemini CLI   ~/.gemini/settings.json
+          OpenCode     ~/.config/opencode/plugins/notchflow.js
+          Kilo Code    ~/.config/kilo/plugin/notchflow.js
+          Crush        ~/.config/crush/crushrc (block between NotchFlow markers)
+          Droid        ~/.factory/hooks.json
+          Cursor       ~/.cursor/hooks.json
+          Grok Build   ~/.grok/hooks/notchflow.json
 
-        Grok Bot:
-          Weekly usage is read from the Grok Bot desktop login. No hooks.
-
-        Other agents:
-          See *.txt notes in this folder, or POST /v1/agents/events
-
+        Other agents: run the hook script with NOTCHFLOW_AGENT=<name>, or POST /v1/agents/events.
         Local API must stay enabled (Settings → Integrations).
         """
-        try text.write(to: readmeURL, atomically: true, encoding: .utf8)
+        try text.write(to: directory.appendingPathComponent("README.txt"), atomically: true, encoding: .utf8)
     }
 
     private static func bundledHookScript() -> String {

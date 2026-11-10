@@ -11,6 +11,11 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
     case deepseek
     case grok
     case grokbot
+    case copilot
+    case qwen
+    case kilo
+    case crush
+    case droid
 
     var id: String { rawValue }
 
@@ -25,6 +30,11 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case .deepseek: "DeepSeek"
         case .grok: "Grok Build"
         case .grokbot: "Grok Bot"
+        case .copilot: "Copilot CLI"
+        case .qwen: "Qwen Code"
+        case .kilo: "Kilo Code"
+        case .crush: "Crush"
+        case .droid: "Droid"
         }
     }
 
@@ -40,6 +50,11 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case .deepseek: "DeepSeek"
         case .grok: "Grok"
         case .grokbot: "Grok Bot"
+        case .copilot: "Copilot"
+        case .qwen: "Qwen"
+        case .kilo: "Kilo"
+        case .crush: "Crush"
+        case .droid: "Droid"
         }
     }
 
@@ -54,6 +69,11 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case .deepseek: "waveform"
         case .grok: "wand.and.stars"
         case .grokbot: "desktopcomputer"
+        case .copilot: "airplane"
+        case .qwen: "cloud"
+        case .kilo: "scalemass"
+        case .crush: "heart"
+        case .droid: "cpu"
         }
     }
 
@@ -67,7 +87,7 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case .cursor:
             ["com.todesktop.230313mzl4w4u92", "com.cursorapp.Cursor"]
         case .opencode:
-            ["com.googlecode.iterm2", "com.apple.Terminal", "com.mitchellh.ghostty"]
+            ["com.googlecode.iterm2", "com.apple.Terminal", "com.mitchellh.ghostty", "com.microsoft.VSCode"]
         case .gemini:
             ["com.googlecode.iterm2", "com.apple.Terminal"]
         case .kimi:
@@ -78,8 +98,18 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
             ["com.googlecode.iterm2", "com.apple.Terminal", "com.mitchellh.ghostty"]
         case .grokbot:
             ["com.anysphere.sand"]
+        case .copilot, .qwen, .crush, .droid:
+            Self.terminalBundleIDs
+        case .kilo:
+            Self.terminalBundleIDs + ["com.microsoft.VSCode"]
         }
     }
+
+    /// Terminals the CLI agents usually run in, most common first.
+    static let terminalBundleIDs = [
+        "com.googlecode.iterm2", "com.apple.Terminal", "com.mitchellh.ghostty", "com.github.wez.wezterm",
+        "net.kovidgoyal.kitty", "dev.warp.Warp-Stable",
+    ]
 
     static func from(raw: String?) -> AgentKind {
         guard let raw else { return .claude }
@@ -94,6 +124,11 @@ enum AgentKind: String, CaseIterable, Identifiable, Codable, Sendable {
         case "deep-seek", "deepseek-cli": return .deepseek
         case "grok-build", "grok_build", "xai": return .grok
         case "grok-bot", "grok_bot", "grokbot", "sand": return .grokbot
+        case "github-copilot", "copilot-cli", "gh-copilot": return .copilot
+        case "qwen-code", "qwen_code": return .qwen
+        case "kilo-code", "kilocode", "kilo_code": return .kilo
+        case "charm-crush", "charm": return .crush
+        case "factory", "factory-droid", "factory_droid": return .droid
         default: return .claude
         }
     }
