@@ -148,6 +148,17 @@ NOTCHFLOW_DEMO=1 NOTCHFLOW_DEMO_AGENT_DELAY=8 "$(swift build --show-bin-path)/No
 | `NOTCHFLOW_DEMO=1` | Turns demo mode on (debug builds only). |
 | `NOTCHFLOW_DEMO_AGENT_DELAY` | Seconds before Claude Code's permission request appears (default `3`). |
 | `NOTCHFLOW_DEBUG_ISLAND=expanded` | Optional: opens the expanded island right away. |
+| `NOTCHFLOW_DEMO_LANGUAGE=en` | UI language for the take (`en`, `pl`, `de`, `it`, `es`) without touching your settings. |
+| `NOTCHFLOW_SIMULATE_NOTCH=1` | Gives every external or virtual display a 14" MacBook Pro notch, so a MacBook-style take can be recorded on a virtual display. |
+
+The hero videos on notchflow.eu (`website/assets/video/hero-{en,pl}.{mp4,webm}`) and the README GIF
+(`docs/media/notchflow-demo.gif`) were recorded this way: a temporary 1512×982 pt HiDPI virtual
+display, a neutral wallpaper with a clean fake menu bar, a black notch and a terminal window drawn on
+it, the demo build launched with the variables above (inside a `.app` bundle so Sparkle and the
+Accessibility grant load), the pointer driven by a script, and `screencapture -v -V 26 -D 2 -k`.
+The take is cropped to the MacBook frame's screen ratio (811:509) and encoded with ffmpeg
+(H.264 CRF 25 + VP9 CRF 38, 1600×1004, 30 fps); the poster is the frame at 13 s. Close any other
+running NotchFlow first, or both islands react to the pointer.
 
 What you get:
 

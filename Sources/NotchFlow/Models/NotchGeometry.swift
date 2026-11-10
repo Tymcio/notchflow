@@ -60,6 +60,25 @@ struct ScreenMetrics: Equatable, Sendable {
     static let isSimulatingNoNotch: Bool =
         ProcessInfo.processInfo.environment[simulateNoNotchEnvironmentKey] == "1"
 
+    #if DEBUG
+    /// Debug override for recording the demo video on a virtual display:
+    /// `NOTCHFLOW_SIMULATE_NOTCH=1` gives every non-built-in display a 14" MacBook Pro notch
+    /// (the recording studio draws the black notch itself).
+    static let isSimulatingNotch: Bool =
+        ProcessInfo.processInfo.environment["NOTCHFLOW_SIMULATE_NOTCH"] == "1"
+
+    /// The same display reporting a centered hardware notch sized like a 14" MacBook Pro's.
+    func withSimulatedNotch(menuBarHeight: CGFloat = 32) -> ScreenMetrics {
+        var copy = self
+        let notchWidth = (frame.width * 185 / 1512).rounded()
+        let side = (frame.width - notchWidth) / 2
+        copy.safeAreaTop = menuBarHeight
+        copy.auxiliaryTopLeftArea = CGRect(x: frame.minX, y: frame.maxY - menuBarHeight, width: side, height: menuBarHeight)
+        copy.auxiliaryTopRightArea = CGRect(x: frame.maxX - side, y: frame.maxY - menuBarHeight, width: side, height: menuBarHeight)
+        return copy
+    }
+    #endif
+
     /// The same display with its top cutout removed (what a notch-less Mac reports).
     func withoutTopCutout() -> ScreenMetrics {
         var copy = self
@@ -85,6 +104,13 @@ extension ScreenMetrics {
         if simulateNoNotch {
             self = withoutTopCutout()
         }
+        #if DEBUG
+        if ScreenMetrics.isSimulatingNotch, safeAreaTop <= 0,
+           let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
+           CGDisplayIsBuiltin(id) == 0 {
+            self = withSimulatedNotch()
+        }
+        #endif
         // Some displays draw a menu bar without reserving it in `visibleFrame`. Without a
         // cutout the capsule needs the real menu bar height, so ask the window server.
         if safeAreaTop <= 0, reservedMenuBarHeight <= 0 {

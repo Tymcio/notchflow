@@ -8,7 +8,7 @@ Your coding agents and daily controls in an island at the top of your Mac's scre
 **[Download](https://github.com/Tymcio/notchflow/releases/latest)** · **[Website](https://notchflow.eu)** · **[Roadmap](docs/roadmap.md)** · **[Free vs Premium](docs/free-vs-premium.md)** · **[Contributing](CONTRIBUTING.md)**
 
 <p align="center">
-  <img src="website/assets/screenshots/01-music.png" alt="NotchFlow — music player in the notch island" width="900"/>
+  <img src="docs/media/notchflow-demo.gif" alt="NotchFlow: Claude Code asks for permission in the notch and is approved there, then music, usage limits, calendar and file shelf open from the same island" width="760"/>
 </p>
 
 <p align="center"><em>Hover the top of your screen — the island expands into coding agents, music, calendar, shelf, timers, notes, clipboard, and mirror.</em></p>
