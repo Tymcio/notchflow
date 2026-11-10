@@ -76,10 +76,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         item.behavior = []
         forceStatusItemVisible(item)
 
-        statusItemVisibilityObservation = item.observe(\.isVisible, options: [.new]) { [weak self] item, change in
+        statusItemVisibilityObservation = item.observe(\.isVisible, options: [.new]) { [weak self] _, change in
             guard change.newValue == false else { return }
+            // Re-read the item on the main actor instead of sending the KVO argument across.
             DispatchQueue.main.async { [weak self] in
-                self?.restoreStatusItemVisibility(item)
+                guard let self, let statusItem = self.statusItem else { return }
+                self.restoreStatusItemVisibility(statusItem)
             }
         }
 

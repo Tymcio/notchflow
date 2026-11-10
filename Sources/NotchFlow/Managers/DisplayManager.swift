@@ -20,16 +20,18 @@ final class DisplayManager: ObservableObject {
         isPointerNearNotch || isDragNearNotch
     }
 
-    private var screenChangeObserver: NSObjectProtocol?
-    private var workspaceObserver: NSObjectProtocol?
-    private var mouseMonitor: Any?
-    private var localMouseMonitor: Any?
-    private var dragMonitor: Any?
-    private var localDragMonitor: Any?
-    private var dragEndMonitor: Any?
-    private var localDragEndMonitor: Any?
-    private var localMouseDownMonitor: Any?
-    private var activationObserver: NSObjectProtocol?
+    // Observer and monitor tokens are nonisolated(unsafe): they are only touched on the main
+    // actor, and the nonisolated deinit reads them once after the last reference is gone.
+    nonisolated(unsafe) private var screenChangeObserver: NSObjectProtocol?
+    nonisolated(unsafe) private var workspaceObserver: NSObjectProtocol?
+    nonisolated(unsafe) private var mouseMonitor: Any?
+    nonisolated(unsafe) private var localMouseMonitor: Any?
+    nonisolated(unsafe) private var dragMonitor: Any?
+    nonisolated(unsafe) private var localDragMonitor: Any?
+    nonisolated(unsafe) private var dragEndMonitor: Any?
+    nonisolated(unsafe) private var localDragEndMonitor: Any?
+    nonisolated(unsafe) private var localMouseDownMonitor: Any?
+    nonisolated(unsafe) private var activationObserver: NSObjectProtocol?
     private let settings: NotchSettings
     private let menuBarLayoutManager: MenuBarLayoutManager
     private var cancellables = Set<AnyCancellable>()

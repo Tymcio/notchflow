@@ -86,9 +86,11 @@ final class NotchPanelController: ObservableObject {
     private var hideTask: Task<Void, Never>?
     private var hoverDwellTask: Task<Void, Never>?
     private var hoverExitGraceTask: Task<Void, Never>?
-    private var clickMonitor: Any?
-    private var escapeMonitor: Any?
-    private var spaceChangeObserver: NSObjectProtocol?
+    // nonisolated(unsafe): only touched on the main actor; the nonisolated deinit reads them
+    // once after the last reference is gone.
+    nonisolated(unsafe) private var clickMonitor: Any?
+    nonisolated(unsafe) private var escapeMonitor: Any?
+    nonisolated(unsafe) private var spaceChangeObserver: NSObjectProtocol?
     /// Last known answer to "may idle wings show on the active display?", to react only to changes.
     private var lastIdleAllowedByGeometry = true
     private var suppressAutoShow = false

@@ -11,7 +11,9 @@ final class MenuBarLayoutManager: ObservableObject {
     @Published private(set) var appMenuRightEdgeX: CGFloat?
     @Published private(set) var isAccessibilityTrusted = AXIsProcessTrusted()
 
-    private var workspaceObserver: NSObjectProtocol?
+    // nonisolated(unsafe): only touched on the main actor; the nonisolated deinit reads it once
+    // after the last reference is gone.
+    nonisolated(unsafe) private var workspaceObserver: NSObjectProtocol?
     private var capsuleScanCache: CapsuleScan?
     private var delayedRefreshTask: Task<Void, Never>?
     private var menuEdgePublishTask: Task<Void, Never>?
@@ -118,7 +120,8 @@ final class MenuBarLayoutManager: ObservableObject {
     }
 
     func requestPermission() {
-        let promptKey = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+        // Value of `kAXTrustedCheckOptionPrompt`; reading the C global is not concurrency-safe.
+        let promptKey = "AXTrustedCheckOptionPrompt"
         let options = [promptKey: true] as CFDictionary
         isAccessibilityTrusted = AXIsProcessTrustedWithOptions(options)
         refresh()
