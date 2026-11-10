@@ -7477,6 +7477,22 @@
         "es": { "stringUnit": { "state": "translated", "value": "Vuelve a iniciar sesión en Cursor para ver los límites" } }
       }
     },
+    "%@ is not a valid JSON settings file. NotchFlow left it unchanged. Fix or remove it, then connect agents again.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "%@ nie jest prawidłowym plikiem ustawień JSON. NotchFlow go nie zmienił. Popraw go lub usuń, a potem ponownie połącz agentów." } },
+        "de": { "stringUnit": { "state": "translated", "value": "%@ ist keine gültige JSON-Einstellungsdatei. NotchFlow hat sie nicht verändert. Korrigiere oder entferne sie und verbinde die Agenten dann erneut." } },
+        "it": { "stringUnit": { "state": "translated", "value": "%@ non è un file di impostazioni JSON valido. NotchFlow non l’ha modificato. Correggilo o rimuovilo, poi collega di nuovo gli agenti." } },
+        "es": { "stringUnit": { "state": "translated", "value": "%@ no es un archivo de ajustes JSON válido. NotchFlow no lo ha modificado. Corrígelo o elimínalo y vuelve a conectar los agentes." } }
+      }
+    },
+    "%@ changed while NotchFlow was updating it. Try again in a moment.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "%@ zmienił się podczas aktualizacji przez NotchFlow. Spróbuj ponownie za chwilę." } },
+        "de": { "stringUnit": { "state": "translated", "value": "%@ wurde geändert, während NotchFlow die Datei aktualisierte. Versuche es gleich noch einmal." } },
+        "it": { "stringUnit": { "state": "translated", "value": "%@ è cambiato mentre NotchFlow lo aggiornava. Riprova tra un momento." } },
+        "es": { "stringUnit": { "state": "translated", "value": "%@ cambió mientras NotchFlow lo actualizaba. Vuelve a intentarlo en un momento." } }
+      }
+    },
     "Sign in with Codex to see limits": {
       "localizations": {
         "pl": {

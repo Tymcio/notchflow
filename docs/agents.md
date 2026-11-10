@@ -14,6 +14,8 @@ Supported: **Claude Code**, **Codex**, **Cursor**, **Grok Build**, **Grok Bot**,
 
 Setup lives only in Settings (not in the island Agents tab).
 
+**How config files are edited.** NotchFlow merges its hooks into `~/.claude/settings.json`, `~/.cursor/hooks.json` and `~/.grok/hooks/notchflow.json` without disturbing the rest of the file: a symlinked file stays a symlink (the real file is updated), its permissions are kept, and the first time NotchFlow changes a file it saves the original next to it as `<file>.notchflow-backup`. If a file exists but is not a JSON object (or does not parse), NotchFlow stops with an error and leaves it untouched.
+
 ## Cursor vs Claude Code
 
 | | Cursor | Claude Code |
