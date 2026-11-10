@@ -20,6 +20,13 @@ fi
 
 BASE="http://127.0.0.1:${PORT}"
 
+# Sends the bearer token on curl's stdin (`-H @-`), never on its command line, so it
+# does not show up in `ps` while the permission poll below runs. `printf` is a bash
+# builtin, so the token is never in any process's argv. Needs curl >= 7.55 (macOS 14+).
+auth_header() {
+  printf 'Authorization: Bearer %s\n' "$TOKEN"
+}
+
 PARSED="$(
   printf '%s' "$INPUT" | FORCED_EVENT="$FORCED_EVENT" AGENT_HINT="$AGENT" /usr/bin/python3 -c '
 import json, os, sys, hashlib
@@ -214,8 +221,8 @@ print(json.dumps({
 '
 )
 
-/usr/bin/curl -sS -X POST "${BASE}/v1/agents/events" \
-  -H "Authorization: Bearer ${TOKEN}" \
+auth_header | /usr/bin/curl -sS -X POST "${BASE}/v1/agents/events" \
+  -H @- \
   -H "Content-Type: application/json" \
   -d "$PAYLOAD" >/dev/null 2>&1 || true
 
@@ -243,8 +250,8 @@ if [[ "$NF_EVENT" != "permission" || -z "$PERMISSION_ID" ]]; then
 fi
 
 for _ in $(seq 1 600); do
-  RESP="$(/usr/bin/curl -sS "${BASE}/v1/agents/permission/${PERMISSION_ID}" \
-    -H "Authorization: Bearer ${TOKEN}" 2>/dev/null || true)"
+  RESP="$(auth_header | /usr/bin/curl -sS "${BASE}/v1/agents/permission/${PERMISSION_ID}" \
+    -H @- 2>/dev/null || true)"
   DECISION="$(printf '%s' "$RESP" | /usr/bin/python3 -c 'import json,sys
 try:
   print(json.load(sys.stdin).get("decision") or "")
