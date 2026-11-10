@@ -149,6 +149,11 @@ struct NotchGeometry: Equatable {
         anchor == .menuBarCapsule && allowsAutomaticPresentation && !shouldHideIdleForMenuOverlap
     }
 
+    /// What idle-visibility reconciliation needs, as plain values.
+    var idleVisibilityFlags: (allowed: Bool, bareCapsule: Bool, automatic: Bool) {
+        (allowsAutomaticPresentation && !shouldHideIdleForMenuOverlap, showsCapsuleWhileIdle, allowsAutomaticPresentation)
+    }
+
     var shouldHideIdleForMenuOverlap: Bool {
         // Left-wing width already drops to 0 when the app menu is too wide; keep the right wing visible.
         (idleLeftWingWidth == 0 && idleRightWingWidth == 0) || suppressesIdleCapsule

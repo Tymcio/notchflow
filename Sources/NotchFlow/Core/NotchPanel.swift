@@ -273,33 +273,44 @@ final class NotchPanelController: ObservableObject {
     /// nothing else changes; follow those transitions. Hardware-notch geometry always allows idle
     /// wings, so notched MacBooks never act here.
     private func reconcileIdleVisibility() {
-        guard let geometry = displayManager.geometry else { return }
-        let allowed = geometry.allowsAutomaticPresentation && !geometry.shouldHideIdleForMenuOverlap
-        let bareCapsule = geometry.showsCapsuleWhileIdle
-        let leftBareCapsule = lastShowedBareCapsule && !bareCapsule
-        guard allowed != lastIdleAllowedByGeometry || bareCapsule != lastShowedBareCapsule else { return }
-        lastIdleAllowedByGeometry = allowed
-        lastShowedBareCapsule = bareCapsule
-        guard !isExpanded else { return }
+        guard let flags = displayManager.geometry?.idleVisibilityFlags else { return }
+        let leftBareCapsule = lastShowedBareCapsule && !flags.bareCapsule
+        if flags.allowed == lastIdleAllowedByGeometry && flags.bareCapsule == lastShowedBareCapsule { return }
+        lastIdleAllowedByGeometry = flags.allowed
+        lastShowedBareCapsule = flags.bareCapsule
+        if isExpanded { return }
 
-        if allowed, wantsIdle {
-            guard !isVisible,
-                  !suppressAutoShow,
-                  !displayManager.shouldHideIsland else { return }
-            presentIdle()
-        } else if allowed {
+        if !flags.allowed {
+            dismissIdleNotAllowed(allowsAutomaticPresentation: flags.automatic)
+        } else if wantsIdle {
+            presentIdleIfHidden()
+        } else if leftBareCapsule {
             // The pointer took the island from a "Top center" capsule to a display with nothing
             // to show (a hardware notch with no live activity): drop the empty capsule.
-            if leftBareCapsule, isVisible, !displayManager.isNotchInteractionActive {
-                dismissImmediately()
-            }
-        } else if isVisible {
-            // Calls and notification peeks still show over menus, but not when the user turned
-            // the island off for this kind of display.
-            let keepForPriority = geometry.allowsAutomaticPresentation && hasPriorityLiveActivity
-            if !keepForPriority {
-                dismissImmediately()
-            }
+            dismissIdleIfUntouched()
+        }
+    }
+
+    // Kept small and fed plain flags: Swift 6.4.2's SimplifyCFG pass crashed (release builds
+    // only) when `reconcileIdleVisibility` held the whole geometry across these branches.
+    private func presentIdleIfHidden() {
+        if isVisible || suppressAutoShow || displayManager.shouldHideIsland { return }
+        presentIdle()
+    }
+
+    private func dismissIdleIfUntouched() {
+        if isVisible && !displayManager.isNotchInteractionActive {
+            dismissImmediately()
+        }
+    }
+
+    private func dismissIdleNotAllowed(allowsAutomaticPresentation: Bool) {
+        guard isVisible else { return }
+        // Calls and notification peeks still show over menus, but not when the user turned
+        // the island off for this kind of display.
+        let keepForPriority = allowsAutomaticPresentation && hasPriorityLiveActivity
+        if !keepForPriority {
+            dismissImmediately()
         }
     }
 
