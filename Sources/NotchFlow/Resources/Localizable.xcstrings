@@ -169,34 +169,6 @@
         }
       }
     },
-    "Accessibility permission is required to detect calls and Notification Center alerts.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wymagane uprawnienie Dostępności, aby wykrywać połączenia i powiadomienia z Notification Center."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bedienungshilfen sind erforderlich, um Anrufe und Mitteilungszentrale-Banner zu erkennen."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Serve Accessibilità per rilevare chiamate e avvisi del Centro notifiche."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Se requiere Accesibilidad para detectar llamadas y avisos del Centro de notificaciones."
-          }
-        }
-      }
-    },
     "Accessibility permission is required to detect the app menu position.": {
       "localizations": {
         "pl": {
@@ -561,34 +533,6 @@
         }
       }
     },
-    "Answer call": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Odbierz połączenie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anruf annehmen"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rispondi alla chiamata"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Contestar llamada"
-          }
-        }
-      }
-    },
     "App menu": {
       "localizations": {
         "pl": {
@@ -949,62 +893,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Calendario y otras pestañas ajustan la altura al contenido automáticamente."
-          }
-        }
-      }
-    },
-    "Calls in the notch": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Połączenia w notchu"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anrufe in der Notch"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chiamate nel notch"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Llamadas en el notch"
-          }
-        }
-      }
-    },
-    "Calls in the notch require a Premium license.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Połączenia w notchu wymagają licencji Premium."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anrufe in der Notch erfordern eine Premium-Lizenz."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le chiamate nel notch richiedono licenza Premium."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Las llamadas en el notch requieren licencia Premium."
           }
         }
       }
@@ -1597,34 +1485,6 @@
         }
       }
     },
-    "Decline call": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Odrzuć połączenie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anruf ablehnen"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rifiuta chiamata"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rechazar llamada"
-          }
-        }
-      }
-    },
     "Delete note": {
       "localizations": {
         "pl": {
@@ -1961,34 +1821,6 @@
         }
       }
     },
-    "End call": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zakończ połączenie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anruf beenden"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Termina chiamata"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Finalizar llamada"
-          }
-        }
-      }
-    },
     "Enter license key…": {
       "localizations": {
         "pl": {
@@ -2013,34 +1845,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Introducir clave de licencia…"
-          }
-        }
-      }
-    },
-    "FaceTime and calls relayed from iPhone appear in the island instead of only as a side banner.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FaceTime i połączenia przekazywane z iPhone'a pojawią się w wyspie zamiast tylko jako banner z boku."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FaceTime und vom iPhone weitergeleitete Anrufe erscheinen in der Insel statt nur als Seitenbanner."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FaceTime e chiamate inoltrate dall'iPhone compaiono nell'isola invece che solo come banner laterale."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FaceTime y llamadas reenviadas desde el iPhone aparecen en la isla en lugar de solo como banner lateral."
           }
         }
       }
@@ -2433,34 +2237,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "En la extensión Raycast basta el Token API — la dirección se lee automáticamente de api.json. Puerto fijo: %lld."
-          }
-        }
-      }
-    },
-    "Incoming call": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Połączenie przychodzące"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eingehender Anruf"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chiamata in arrivo"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Llamada entrante"
           }
         }
       }
@@ -5373,34 +5149,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mostrar isla Notch"
-          }
-        }
-      }
-    },
-    "Show incoming calls in the island": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pokazuj połączenia przychodzące w wyspie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eingehende Anrufe in der Insel anzeigen"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mostra chiamate in arrivo nell'isola"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mostrar llamadas entrantes en la isla"
           }
         }
       }

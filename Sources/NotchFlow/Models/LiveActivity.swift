@@ -1,55 +1,5 @@
 import Foundation
 
-struct IncomingCallActivity: Equatable, Sendable {
-    let callerName: String
-    let appBundleID: String
-    let receivedAt: Date
-    /// PNG/JPEG bytes of the contact thumbnail when Contacts lookup succeeds.
-    let avatarImageData: Data?
-
-    init(
-        callerName: String,
-        appBundleID: String,
-        receivedAt: Date,
-        avatarImageData: Data? = nil
-    ) {
-        self.callerName = callerName
-        self.appBundleID = appBundleID
-        self.receivedAt = receivedAt
-        self.avatarImageData = avatarImageData
-    }
-}
-
-struct ActiveCallActivity: Equatable, Sendable {
-    let callerName: String
-    let appBundleID: String
-    let startedAt: Date
-    let avatarImageData: Data?
-
-    init(
-        callerName: String,
-        appBundleID: String,
-        startedAt: Date,
-        avatarImageData: Data? = nil
-    ) {
-        self.callerName = callerName
-        self.appBundleID = appBundleID
-        self.startedAt = startedAt
-        self.avatarImageData = avatarImageData
-    }
-
-    var elapsedSeconds: Int {
-        max(0, Int(Date().timeIntervalSince(startedAt)))
-    }
-
-    var formattedDuration: String {
-        let total = elapsedSeconds
-        let minutes = total / 60
-        let seconds = total % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-}
-
 struct FocusTimerActivity: Equatable, Sendable {
     let formattedTime: String
     let progress: Double
@@ -104,8 +54,6 @@ struct NotificationPeekActivity: Equatable, Sendable {
 }
 
 enum LiveActivityKind: Equatable, Sendable {
-    case incomingCall(IncomingCallActivity)
-    case activeCall(ActiveCallActivity)
     case agentSession(AgentSessionActivity)
     case timer(FocusTimerActivity)
     case notification(NotificationPeekActivity)
@@ -113,8 +61,6 @@ enum LiveActivityKind: Equatable, Sendable {
 
     var priority: Int {
         switch self {
-        case .incomingCall: 0
-        case .activeCall: 1
         case .agentSession(let session) where session.needsAttention: 2
         case .notification: 3
         case .agentSession: 4
@@ -126,19 +72,11 @@ enum LiveActivityKind: Equatable, Sendable {
 
 enum LiveActivityResolver {
     static func resolve(
-        incomingCall: IncomingCallActivity?,
-        activeCall: ActiveCallActivity?,
         agentSession: AgentSessionActivity?,
         timer: FocusTimerActivity?,
         notification: NotificationPeekActivity?,
         showsMedia: Bool
     ) -> LiveActivityKind? {
-        if let incomingCall {
-            return .incomingCall(incomingCall)
-        }
-        if let activeCall {
-            return .activeCall(activeCall)
-        }
         if let agentSession, agentSession.needsAttention {
             return .agentSession(agentSession)
         }

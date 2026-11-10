@@ -105,7 +105,6 @@ final class NotificationCatalogTests: XCTestCase {
         XCTAssertFalse(NotificationAppCatalog.isCalendarChromeLabel("Ada Nowak"))
         XCTAssertTrue(NotificationAppCatalog.isPlausibleCallerName("Ada Nowak"))
         XCTAssertTrue(NotificationAppCatalog.isPlausibleCallerName("Martyna Tymków"))
-        XCTAssertTrue(NotificationAppCatalog.isContinuityCallSubtitle("Z Twojego iPhone'a"))
         XCTAssertFalse(
             NotificationAppCatalog.isPlausibleCallerName(
                 "„NotchFlow” chce uzyskać dostęp do Twoich kontaktów."
@@ -133,41 +132,7 @@ final class NotificationCatalogTests: XCTestCase {
 }
 
 @MainActor
-final class CallActivityTests: XCTestCase {
-    func testIncomingCallOutranksActiveCallAndNotifications() {
-        let incoming = IncomingCallActivity(
-            callerName: "Ada",
-            appBundleID: "com.apple.FaceTime",
-            receivedAt: .now
-        )
-        let active = ActiveCallActivity(
-            callerName: "Ada",
-            appBundleID: "com.apple.FaceTime",
-            startedAt: .now
-        )
-        let peek = NotificationPeekActivity(
-            id: UUID(),
-            appName: "Messages",
-            appBundleID: "com.apple.MobileSMS",
-            openBundleID: "com.apple.MobileSMS",
-            sender: "Bob",
-            body: "Hi",
-            receivedAt: .now,
-            expiresAt: Date().addingTimeInterval(10),
-            supportsQuickReply: true
-        )
-
-        let resolved = LiveActivityResolver.resolve(
-            incomingCall: incoming,
-            activeCall: active,
-            agentSession: nil,
-            timer: nil,
-            notification: peek,
-            showsMedia: true
-        )
-        XCTAssertEqual(resolved, .incomingCall(incoming))
-    }
-
+final class LiveActivityResolverTests: XCTestCase {
     func testNotificationPeekTemporarilyOutranksRunningFocusTimer() {
         let timer = FocusTimerActivity(
             formattedTime: "12:00",
@@ -189,25 +154,12 @@ final class CallActivityTests: XCTestCase {
             supportsQuickReply: false
         )
         let resolved = LiveActivityResolver.resolve(
-            incomingCall: nil,
-            activeCall: nil,
             agentSession: nil,
             timer: timer,
             notification: peek,
             showsMedia: true
         )
         XCTAssertEqual(resolved, .notification(peek))
-    }
-
-    func testIncomingBannerWidthStaysWithinBounds() {
-        let call = IncomingCallActivity(
-            callerName: "Wesley Tingey",
-            appBundleID: "com.apple.FaceTime",
-            receivedAt: .now
-        )
-        let width = IncomingCallBannerMetrics.preferredWidth(for: call, cutoutWidth: 184)
-        XCTAssertGreaterThanOrEqual(width, NotchFlowConstants.minIncomingCallBannerWidth)
-        XCTAssertLessThanOrEqual(width, NotchFlowConstants.maxIncomingCallBannerWidth)
     }
 
     func testNotificationDripWidthStaysWithinBounds() {

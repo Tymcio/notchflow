@@ -72,21 +72,9 @@ struct NotchIslandView: View {
 
     @ViewBuilder
     private func idleIsland(geometry: NotchGeometry, activity: LiveActivityKind) -> some View {
-        if case .incomingCall(let call) = activity,
+        if case .notification(let peek) = activity,
            let bannerWidth = appState.idleDropBannerWidth,
            let bannerHeight = appState.idleDropBannerHeight {
-            IncomingCallBannerView(
-                call: call,
-                bannerWidth: bannerWidth,
-                bannerHeight: bannerHeight,
-                topInset: appState.idleDropBannerTopInset,
-                onAnswer: { appState.answerIncomingCall() },
-                onDecline: { appState.declineIncomingCall() }
-            )
-            .frame(width: bannerWidth, height: bannerHeight, alignment: .top)
-        } else if case .notification(let peek) = activity,
-                  let bannerWidth = appState.idleDropBannerWidth,
-                  let bannerHeight = appState.idleDropBannerHeight {
             NotificationBannerView(
                 notification: peek,
                 bannerWidth: bannerWidth,
@@ -105,9 +93,6 @@ struct NotchIslandView: View {
                 mediaState: appState.mediaState,
                 accent: appState.settings.selectedTheme.accent,
                 wingLayout: wingLayout,
-                onAnswerCall: { appState.answerIncomingCall() },
-                onDeclineCall: { appState.declineIncomingCall() },
-                onEndCall: { appState.endActiveCall() },
                 onOpenNotification: { appState.openHubNotificationApp() },
                 onReplyNotification: { text in appState.replyToHubNotification(text) },
                 onDismissFinishedTimer: { appState.focusTimerManager.reset() },
@@ -115,7 +100,6 @@ struct NotchIslandView: View {
                 onDenyAgent: { appState.denyActiveAgentPermission() },
                 onJumpAgent: { appState.jumpToActiveAgentSession() },
                 supportsQuickReply: appState.notificationHub.supportsQuickReply,
-                isWingHoverActive: appState.isIdleWingHoverActive,
                 agentUsageHint: {
                     _ = appState.agentUsageRevision
                     if case .agentSession(let session) = activity {
