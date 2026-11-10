@@ -31,9 +31,15 @@ sample $(pgrep NotchFlow) 5 -file /tmp/notchflow-sample.txt
 
 ## Architecture rules
 
-- No unconditional polling loops for media, HUD, or license checks
-- AppleScript media polling runs only while the island is visible and playback is active
+- No unconditional polling loops for media, HUD, calendar or license checks
+- Never block the main thread on IPC: Accessibility, AppleScript, EventKit and AVCaptureSession calls run on background queues
+- AppleScript (`NSAppleScript`) runs only on `AppleScriptExecutor`'s serial queue — never concurrently, never on the main thread; poll scripts are compiled once and wrapped in `with timeout`
+- AppleScript media polling (one compiled script per *running* player, 0.75 s) runs only while the island is expanded on the media module and playback is active
+- Media monitor uses distributed notifications as the primary source and publishes immediately; artwork and lyrics are fetched afterwards per track (cancellable, results and misses cached, 5 s network timeout) and artwork is downsampled to 104 px
 - Menu bar overlap layout is event-driven (`didActivateApplicationNotification` + delayed refresh)
 - Mouse tracking coalesced on `mouseMoved` (no Accessibility polling for menu layout)
-- Media monitor uses distributed notifications as the primary source; scripting bridge is a timing supplement only when needed
-- Notification AX scan backs off to 1.5 s after eight empty scans (premium calls/notifications)
+- Notification Center banners (premium notifications) are detected by an `AXObserver` (a short burst of scans per UI change) plus a 5 s safety poll; the tree walk runs off the main thread with a 0.25 s AX messaging timeout per element and node / 1.5 s time budgets per scan
+- Looping indicators (equalizer, agent typing dots, attention / finished-timer glow) are Core Animation layer animations: they run in the render server, stop when off screen and are static with Reduce Motion — no SwiftUI `repeatForever`
+- Focus timer: one timer per phase end; views redraw once per displayed second only while a timer runs; muted-alert detection uses a CoreAudio property listener
+- Calendar refreshes on `EKEventStoreChanged`, day change, wake, and a one-shot timer at the next event start/end (at most hourly otherwise)
+- Agent stale-session watchdog (5 s) runs only while an agent session is running or waiting

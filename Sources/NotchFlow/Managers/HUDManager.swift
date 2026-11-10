@@ -20,12 +20,10 @@ final class HUDManager {
     private var observers: [NSObjectProtocol] = []
     private var hideTask: Task<Void, Never>?
 
+    /// Registers once; the manager lives for the whole app session.
     func start() {
+        guard observers.isEmpty else { return }
         registerObservers()
-    }
-
-    deinit {
-        observers.forEach(NotificationCenter.default.removeObserver)
     }
 
     private func registerObservers() {
@@ -41,29 +39,34 @@ final class HUDManager {
                 object: nil,
                 queue: .main
             ) { [weak self] notification in
-                guard let self else { return }
-                Task { @MainActor in
-                    self.handle(notification: notification, name: name)
+                let level = HUDLevel(userInfo: notification.userInfo)
+                MainActor.assumeIsolated {
+                    self?.handle(level, name: name)
                 }
             }
             observers.append(token)
         }
     }
 
-    private func handle(notification: Notification, name: String) {
-        let userInfo = notification.userInfo ?? [:]
+    /// Levels read from the notification on the posting thread (only Sendable values cross over).
+    private struct HUDLevel: Sendable {
+        let volume: Double?
+        let brightness: Double?
 
+        init(userInfo: [AnyHashable: Any]?) {
+            volume = (userInfo?["Volume"] as? Double) ?? (userInfo?["VolumeScalar"] as? Double)
+            brightness = userInfo?["Brightness"] as? Double
+        }
+    }
+
+    private func handle(_ level: HUDLevel, name: String) {
         if name.contains("Volume") || name.contains("sound") {
-            let volume = (userInfo["Volume"] as? Double)
-                ?? (userInfo["VolumeScalar"] as? Double)
-                ?? Double(NSApplication.shared.windows.count > 0 ? 0.5 : 0.5)
-            showHUD(kind: .volume, value: volume, label: loc("Volume"))
+            showHUD(kind: .volume, value: level.volume ?? 0.5, label: loc("Volume"))
             return
         }
 
         if name.contains("Brightness") {
-            let brightness = (userInfo["Brightness"] as? Double) ?? 0.5
-            showHUD(kind: .brightness, value: brightness, label: loc("Brightness"))
+            showHUD(kind: .brightness, value: level.brightness ?? 0.5, label: loc("Brightness"))
         }
     }
 
