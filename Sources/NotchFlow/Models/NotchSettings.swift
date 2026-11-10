@@ -212,7 +212,10 @@ final class NotchSettings {
             )
             nonNotchIslandPlacement = resolved
             // Saved once, so the next launch (which would look like an existing install) keeps it.
-            defaults.set(resolved.rawValue, forKey: Keys.nonNotchIslandPlacement)
+            // Demo mode leaves the defaults of the real install alone.
+            if !DemoMode.isEnabled {
+                defaults.set(resolved.rawValue, forKey: Keys.nonNotchIslandPlacement)
+            }
         }
         islandDisplay = defaults.string(forKey: Keys.islandDisplay)
             .flatMap(IslandDisplayPreference.init(rawValue:)) ?? .followPointer
@@ -239,7 +242,7 @@ final class NotchSettings {
         }
 
         // One-time: fold previously enabled Rambox *native* service IDs into the single allowlist.
-        if !defaults.bool(forKey: Keys.ramboxAllowlistMigrated) {
+        if !defaults.bool(forKey: Keys.ramboxAllowlistMigrated), !DemoMode.isEnabled {
             let ramboxServices = defaults.stringArray(forKey: Keys.allowedRamboxServiceBundleIDs) ?? []
             ids.append(contentsOf: ramboxServices)
             defaults.set(true, forKey: Keys.ramboxAllowlistMigrated)

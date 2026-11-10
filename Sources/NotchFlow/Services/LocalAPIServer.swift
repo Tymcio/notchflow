@@ -61,7 +61,8 @@ final class LocalAPIServer {
 
     func start(appState: AppState) async throws {
         self.appState = appState
-        guard appState.settings.localAPIEnabled else { return }
+        // Demo mode has no hooks behind it and must not read the API token from the Keychain.
+        guard !DemoMode.isEnabled, appState.settings.localAPIEnabled else { return }
 
         _ = try APIAuth.token()
 

@@ -6,6 +6,15 @@ final class AgentSessionManager {
     var onStateChange: (() -> Void)?
     /// Fired when a session newly needs the user (notch approval or jump-to-agent).
     var onNeedsAttention: ((AgentSession) -> Void)?
+    /// Fired after a consent prompt was answered in the notch and the session updated.
+    var onPermissionDecided: ((String, AgentPermissionDecision) -> Void)?
+    /// When false, jumping never activates or opens another app (debug demo mode).
+    var jumpsToAgentApps = true
+    /// When false, quiet running sessions are never treated as finished (debug demo mode,
+    /// where no hook reports progress).
+    var finishesQuietSessions = true {
+        didSet { updateStaleWatchdog() }
+    }
 
     private(set) var sessions: [AgentSession] = [] {
         didSet { updateStaleWatchdog() }
@@ -200,6 +209,7 @@ final class AgentSessionManager {
     }
 
     func decidePermission(id: String, decision: AgentPermissionDecision) {
+        defer { onPermissionDecided?(id, decision) }
         permissionDecisions[id] = decision
         for key in Array(queuedPermissions.keys) {
             queuedPermissions[key]?.removeAll { $0.id == id }
@@ -264,6 +274,7 @@ final class AgentSessionManager {
     }
 
     func jump(to session: AgentSession) {
+        guard jumpsToAgentApps else { return }
         // Prefer bringing an already-running agent/IDE forward.
         let candidates = ([session.terminalBundleID].compactMap { $0 } + session.agent.preferredBundleIDs)
         var didActivate = false
@@ -421,7 +432,7 @@ final class AgentSessionManager {
 
     /// The watchdog only runs while a session could go stale — no wakeups without agents.
     private func updateStaleWatchdog() {
-        if hasStaleCandidates {
+        if finishesQuietSessions, hasStaleCandidates {
             guard staleWatchdogTask == nil else { return }
             staleWatchdogTask = Task { [weak self] in
                 while !Task.isCancelled {

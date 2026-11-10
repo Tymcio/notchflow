@@ -126,3 +126,48 @@ ffmpeg -ss 00:00:05 -i website/assets/hero.mp4 -vframes 1 website/assets/hero-po
 | `website/scripts/prepare-screenshots.py` | Miękkie tło pod screeny |
 
 Po dodaniu nowych screenów lub logo uruchom odpowiedni skrypt przed commitem.
+
+---
+
+## Recording the demo video
+
+Debug builds have a **demo mode** that fills every module with fictional content, so a video
+never shows real tracks, meetings, notes, files or agent sessions. It exists only in debug
+builds (`#if DEBUG`): release builds and the packaged app contain none of it.
+
+```bash
+swift build
+NOTCHFLOW_DEMO=1 "$(swift build --show-bin-path)/NotchFlow"
+
+# Claude Code asks for permission after 8 s instead of the default 3 s:
+NOTCHFLOW_DEMO=1 NOTCHFLOW_DEMO_AGENT_DELAY=8 "$(swift build --show-bin-path)/NotchFlow"
+```
+
+| Variable | Meaning |
+|----------|---------|
+| `NOTCHFLOW_DEMO=1` | Turns demo mode on (debug builds only). |
+| `NOTCHFLOW_DEMO_AGENT_DELAY` | Seconds before Claude Code's permission request appears (default `3`). |
+| `NOTCHFLOW_DEBUG_ISLAND=expanded` | Optional: opens the expanded island right away. |
+
+What you get:
+
+- **Media** — "Golden Hour" by Northbound (3:24), playing from 0:48 in real time, with artwork drawn
+  in code and a lyrics line. Play/pause, skip and seek only move this fake track; Spotify and Music
+  are never observed or controlled.
+- **Agents** — Codex is "Refactoring payment tests" in `~/Developer/shop`. After the delay Claude Code
+  asks to run `npm test` (Bash). **Allow** in the island shows "Running npm test" and finishes about
+  4 s later; **Deny** ends the session. Usage meters: Claude Max 5× (5h 62% left, 7d 81% left),
+  Codex Plus (47% / 73%), Cursor Pro (70% of included usage left). Relaunch for another take.
+- **Calendar** — "Standup" and "Design review" (14:00) today, "Ship v2" tomorrow, "Team lunch" on
+  Friday at 12:30. EventKit is not used.
+- **Notes, clipboard, shelf** — two notes, two clipboard entries and three pinned files
+  (`Pitch.key`, `Invoice.pdf`, `Assets.zip`), all fictional.
+- **Premium and the Agents add-on** show as active (Lifetime).
+- **Focus timer** starts idle, and alarms and system notifications are muted.
+
+Demo mode never reads or writes the real install's data: notes and clipboard stay in memory; shelf
+and license files go to a `NotchFlowDemo-…` folder in the temporary directory that is deleted on
+quit; the Keychain, other apps' credentials, notification banners, the local API, agent hooks,
+launch at login, Sparkle and the defaults written at launch are all left alone. Run the bare debug
+binary as above (not a copy wrapped in an app bundle with the real bundle ID), so its settings live
+in a separate defaults domain. Quit your normal NotchFlow first so only one island is on screen.

@@ -104,7 +104,10 @@ final class CalendarManager {
     /// Re-check at least this often when nothing is scheduled (events entering the lookahead).
     nonisolated static let maximumRefreshInterval: TimeInterval = 3600
 
-    private let store = EKEventStore()
+    /// Created on first use, so a manager serving fixed events never connects to EventKit.
+    private lazy var store = EKEventStore()
+    /// Set by `useFixedEvents`: these are served instead of EventKit's.
+    private var fixedEvents: [CalendarEventPreview]?
     private let fetchQueue = DispatchQueue(label: "eu.notchflow.calendar-fetch", qos: .utility)
     private var boundaryTimer: Timer?
     private var pendingRefresh: Task<Void, Never>?
@@ -121,8 +124,33 @@ final class CalendarManager {
         let nextBoundary: Date
     }
 
+    /// Serves `events` instead of the user's calendars (debug demo mode). EventKit is never
+    /// asked for access or queried afterwards, and nothing opens the Calendar app.
+    func useFixedEvents(_ events: [CalendarEventPreview], now: Date = Date()) {
+        let sorted = events.sorted { $0.startDate < $1.startDate }
+        fixedEvents = sorted
+        boundaryTimer?.invalidate()
+        boundaryTimer = nil
+        hasAccess = true
+        let startOfTomorrow = Calendar.current.date(
+            byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now)
+        ) ?? now.addingTimeInterval(24 * 3600)
+        upcomingEvent = Self.overlapping(sorted, from: now, to: now.addingTimeInterval(Self.upcomingWindow)).first
+        dayEvents = Array(Self.overlapping(sorted, from: now, to: startOfTomorrow).prefix(5))
+    }
+
+    /// Same rule as EventKit's date-range predicate: any overlap with `start..<end`.
+    nonisolated static func overlapping(
+        _ events: [CalendarEventPreview],
+        from start: Date,
+        to end: Date
+    ) -> [CalendarEventPreview] {
+        events.filter { $0.startDate < end && $0.endDate > start }
+    }
+
     /// Prompts the user for calendar access (system dialog). Call only from an explicit user action.
     func ensureAccess() async {
+        guard fixedEvents == nil else { return }
         hasAccess = await requestAccess()
         if hasAccess {
             await refresh()
@@ -131,6 +159,7 @@ final class CalendarManager {
 
     /// Reads the current authorization status without showing the system prompt.
     func refreshAccessStatus() async {
+        guard fixedEvents == nil else { return }
         hasAccess = EKEventStore.authorizationStatus(for: .event) == .fullAccess
         if hasAccess {
             await refresh()
@@ -145,6 +174,9 @@ final class CalendarManager {
         guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
             return []
         }
+        if let fixedEvents {
+            return Array(Self.overlapping(fixedEvents, from: startOfDay, to: endOfDay).prefix(8))
+        }
         let box = StoreBox(store: store)
         return await withCheckedContinuation { continuation in
             fetchQueue.async {
@@ -155,6 +187,7 @@ final class CalendarManager {
     }
 
     func openDayInCalendarApp(_ date: Date) {
+        guard fixedEvents == nil else { return }
         NSApp.activate(ignoringOtherApps: true)
         Task {
             if await openCalendarDayWithAppleScript(date) { return }
@@ -163,6 +196,7 @@ final class CalendarManager {
     }
 
     func openEventInCalendarApp(_ event: CalendarEventPreview) {
+        guard fixedEvents == nil else { return }
         if let meetingURL = event.meetingURL {
             NSApp.activate(ignoringOtherApps: true)
             NSWorkspace.shared.open(meetingURL)
@@ -173,6 +207,7 @@ final class CalendarManager {
 
     /// Starts change-driven refreshing (idempotent) and refreshes now.
     func startAutoRefresh() {
+        guard fixedEvents == nil else { return }
         if observers.isEmpty {
             let refreshSoon: @Sendable (Notification) -> Void = { [weak self] _ in
                 MainActor.assumeIsolated {

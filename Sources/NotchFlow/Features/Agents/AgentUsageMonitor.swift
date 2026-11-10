@@ -15,12 +15,15 @@ final class AgentUsageMonitor {
     private var pollTask: Task<Void, Never>?
     private var inFlight: Task<Void, Never>?
     private var isEnabled = false
+    /// Set by `showFixedSnapshots`: polling stays off and nothing is fetched again.
+    private var isPinnedToFixedSnapshots = false
     private var nextFetchAllowedAt: [AgentKind: Date] = [:]
 
     private let cacheTTL: TimeInterval = 5 * 60
     private let defaultBackoff: TimeInterval = 5 * 60
 
-    init() {
+    init(removesLegacyTokenCaches: Bool = true) {
+        guard removesLegacyTokenCaches else { return }
         // Older builds kept refreshed Cursor / Grok Bot tokens in plain-text files.
         Task.detached(priority: .utility) {
             AgentUsageClient.removeLegacyTokenCaches()
@@ -42,8 +45,21 @@ final class AgentUsageMonitor {
         }
     }
 
+    /// Shows these snapshots instead of fetched ones (debug demo mode). Polling stops for
+    /// good: no credentials, files, Keychain items or network are touched afterwards.
+    func showFixedSnapshots(_ fixed: [AgentUsageSnapshot]) {
+        setEnabled(false)
+        isPinnedToFixedSnapshots = true
+        claude = fixed.first { $0.agent == .claude }
+        codex = fixed.first { $0.agent == .codex }
+        cursor = fixed.first { $0.agent == .cursor }
+        grok = fixed.first { $0.agent == .grok }
+        grokBot = fixed.first { $0.agent == .grokbot }
+        onChange?()
+    }
+
     func setEnabled(_ enabled: Bool) {
-        guard isEnabled != enabled else { return }
+        guard !isPinnedToFixedSnapshots, isEnabled != enabled else { return }
         isEnabled = enabled
         if enabled {
             startPolling()

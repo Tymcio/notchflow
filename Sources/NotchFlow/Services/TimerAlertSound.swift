@@ -48,6 +48,8 @@ enum TimerAlertSound {
     @MainActor
     static func play(_ id: String, loops: Bool = false) {
         stop()
+        // Demo mode is for screen recordings: never sound an alarm.
+        guard !DemoMode.isEnabled else { return }
         guard let url = url(for: id) else { return }
         guard let sound = NSSound(contentsOf: url, byReference: true) else { return }
         sound.loops = loops

@@ -75,11 +75,18 @@ final class ClipboardManager {
     private var lastChangeCount = NSPasteboard.general.changeCount
     private var monitorTask: Task<Void, Never>?
     private var isWritingToPasteboard = false
-    private let storageURL: URL
+    /// `nil` keeps the history in memory only: nothing is read from or written to disk.
+    private let storageURL: URL?
 
-    init() {
-        storageURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("NotchFlow/clipboard.json")
+    convenience init() {
+        self.init(
+            storageURL: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+                .appendingPathComponent("NotchFlow/clipboard.json")
+        )
+    }
+
+    init(storageURL: URL?) {
+        self.storageURL = storageURL
         load()
     }
 
@@ -98,7 +105,8 @@ final class ClipboardManager {
     }
 
     func captureIfChanged() {
-        guard !isWritingToPasteboard else { return }
+        // Demo mode shows fictional entries only, never what is really on the pasteboard.
+        guard !isWritingToPasteboard, !DemoMode.isEnabled else { return }
 
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }
@@ -117,6 +125,7 @@ final class ClipboardManager {
     }
 
     func captureCurrentContents() {
+        guard !DemoMode.isEnabled else { return }
         let pasteboard = NSPasteboard.general
         lastChangeCount = pasteboard.changeCount
 
@@ -181,6 +190,7 @@ final class ClipboardManager {
     }
 
     private func persist() {
+        guard let storageURL else { return }
         do {
             let data = try JSONEncoder().encode(entries)
             try SecureFileWriter.write(data, to: storageURL)
@@ -190,7 +200,8 @@ final class ClipboardManager {
     }
 
     private func load() {
-        guard let data = try? Data(contentsOf: storageURL),
+        guard let storageURL,
+              let data = try? Data(contentsOf: storageURL),
               let decoded = try? JSONDecoder().decode([ClipboardEntry].self, from: data) else { return }
         entries = decoded
     }

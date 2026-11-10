@@ -46,20 +46,25 @@ final class AppState {
         let menuBarLayoutManager = MenuBarLayoutManager(settings: sharedSettings)
         self.menuBarLayoutManager = menuBarLayoutManager
         displayManager = DisplayManager(settings: sharedSettings, menuBarLayoutManager: menuBarLayoutManager)
+        // Debug demo mode (DemoMode.swift) keeps notes and clipboard in memory, and shelf and
+        // license files in a scratch folder, so the real install's data is never touched.
+        let demoDirectory = DemoMode.scratchDirectory
         mediaMonitor = MediaMonitor()
-        shelfManager = ShelfManager()
+        shelfManager = ShelfManager(directory: demoDirectory?.appendingPathComponent("Shelf", isDirectory: true))
         hudManager = HUDManager()
         focusTimerManager = FocusTimerManager()
         calendarManager = CalendarManager()
-        licenseManager = LicenseManager()
-        notesManager = NotesManager()
-        clipboardManager = ClipboardManager()
+        licenseManager = demoDirectory.map {
+            LicenseManager(storage: LicenseStorage(fileURL: $0.appendingPathComponent("License/license.json")))
+        } ?? LicenseManager()
+        notesManager = demoDirectory == nil ? NotesManager() : NotesManager(storageURL: nil)
+        clipboardManager = demoDirectory == nil ? ClipboardManager() : ClipboardManager(storageURL: nil)
         cameraMirrorManager = CameraMirrorManager()
         localAPIServer = LocalAPIServer()
         notificationHub = NotificationHubManager()
         notificationCenterObserver = NotificationCenterObserver()
         agentSessionManager = AgentSessionManager()
-        agentUsageMonitor = AgentUsageMonitor()
+        agentUsageMonitor = AgentUsageMonitor(removesLegacyTokenCaches: demoDirectory == nil)
         bindManagers()
     }
 
@@ -149,6 +154,12 @@ final class AppState {
     }
 
     func start() async {
+        #if DEBUG
+        if DemoMode.isEnabled {
+            startDemo()
+            return
+        }
+        #endif
         licenseStatus = licenseManager.status
         settings.isPremiumEnabled = isPremium
         await licenseManager.refreshIfNeeded()
@@ -188,7 +199,8 @@ final class AppState {
     }
 
     func applyNotificationSettings() {
-        let notificationsEnabled = isPremium && settings.appNotificationsEnabled
+        // Demo mode never reads other apps' notification banners (Accessibility).
+        let notificationsEnabled = !DemoMode.isEnabled && isPremium && settings.appNotificationsEnabled
         notificationHub.isEnabled = notificationsEnabled
         notificationHub.allowedNativeBundleIDs = Set(settings.allowedNativeNotificationBundleIDs)
         notificationHub.hideMessageBody = settings.hideNotificationBody

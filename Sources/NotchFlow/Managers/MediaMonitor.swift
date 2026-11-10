@@ -30,6 +30,8 @@ final class MediaMonitor {
     private var scriptingPollingActive = false
     private var scriptingPollingRequest = 0
     private var playerTerminateObserver: NSObjectProtocol?
+    /// A fixed track with no player behind it (debug demo mode); see `showSimulatedTrack`.
+    private var isSimulated = false
 
     private var artworkCache = MediaEnrichmentCache<Data>(capacity: 32)
     private var lyricsCache = MediaEnrichmentCache<String>(capacity: 64)
@@ -66,20 +68,62 @@ final class MediaMonitor {
         refreshScriptingPolling()
     }
 
+    /// Publishes `state` with no player behind it, instead of calling `start()`. Players are
+    /// never observed, polled or scripted afterwards, no artwork or lyrics are looked up, and
+    /// the transport controls only move this in-memory track.
+    func showSimulatedTrack(_ state: MediaPlaybackState) {
+        isSimulated = true
+        publish(state)
+    }
+
     func togglePlayPause() {
+        guard !isSimulated else {
+            let now = Date()
+            publishSimulated(elapsed: currentState.interpolatedPosition(at: now), isPlaying: !currentState.isPlaying, at: now)
+            return
+        }
         MediaPlayerController.perform(.playPause, playerBundleID: currentState.bundleIdentifier)
     }
 
     func nextTrack() {
+        guard !isSimulated else {
+            publishSimulated(elapsed: 0, isPlaying: currentState.isPlaying, at: Date())
+            return
+        }
         MediaPlayerController.perform(.next, playerBundleID: currentState.bundleIdentifier)
     }
 
     func previousTrack() {
+        guard !isSimulated else {
+            publishSimulated(elapsed: 0, isPlaying: currentState.isPlaying, at: Date())
+            return
+        }
         MediaPlayerController.perform(.previous, playerBundleID: currentState.bundleIdentifier)
     }
 
     func seek(to position: Double) {
+        guard !isSimulated else {
+            publishSimulated(elapsed: position, isPlaying: currentState.isPlaying, at: Date())
+            return
+        }
         MediaPlayerController.seek(to: position, playerBundleID: currentState.bundleIdentifier)
+    }
+
+    private func publishSimulated(elapsed: Double, isPlaying: Bool, at date: Date) {
+        let state = currentState
+        publish(MediaPlaybackState(
+            title: state.title,
+            artist: state.artist,
+            album: state.album,
+            artworkURL: state.artworkURL,
+            artworkData: state.artworkData,
+            isPlaying: isPlaying,
+            elapsed: min(max(0, elapsed), state.duration),
+            duration: state.duration,
+            bundleIdentifier: state.bundleIdentifier,
+            lyricsSnippet: state.lyricsSnippet,
+            positionSampledAt: date
+        ))
     }
 
     private func registerPlayerTerminationObserver() {
@@ -148,7 +192,8 @@ final class MediaMonitor {
     }
 
     private func refreshScriptingPolling() {
-        let needsPolling = currentState.isPlaying
+        let needsPolling = !isSimulated
+            && currentState.isPlaying
             && islandVisible
             && islandExpanded
             && activeModule == .media

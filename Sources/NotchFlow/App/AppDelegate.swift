@@ -15,7 +15,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Every Mac is supported: displays without a notch get a capsule in the menu bar
         // (see NotchGeometry.classifyTopCutout).
         NSApp.setActivationPolicy(.accessory)
-        NotchFlowLog.removeLegacyCallTraceFile()
+        // Demo mode (debug only, see DemoMode) leaves the real install's files, login item,
+        // updater and defaults alone.
+        let isDemo = DemoMode.isEnabled
+        if !isDemo {
+            NotchFlowLog.removeLegacyCallTraceFile()
+        }
 
         let state = AppState()
         appState = state
@@ -25,8 +30,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         panelController = NotchPanelController(displayManager: state.displayManager, appState: state)
 
         configureStatusItem()
-        configureLaunchAtLogin()
-        configureSparkle()
+        if !isDemo {
+            configureLaunchAtLogin()
+            configureSparkle()
+        }
 
         Task {
             await state.start()
@@ -35,7 +42,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             #endif
         }
 
-        showFirstLaunchHintIfNeeded()
+        if !isDemo {
+            showFirstLaunchHintIfNeeded()
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        #if DEBUG
+        DemoMode.removeScratchDirectory()
+        #endif
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -115,12 +130,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func clearPersistedStatusItemVisibility() {
+        guard !DemoMode.isEnabled else { return }
         UserDefaults.standard.removeObject(forKey: Self.persistedVisibilityKey)
     }
 
     private func forceStatusItemVisible(_ item: NSStatusItem) {
         item.isVisible = true
-        item.autosaveName = Self.statusAutosaveName
+        if !DemoMode.isEnabled {
+            item.autosaveName = Self.statusAutosaveName
+        }
         item.isVisible = true
         DispatchQueue.main.async {
             item.isVisible = true
