@@ -4,18 +4,19 @@
 repository only accepts self-submitted apps with at least 75 GitHub stars, 30 forks
 or 30 watchers, so NotchFlow starts in its own tap.
 
-## Publish the tap (one time)
+## The tap
 
-1. Create a public GitHub repository named `homebrew-tap` under the same account.
-2. Copy `Casks/notchflow.rb` into it as `Casks/notchflow.rb` and push.
-3. Users install with:
+Published at [Tymcio/homebrew-tap](https://github.com/Tymcio/homebrew-tap). Keep `Casks/notchflow.rb`
+here and there in sync. Users install with:
 
-   ```bash
-   brew install --cask tymcio/tap/notchflow
-   ```
+```bash
+brew tap tymcio/tap
+brew trust --cask tymcio/tap/notchflow   # Homebrew 7 asks once for third-party casks
+brew install --cask notchflow
+```
 
-The cask uses `version :latest` and `auto_updates true`: Sparkle updates the app, so the
-tap does not need a new commit for every release.
+The cask uses `version :latest` (always the latest release download), and Sparkle updates the app,
+so the tap does not need a new commit for every release.
 
 ## Check it locally
 

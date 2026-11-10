@@ -92,6 +92,6 @@ What's different from Boring Notch, NotchNook, and others:
 - GPL-3.0, signed and notarized, Sparkle updates
 - One-time Pro ({PRICE}), no subscription; the free tier has no time limit
 
-Download: notchflow.eu · Source: github.com/Tymcio/notchflow · Homebrew: `brew install --cask tymcio/tap/notchflow`
+Download: notchflow.eu · Source: github.com/Tymcio/notchflow · Homebrew: `brew tap tymcio/tap && brew trust --cask tymcio/tap/notchflow && brew install --cask notchflow`
 
 Feedback on what's missing is very welcome.

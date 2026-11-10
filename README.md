@@ -103,6 +103,7 @@ Details, tier assignment, and non-goals: **[docs/roadmap.md](docs/roadmap.md)**
 Official builds (signed, notarized, with premium activation):
 
 - **[Latest release](https://github.com/Tymcio/notchflow/releases/latest)** — drag `NotchFlow.app` to Applications
+- **Homebrew** — `brew tap tymcio/tap && brew trust --cask tymcio/tap/notchflow && brew install --cask notchflow`
 - **[notchflow.eu](https://notchflow.eu)** — purchase premium license
 
 Verify the signature:

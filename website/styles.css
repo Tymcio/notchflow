@@ -1366,3 +1366,9 @@ html.js [data-reveal].is-visible {
   html.js [data-reveal],
   html.js .shot { opacity: 1; transform: none; }
 }
+
+/* Long install commands wrap instead of widening the page on phones. */
+.fineprint code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
