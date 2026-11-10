@@ -128,11 +128,11 @@ struct ArtworkView: View {
             let expectedTrackKey = trackKey
             let url = artworkURL
             Task.detached(priority: .utility) {
+                // Downsampled Data is Sendable; the small NSImage is built on the main actor.
                 let data = (try? Data(contentsOf: url)).flatMap { ArtworkDownsampler.downsample($0) }
-                let image = data.flatMap { NSImage(data: $0) }
                 await MainActor.run {
                     guard expectedTrackKey == trackKey else { return }
-                    loadedImage = image
+                    loadedImage = data.flatMap { NSImage(data: $0) }
                     loadedTrackKey = trackKey
                 }
             }
@@ -151,16 +151,11 @@ struct ArtworkView: View {
         }
     }
 
+    /// `data` is already downsampled to thumbnail size, so building the NSImage here is cheap.
     private func decodeImage(from data: Data, expectedTrackKey: String) {
-        let expectedKey = expectedTrackKey
-        Task.detached(priority: .utility) {
-            let image = NSImage(data: data)
-            await MainActor.run {
-                guard expectedKey == trackKey else { return }
-                loadedImage = image
-                loadedTrackKey = trackKey
-            }
-        }
+        guard expectedTrackKey == trackKey else { return }
+        loadedImage = NSImage(data: data)
+        loadedTrackKey = trackKey
     }
 
     private var placeholder: some View {
