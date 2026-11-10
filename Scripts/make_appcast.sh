@@ -86,11 +86,11 @@ if [[ -z "${SPARKLE_PRIVATE_ED_KEY:-}" ]]; then
 fi
 
 KEY_FILE="$(mktemp -t notchflow-sparkle.XXXXXX.key)"
+trap 'rm -f "$KEY_FILE"' EXIT
 chmod 600 "$KEY_FILE"
 printf "%s" "$SPARKLE_PRIVATE_ED_KEY" >"$KEY_FILE"
 
 RAW_SIGNATURE="$("$SIGN_UPDATE" --ed-key-file "$KEY_FILE" "$DMG_PATH")"
-rm -f "$KEY_FILE"
 
 ED_SIGNATURE="$RAW_SIGNATURE"
 # `sign_update` often prints a full XML attribute snippet, e.g.
@@ -114,6 +114,15 @@ cat > "$APPCAST_PATH" <<XML
   </channel>
 </rss>
 XML
+
+# Sign the feed itself. Builds packaged with SURequireSignedFeed reject an unsigned
+# or modified appcast; older builds ignore the trailing signature comment.
+"$SIGN_UPDATE" --ed-key-file "$KEY_FILE" "$APPCAST_PATH" >/dev/null
+if ! "$SIGN_UPDATE" --verify --ed-key-file "$KEY_FILE" "$APPCAST_PATH" >/dev/null; then
+  echo "Appcast feed signature did not verify." >&2
+  exit 1
+fi
+rm -f "$KEY_FILE"
 
 echo "Appcast written to $APPCAST_PATH"
 echo "SHA256: $SHA256"
