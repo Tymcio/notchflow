@@ -12,7 +12,10 @@ jobs:
   release:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      # Third-party actions are pinned to full commit SHAs; bump the SHA and the comment together.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
@@ -23,12 +26,16 @@ jobs:
           DEVELOPER_ID_CERTIFICATE: ${{ secrets.DEVELOPER_ID_CERTIFICATE }}
           DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
         run: |
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          # The decoded certificate never outlives this step, even if the import fails.
+          trap 'rm -f "$CERT_PATH"' EXIT
           security create-keychain -p "" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "" "$KEYCHAIN_PATH"
-          echo "$DEVELOPER_ID_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/cert.p12
-          security import $RUNNER_TEMP/cert.p12 -P "$DEVELOPER_ID_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          (umask 077 && echo "$DEVELOPER_ID_CERTIFICATE" | base64 --decode > "$CERT_PATH")
+          security import "$CERT_PATH" -P "$DEVELOPER_ID_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          rm -f "$CERT_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
 
       - name: Configure notarytool profile
@@ -48,9 +55,19 @@ jobs:
           DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
           NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
           POLAR_ORGANIZATION_ID: ${{ secrets.POLAR_ORGANIZATION_ID }}
+          POLAR_PREMIUM_BENEFIT_IDS: ${{ secrets.POLAR_PREMIUM_BENEFIT_IDS }}
+          POLAR_AGENTS_BENEFIT_IDS: ${{ secrets.POLAR_AGENTS_BENEFIT_IDS }}
           SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
           SPARKLE_FEED_URL: https://github.com/Tymcio/notchflow/releases/latest/download/appcast.xml
         run: Scripts/sign-and-notarize.sh
+
+      # Signing and notarization are done: drop the Developer ID keychain before anything
+      # is generated or uploaded. The always() step at the end covers failed runs.
+      - name: Delete signing keychain
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/cert.p12"
+          security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db" || true
 
       - name: Generate appcast
         env:
@@ -59,9 +76,15 @@ jobs:
         run: Scripts/make_appcast.sh
 
       - name: Upload release artifacts
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           files: |
             build/NotchFlow.dmg
             build/NotchFlow-*.dmg
             build/appcast.xml
+
+      - name: Clean up signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/cert.p12"

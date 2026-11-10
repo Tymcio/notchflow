@@ -129,6 +129,29 @@ POLAR
 )"
 fi
 
+# Polar benefit IDs (comma-separated) decide Premium vs Agents for a license key.
+# Without them the app falls back to guessing from the key prefix / product name.
+xml_escape() {
+  local value="$1"
+  value="${value//&/&amp;}"
+  value="${value//</&lt;}"
+  value="${value//>/&gt;}"
+  printf '%s' "$value"
+}
+if [[ -n "${POLAR_PREMIUM_BENEFIT_IDS:-}" ]]; then
+  POLAR_PLIST="${POLAR_PLIST}
+  <key>PolarPremiumBenefitIDs</key>
+  <string>$(xml_escape "$POLAR_PREMIUM_BENEFIT_IDS")</string>"
+fi
+if [[ -n "${POLAR_AGENTS_BENEFIT_IDS:-}" ]]; then
+  POLAR_PLIST="${POLAR_PLIST}
+  <key>PolarAgentsBenefitIDs</key>
+  <string>$(xml_escape "$POLAR_AGENTS_BENEFIT_IDS")</string>"
+fi
+if [[ "${ENFORCE_LICENSE:-1}" == "1" && -z "${POLAR_PREMIUM_BENEFIT_IDS:-}${POLAR_AGENTS_BENEFIT_IDS:-}" ]]; then
+  echo "WARNING: POLAR_PREMIUM_BENEFIT_IDS / POLAR_AGENTS_BENEFIT_IDS not set — license product is guessed from key names." >&2
+fi
+
 SPARKLE_PLIST=""
 if [[ -n "${SPARKLE_PUBLIC_ED_KEY:-}" ]]; then
   SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-https://notchflow.eu/appcast.xml}"
