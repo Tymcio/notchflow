@@ -49,8 +49,6 @@ struct IdleTimerView: View {
     let wingLayout: IdleWingLayout
     var onDismissFinished: () -> Void = {}
 
-    @State private var pulse = false
-
     private var isMutedAlert: Bool {
         timer.isFinished && timer.isAlertMuted
     }
@@ -64,113 +62,95 @@ struct IdleTimerView: View {
     }
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            let formattedTime = displayTime(at: context.date)
-            let progress = displayProgress(at: context.date)
+        // Only a running timer needs a clock; finished / paused timers are static, and the
+        // finished glow is a Core Animation pulse (render server, Reduce Motion aware).
+        if timer.isRunning {
+            TimelineView(.periodic(from: Self.tickAnchor(for: timer), by: 1)) { context in
+                content(at: context.date)
+            }
+        } else {
+            content(at: Date())
+        }
+    }
 
-            IdleWingContainer(
-                wingLayout: wingLayout,
-                leading: {
-                    ZStack {
-                        if timer.isFinished {
-                            Circle()
-                                .fill(alertTint.opacity(isMutedAlert ? 0.4 : 0.28))
-                                .frame(
-                                    width: pulse ? (isMutedAlert ? 28 : 24) : 16,
-                                    height: pulse ? (isMutedAlert ? 28 : 24) : 16
-                                )
-                                .animation(
-                                    .easeInOut(duration: pulseDuration).repeatForever(autoreverses: true),
-                                    value: pulse
-                                )
-                        }
-                        Circle()
-                            .stroke(IslandStyle.surfaceStroke, lineWidth: 2)
-                            .frame(width: 20, height: 20)
-                        Circle()
-                            .trim(from: 0, to: timer.isFinished ? 1 : progress)
-                            .stroke(alertTint, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .frame(width: 20, height: 20)
-                            .opacity(timer.isFinished ? (pulse ? 1 : 0.45) : 1)
-                            .animation(
-                                timer.isFinished
-                                    ? .easeInOut(duration: pulseDuration).repeatForever(autoreverses: true)
-                                    : .default,
-                                value: pulse
-                            )
-                        Image(systemName: leadingSymbol)
-                            .font(.system(size: isMutedAlert ? 9 : 8, weight: .bold))
-                            .foregroundStyle(alertTint)
-                            .scaleEffect(timer.isFinished && pulse ? (isMutedAlert ? 1.22 : 1.15) : 1)
-                            .animation(
-                                timer.isFinished
-                                    ? .easeInOut(duration: pulseDuration).repeatForever(autoreverses: true)
-                                    : .default,
-                                value: pulse
-                            )
-                    }
-                },
-                trailing: {
-                    if isMutedAlert {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(formattedTime)
-                                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                .monospacedDigit()
-                                .foregroundStyle(alertTint)
-                            Text(loc("Sound muted"))
-                                .font(.system(size: IdleTimerMetrics.muteCaptionFontSize, weight: .medium))
-                                .foregroundStyle(alertTint.opacity(0.9))
-                                .lineLimit(1)
-                        }
-                        .padding(.leading, NotchFlowConstants.idleWingInnerOverlap + 4)
-                        .opacity(pulse ? 1 : 0.55)
-                        .shadow(color: alertTint.opacity(0.55), radius: 6)
-                        .animation(
-                            .easeInOut(duration: pulseDuration).repeatForever(autoreverses: true),
-                            value: pulse
+    /// A fixed date on the same sub-second grid as the moments the shown time changes.
+    static func tickAnchor(for timer: FocusTimerActivity) -> Date {
+        if let phaseEndDate = timer.phaseEndDate {
+            return phaseEndDate.addingTimeInterval(-Double(max(timer.totalSeconds, 1)))
+        }
+        return timer.stopwatchStartDate ?? Date()
+    }
+
+    private func content(at date: Date) -> some View {
+        let formattedTime = displayTime(at: date)
+        let progress = displayProgress(at: date)
+
+        return IdleWingContainer(
+            wingLayout: wingLayout,
+            leading: {
+                ZStack {
+                    if timer.isFinished {
+                        PulseHaloView(
+                            color: alertTint.opacity(isMutedAlert ? 0.4 : 0.28),
+                            minDiameter: 16,
+                            maxDiameter: isMutedAlert ? 28 : 24,
+                            duration: pulseDuration
                         )
-                    } else {
+                        .frame(width: 28, height: 28)
+                    }
+                    Circle()
+                        .stroke(IslandStyle.surfaceStroke, lineWidth: 2)
+                        .frame(width: 20, height: 20)
+                    Circle()
+                        .trim(from: 0, to: timer.isFinished ? 1 : progress)
+                        .stroke(alertTint, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .frame(width: 20, height: 20)
+                    Image(systemName: leadingSymbol)
+                        .font(.system(size: isMutedAlert ? 9 : 8, weight: .bold))
+                        .foregroundStyle(alertTint)
+                }
+            },
+            trailing: {
+                if isMutedAlert {
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(formattedTime)
                             .font(.system(size: 11, weight: .semibold, design: .rounded))
                             .monospacedDigit()
-                            .foregroundStyle(
-                                timer.isFinished || timer.isRunning ? accent : IslandStyle.primaryText
-                            )
-                            .opacity(timer.isFinished ? (pulse ? 1 : 0.55) : 1)
-                            .shadow(
-                                color: (timer.isRunning || timer.isFinished) ? accent.opacity(timer.isFinished ? 0.55 : 0.35) : .clear,
-                                radius: timer.isFinished ? 6 : 4
-                            )
-                            .animation(
-                                timer.isFinished
-                                    ? .easeInOut(duration: pulseDuration).repeatForever(autoreverses: true)
-                                    : .default,
-                                value: pulse
-                            )
+                            .foregroundStyle(alertTint)
+                        Text(loc("Sound muted"))
+                            .font(.system(size: IdleTimerMetrics.muteCaptionFontSize, weight: .medium))
+                            .foregroundStyle(alertTint.opacity(0.9))
+                            .lineLimit(1)
                     }
+                    .padding(.leading, NotchFlowConstants.idleWingInnerOverlap + 4)
+                    .shadow(color: alertTint.opacity(0.55), radius: 6)
+                } else {
+                    Text(formattedTime)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(
+                            timer.isFinished || timer.isRunning ? accent : IslandStyle.primaryText
+                        )
+                        .shadow(
+                            color: (timer.isRunning || timer.isFinished) ? accent.opacity(timer.isFinished ? 0.55 : 0.35) : .clear,
+                            radius: timer.isFinished ? 6 : 4
+                        )
                 }
-            )
-            .contentShape(Rectangle())
-            .onTapGesture {
-                guard timer.isFinished else { return }
-                onDismissFinished()
             }
-            .accessibilityAddTraits(timer.isFinished ? .isButton : [])
-            .accessibilityLabel(
-                isMutedAlert
-                    ? "\(loc("Timer finished")), \(loc("Sound muted"))"
-                    : (timer.isFinished ? loc("Dismiss") : loc("Timer"))
-            )
-            .accessibilityHint(timer.isFinished ? loc("Dismiss") : "")
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard timer.isFinished else { return }
+            onDismissFinished()
         }
-        .onAppear { pulse = timer.isFinished }
-        .onChange(of: timer.isFinished) { _, finished in
-            pulse = finished
-        }
-        .onChange(of: timer.isAlertMuted) { _, _ in
-            pulse = timer.isFinished
-        }
+        .accessibilityAddTraits(timer.isFinished ? .isButton : [])
+        .accessibilityLabel(
+            isMutedAlert
+                ? "\(loc("Timer finished")), \(loc("Sound muted"))"
+                : (timer.isFinished ? loc("Dismiss") : loc("Timer"))
+        )
+        .accessibilityHint(timer.isFinished ? loc("Dismiss") : "")
     }
 
     private var leadingSymbol: String {
