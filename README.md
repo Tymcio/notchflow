@@ -45,7 +45,7 @@ Setup and details: [docs/agents.md](docs/agents.md)
 | **Clipboard** | 5 entries (opt-in monitoring) | 50 entries + search |
 | **Mirror** | Tab visible (locked) | Live camera preview |
 | **Calendar** | Month grid + upcoming preview | — |
-| **HUD** | Custom volume & brightness overlays | — |
+| **HUD** | Volume and brightness levels in the notch (the macOS indicator still shows) | — |
 | **Integrations** | URL scheme, local API (media) | Local API (notes, clipboard, mirror) |
 | **Notifications** | — | App alerts in notch, hide body, close system banner |
 | **Hide mode** | — | Hide island for selected apps (settings panel) |
@@ -59,7 +59,7 @@ Planned releases **v1.1 → v1.3** and status of each item. ✅ = shipped today 
 | Release | Feature | Status |
 |---------|---------|--------|
 | **Shipped** | Hover island, media, calendar, shelf, focus timer, notes, clipboard, mirror | ✅ |
-| **Shipped** | Volume / brightness HUD, URL scheme, local API, Raycast | ✅ |
+| **Shipped** | Volume and brightness levels in the notch, URL scheme, local API, Raycast | ✅ |
 | **Shipped** | Localization (en, pl, de, it, es) + in-app language picker | ✅ |
 | **Shipped** | App notifications in the notch (Premium) | ✅ |
 | **Shipped** | Close system banner when notification appears in island (Premium) | ✅ |

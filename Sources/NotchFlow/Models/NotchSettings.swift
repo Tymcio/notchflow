@@ -73,6 +73,16 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(dismissSystemBanners, forKey: Keys.dismissSystemBanners) }
     }
 
+    /// Show volume and brightness changes in the notch. Off means no CoreAudio listener and no
+    /// key event monitor at all.
+    var showsLevelHUD: Bool {
+        didSet {
+            guard oldValue != showsLevelHUD else { return }
+            UserDefaults.standard.set(showsLevelHUD, forKey: Keys.showsLevelHUD)
+            onLevelHUDChange?()
+        }
+    }
+
     /// System sound name from `/System/Library/Sounds` (without extension). Empty = silent.
     var timerAlertSoundName: String {
         didSet { UserDefaults.standard.set(timerAlertSoundName, forKey: Keys.timerAlertSoundName) }
@@ -105,6 +115,7 @@ final class NotchSettings {
     var onAvoidMenuOverlapChange: (() -> Void)?
     var onDimensionsChange: (() -> Void)?
     var onDisplayPlacementChange: (() -> Void)?
+    var onLevelHUDChange: (() -> Void)?
 
     private var dimensionPersistTask: Task<Void, Never>?
 
@@ -127,6 +138,7 @@ final class NotchSettings {
         static let allowedRamboxServiceBundleIDs = "allowedRamboxServiceBundleIDs"
         static let hideNotificationBody = "hideNotificationBody"
         static let dismissSystemBanners = "dismissSystemBanners"
+        static let showsLevelHUD = "showsVolumeBrightnessHUD"
         static let timerAlertSoundName = "timerAlertSoundName"
         static let ramboxAllowlistMigrated = "notificationAllowlistRamboxRemoved"
         static let nonNotchIslandPlacement = "nonNotchIslandPlacement"
@@ -138,7 +150,7 @@ final class NotchSettings {
             urlSchemeAutomationEnabled, lyricsSharingEnabled, appNotificationsEnabled,
             allowedNotificationBundleIDs, allowedNativeNotificationBundleIDs,
             allowedRamboxAggregatorBundleIDs, allowedRamboxServiceBundleIDs, hideNotificationBody,
-            dismissSystemBanners, timerAlertSoundName, ramboxAllowlistMigrated,
+            dismissSystemBanners, showsLevelHUD, timerAlertSoundName, ramboxAllowlistMigrated,
             nonNotchIslandPlacement, islandDisplay,
         ]
     }
@@ -200,6 +212,7 @@ final class NotchSettings {
         hideNotificationBody = defaults.bool(forKey: Keys.hideNotificationBody)
         // Default ON — notch replaces the corner banner for calls and messaging.
         dismissSystemBanners = defaults.object(forKey: Keys.dismissSystemBanners) as? Bool ?? true
+        showsLevelHUD = defaults.object(forKey: Keys.showsLevelHUD) as? Bool ?? true
         let savedTimerSound = defaults.string(forKey: Keys.timerAlertSoundName) ?? TimerAlertSound.defaultID
         timerAlertSoundName = TimerAlertSound.migratedID(savedTimerSound)
         if let saved = defaults.string(forKey: Keys.nonNotchIslandPlacement)
