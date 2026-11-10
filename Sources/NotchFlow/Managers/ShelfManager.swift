@@ -52,6 +52,10 @@ final class ShelfManager {
 
     private let shelfDirectory: URL
     private let pinnedIndexURL: URL
+    /// Lives next to the shelf folder, not in it: a dropped file keeps its own name, so a
+    /// file called `index.plist` used to overwrite the index.
+    let indexURL: URL
+    private var legacyIndexURL: URL { shelfDirectory.appendingPathComponent("index.plist") }
 
     var pinnedItems: [ShelfItem] {
         items.filter { $0.kind == .pinned }
@@ -69,6 +73,8 @@ final class ShelfManager {
             shelfDirectory = appSupport.appendingPathComponent("NotchFlow/Shelf", isDirectory: true)
         }
         pinnedIndexURL = shelfDirectory.appendingPathComponent("pinned.plist")
+        indexURL = shelfDirectory.deletingLastPathComponent()
+            .appendingPathComponent("\(shelfDirectory.lastPathComponent)-index.plist")
         try? FileManager.default.createDirectory(at: shelfDirectory, withIntermediateDirectories: true)
         loadPersistedItems()
     }
@@ -417,7 +423,6 @@ final class ShelfManager {
             }
             return entry
         }
-        let indexURL = shelfDirectory.appendingPathComponent("index.plist")
         do {
             let data = try PropertyListSerialization.data(fromPropertyList: payload, format: .binary, options: 0)
             try SecureFileWriter.write(data, to: indexURL)
@@ -440,8 +445,19 @@ final class ShelfManager {
     }
 
     private func loadPersistedItems() {
-        let indexURL = shelfDirectory.appendingPathComponent("index.plist")
-        guard let payload = NSArray(contentsOf: indexURL) as? [[String: String]] else { return }
+        let payload: [[String: String]]
+        if let current = NSArray(contentsOf: indexURL) as? [[String: String]] {
+            payload = current
+        } else if let legacy = NSArray(contentsOf: legacyIndexURL) as? [[String: String]] {
+            // One-time move from inside the shelf folder (builds before the index moved out).
+            payload = legacy
+            if let data = try? PropertyListSerialization.data(fromPropertyList: legacy, format: .binary, options: 0),
+               (try? SecureFileWriter.write(data, to: indexURL)) != nil {
+                try? FileManager.default.removeItem(at: legacyIndexURL)
+            }
+        } else {
+            return
+        }
 
         items = payload.compactMap { entry in
             guard let path = entry["path"],
