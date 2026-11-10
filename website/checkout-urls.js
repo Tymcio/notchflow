@@ -1,10 +1,9 @@
-// Polar checkout URLs — replace after creating Checkout Links in Polar dashboard.
+// Polar Checkout Links, one per product (Polar dashboard → Products → Checkout Links).
 // See docs/polar-setup.md
 var NOTCHFLOW_CHECKOUT = {
-  lifetime: "https://buy.polar.sh/polar_cl_IFSZArybpJcU5Jx11XnZYRA5fGFcQgUdrU2Gv0bL3zW",
-  annual: "https://buy.polar.sh/polar_cl_IFSZArybpJcU5Jx11XnZYRA5fGFcQgUdrU2Gv0bL3zW",
-  // Replace with the Polar Checkout Link for the Agents (€14.90) product when created.
-  agents: "https://buy.polar.sh/polar_cl_IFSZArybpJcU5Jx11XnZYRA5fGFcQgUdrU2Gv0bL3zW",
+  lifetime: "https://buy.polar.sh/polar_cl_DSIigbSgJplyPqZUI63NOAQ3EiVLdetTLDTyG0JMsQw", // Premium Lifetime, €24
+  annual: "https://buy.polar.sh/polar_cl_IFSZArybpJcU5Jx11XnZYRA5fGFcQgUdrU2Gv0bL3zW", // Premium Annual, €12/year
+  agents: "https://buy.polar.sh/polar_cl_BGqaO25SF6We5JfcL756pMu2uwjL5WamZ1g032o5fI3", // Agents add-on, €14.90
 };
 
 (function () {
