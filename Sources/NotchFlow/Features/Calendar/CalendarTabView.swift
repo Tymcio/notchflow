@@ -98,7 +98,7 @@ struct CalendarTabView: View {
             return loc("Today")
         }
         let formatter = DateFormatter()
-        formatter.locale = Locale.current
+        formatter.locale = LanguageResolver.locale
         formatter.setLocalizedDateFormatFromTemplate("d MMM")
         return formatter.string(from: selectedDay)
     }
@@ -119,8 +119,11 @@ struct CalendarTabView: View {
                         Text(event.formattedStartTime)
                             .font(.caption2.monospacedDigit())
                         if emphasized, event.startDate.timeIntervalSinceNow > 0 {
-                            Text(event.formattedCountdown)
-                                .font(.caption2)
+                            // Ticks only while the calendar tab is on screen.
+                            TimelineView(.everyMinute) { context in
+                                Text(event.formattedCountdown(at: context.date))
+                                    .font(.caption2)
+                            }
                         }
                     }
                     .foregroundStyle(IslandStyle.tertiaryText)

@@ -1,6 +1,7 @@
 import CommonCrypto
 import CryptoKit
 import Foundation
+import os
 import Security
 import SQLite3
 
@@ -35,7 +36,8 @@ enum ClaudeDesktopCredentials {
     private static let productionClientID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
     private static let expirySafetyMargin: TimeInterval = 2 * 60
     private static let cookieHosts = [".claude.ai", "claude.ai"]
-    private static var didPromptForKeychain = false
+    /// Set once the automatic (non-manual) Keychain prompt has been shown this launch.
+    private static let didPromptForKeychain = OSAllocatedUnfairLock(initialState: false)
 
     static var hasCredentialMaterial: Bool {
         guard let root = readConfig() else { return false }
@@ -46,9 +48,11 @@ enum ClaudeDesktopCredentials {
         do {
             return try loadUnlocked(allowPrompt: false)
         } catch LoadError.needsKeychainAccess {
-            let shouldPrompt = allowKeychainPrompt || !didPromptForKeychain
-            guard shouldPrompt else { throw LoadError.needsKeychainAccess }
-            didPromptForKeychain = true
+            let firstPrompt = didPromptForKeychain.withLock { prompted in
+                defer { prompted = true }
+                return !prompted
+            }
+            guard allowKeychainPrompt || firstPrompt else { throw LoadError.needsKeychainAccess }
             return try loadUnlocked(allowPrompt: true)
         }
     }

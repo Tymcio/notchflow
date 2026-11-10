@@ -79,6 +79,10 @@ final class LicenseManager {
     /// offline grace period always counts from a recent successful validation.
     static let revalidationInterval: TimeInterval = 24 * 3600
 
+    /// A validation stamped further in the future than this (clock skew allowance) is not
+    /// trusted: it would otherwise keep the grace period and staleness checks happy forever.
+    static let futureValidationTolerance: TimeInterval = 24 * 3600
+
     private enum StorageKey {
         static let licenseKey = "license_key"
         static let activationID = "license_activation_id"
@@ -174,7 +178,7 @@ final class LicenseManager {
         if let agentsKey {
             switch await validateStored(key: agentsKey, activationStorageKey: StorageKey.agentsActivationID) {
             case .valid(let session):
-                if session.isAgentsProduct || PolarLicenseClient.looksLikeAgentsKey(agentsKey) {
+                if session.isAgentsKey(agentsKey) {
                     try? persistAgents(session: session, key: agentsKey)
                     agentsPart = session.status.withAgentsAddon(key: agentsKey, validatedAt: now())
                 }
@@ -238,7 +242,7 @@ final class LicenseManager {
             instanceName: Host.current().localizedName ?? "Mac"
         )
 
-        if session.isAgentsProduct || PolarLicenseClient.looksLikeAgentsKey(trimmed) {
+        if session.isAgentsKey(trimmed) {
             try storage.save(key: StorageKey.agentsKey, value: trimmed)
             try storage.save(key: StorageKey.agentsActivationID, value: session.activationID)
             let agentsStatus = session.status.withAgentsAddon(key: trimmed, validatedAt: now())
@@ -389,8 +393,12 @@ final class LicenseManager {
         return premiumOK && agentsOK
     }
 
+    private func isTrustworthy(_ validatedAt: Date) -> Bool {
+        validatedAt <= now().addingTimeInterval(Self.futureValidationTolerance)
+    }
+
     private func isPremiumWithinGrace(_ status: LicenseStatus) -> Bool {
-        guard let validatedAt = status.validatedAt else { return false }
+        guard let validatedAt = status.validatedAt, isTrustworthy(validatedAt) else { return false }
         if let expiresAt = status.expiresAt, expiresAt < now() {
             return false
         }
@@ -398,7 +406,8 @@ final class LicenseManager {
     }
 
     private func isAgentsWithinGrace(_ status: LicenseStatus) -> Bool {
-        guard let validatedAt = status.agentsValidatedAt ?? status.validatedAt else { return false }
+        guard let validatedAt = status.agentsValidatedAt ?? status.validatedAt,
+              isTrustworthy(validatedAt) else { return false }
         return now() <= validatedAt.addingTimeInterval(Self.gracePeriod)
     }
 
@@ -420,6 +429,7 @@ final class LicenseManager {
             status.hasAgentsAddon ? (status.agentsValidatedAt ?? status.validatedAt) : nil,
         ].compactMap { $0 }
         guard let oldest = dates.min() else { return true }
+        if dates.contains(where: { !isTrustworthy($0) }) { return true }
         return now().timeIntervalSince(oldest) > Self.revalidationInterval
     }
 }

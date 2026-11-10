@@ -38,3 +38,28 @@ struct NotchShape: Shape {
         return path
     }
 }
+
+/// Virtual notch behind the idle wings on displays without one: flush with the top of the
+/// screen, bottom corners rounded exactly like the outer corners of `NotchWingShape`, so the
+/// wings and the center merge into one capsule.
+struct MenuBarCapsuleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let radius = min(10, rect.width * 0.22, rect.height * 0.38)
+
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - radius))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.minX + radius, y: rect.maxY),
+            control: CGPoint(x: rect.minX, y: rect.maxY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.maxY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.maxY - radius),
+            control: CGPoint(x: rect.maxX, y: rect.maxY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.closeSubpath()
+        return path
+    }
+}

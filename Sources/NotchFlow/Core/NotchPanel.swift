@@ -86,9 +86,20 @@ final class NotchPanelController: ObservableObject {
     private var hideTask: Task<Void, Never>?
     private var hoverDwellTask: Task<Void, Never>?
     private var hoverExitGraceTask: Task<Void, Never>?
-    private var clickMonitor: Any?
-    private var escapeMonitor: Any?
-    private var spaceChangeObserver: NSObjectProtocol?
+    // nonisolated(unsafe): only touched on the main actor; the nonisolated deinit reads them
+    // once after the last reference is gone.
+    nonisolated(unsafe) private var clickMonitor: Any?
+    nonisolated(unsafe) private var escapeMonitor: Any?
+    nonisolated(unsafe) private var spaceChangeObserver: NSObjectProtocol?
+    /// Last known answer to "may idle wings show on the active display?", to react only to changes.
+    private var lastIdleAllowedByGeometry = true
+    private var lastShowedBareCapsule = false
+
+    /// Something should sit in the idle island: a live activity, or the bare menu-bar capsule
+    /// on a notch-less display set to "Top center".
+    private var wantsIdle: Bool {
+        appState.shouldShowIdleNotch || displayManager.geometry?.showsCapsuleWhileIdle == true
+    }
     private var suppressAutoShow = false
     private var suppressQuickExpandUntilHoverEnd = false
     private let displayManager: DisplayManager
@@ -155,9 +166,15 @@ final class NotchPanelController: ObservableObject {
 
         displayManager.$geometry
             .removeDuplicates()
-            .sink { [weak self] _ in
+            .sink { [weak self] geometry in
                 guard let self else { return }
-                self.repositionIfVisible(animated: self.isExpanded)
+                // @Published delivers before the property is stored: place the panel with the
+                // new value (reading `displayManager.geometry` here would get the old display),
+                // then finish visibility once the property is set.
+                self.repositionIfVisible(animated: self.isExpanded, geometry: geometry)
+                DispatchQueue.main.async { [weak self] in
+                    self?.reconcileIdleVisibility()
+                }
             }
             .store(in: &cancellables)
 
@@ -174,8 +191,6 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func updateVisibility(hovering: Bool) {
-        appState.isIdleWingHoverActive = hovering && !isExpanded
-
         guard !displayManager.shouldHideIsland || hasPriorityLiveActivity else {
             dismissImmediately()
             return
@@ -200,13 +215,9 @@ final class NotchPanelController: ObservableObject {
                 keepIdleVisibleIfNeeded()
                 return
             }
-            // During a call or agent permission prompt, hovering reveals wing controls —
+            // During an agent permission prompt, hovering reveals wing controls —
             // auto-expanding would hide Allow/Deny before the user can click.
             switch appState.activeLiveActivity {
-            case .activeCall, .incomingCall:
-                hoverDwellTask?.cancel()
-                keepIdleVisibleIfNeeded()
-                return
             case .agentSession(let session) where session.needsAttention:
                 hoverDwellTask?.cancel()
                 keepIdleVisibleIfNeeded()
@@ -245,7 +256,7 @@ final class NotchPanelController: ObservableObject {
             return
         }
 
-        if appState.shouldShowIdleNotch, !shouldSuppressIdleForMenuOverlap {
+        if wantsIdle, !shouldSuppressIdleForMenuOverlap {
             if displayManager.geometry != nil {
                 presentIdle()
             } else {
@@ -257,14 +268,60 @@ final class NotchPanelController: ObservableObject {
         scheduleHide()
     }
 
+    /// On displays without a notch, idle wings can become unavailable (menus under them, the menu
+    /// bar hidden, placement turned Off, pointer moved to such a display) or available again while
+    /// nothing else changes; follow those transitions. Hardware-notch geometry always allows idle
+    /// wings, so notched MacBooks never act here.
+    private func reconcileIdleVisibility() {
+        guard let flags = displayManager.geometry?.idleVisibilityFlags else { return }
+        let leftBareCapsule = lastShowedBareCapsule && !flags.bareCapsule
+        if flags.allowed == lastIdleAllowedByGeometry && flags.bareCapsule == lastShowedBareCapsule { return }
+        lastIdleAllowedByGeometry = flags.allowed
+        lastShowedBareCapsule = flags.bareCapsule
+        if isExpanded { return }
+
+        if !flags.allowed {
+            dismissIdleNotAllowed(allowsAutomaticPresentation: flags.automatic)
+        } else if wantsIdle {
+            presentIdleIfHidden()
+        } else if leftBareCapsule {
+            // The pointer took the island from a "Top center" capsule to a display with nothing
+            // to show (a hardware notch with no live activity): drop the empty capsule.
+            dismissIdleIfUntouched()
+        }
+    }
+
+    // Kept small and fed plain flags: Swift 6.4.2's SimplifyCFG pass crashed (release builds
+    // only) when `reconcileIdleVisibility` held the whole geometry across these branches.
+    private func presentIdleIfHidden() {
+        if isVisible || suppressAutoShow || displayManager.shouldHideIsland { return }
+        presentIdle()
+    }
+
+    private func dismissIdleIfUntouched() {
+        if isVisible && !displayManager.isNotchInteractionActive {
+            dismissImmediately()
+        }
+    }
+
+    private func dismissIdleNotAllowed(allowsAutomaticPresentation: Bool) {
+        guard isVisible else { return }
+        // Calls and notification peeks still show over menus, but not when the user turned
+        // the island off for this kind of display.
+        let keepForPriority = allowsAutomaticPresentation && hasPriorityLiveActivity
+        if !keepForPriority {
+            dismissImmediately()
+        }
+    }
+
     private var shouldHideIdleForMenuOverlap: Bool {
         displayManager.geometry?.shouldHideIdleForMenuOverlap == true
     }
 
-    /// Połączenia i krótkie peeki powiadomień omijają chowanie wyspy przez overlap menu bara.
+    /// Krótkie peeki powiadomień omijają chowanie wyspy przez overlap menu bara.
     private var hasPriorityLiveActivity: Bool {
         switch appState.activeLiveActivity {
-        case .incomingCall, .activeCall, .notification:
+        case .notification:
             return true
         case .agentSession(let session) where session.needsAttention:
             return true
@@ -310,7 +367,7 @@ final class NotchPanelController: ObservableObject {
             return
         }
 
-        if appState.shouldShowIdleNotch, !shouldSuppressIdleForMenuOverlap {
+        if wantsIdle, !shouldSuppressIdleForMenuOverlap {
             if !isVisible || isExpanded {
                 if displayManager.geometry != nil {
                     presentIdle()
@@ -327,7 +384,7 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func shouldKeepVisible() -> Bool {
-        if appState.shouldShowIdleNotch { return true }
+        if wantsIdle { return true }
         if displayManager.isNotchInteractionActive { return true }
         if appState.isIslandInputFocused { return true }
         if let panel, panel.isVisible, panel.frame.insetBy(dx: -8, dy: -8).contains(NSEvent.mouseLocation) {
@@ -358,6 +415,13 @@ final class NotchPanelController: ObservableObject {
             return
         }
         displayManager.refreshMenuLayoutNow()
+        // Placement "Off" on a display without a notch: nothing idle, menu bar icon only.
+        guard displayManager.geometry?.allowsAutomaticPresentation != false else {
+            if isVisible, !isExpanded {
+                dismissImmediately()
+            }
+            return
+        }
         guard !shouldSuppressIdleForMenuOverlap else {
             if isVisible, !isExpanded {
                 dismissImmediately()
@@ -400,8 +464,6 @@ final class NotchPanelController: ObservableObject {
 
     private var idleAcceptsMouseEvents: Bool {
         switch appState.activeLiveActivity {
-        case .incomingCall, .activeCall:
-            return true
         case .notification:
             return true
         case .agentSession(let session) where session.needsAttention:
@@ -448,7 +510,7 @@ final class NotchPanelController: ObservableObject {
     }
 
     private func keepIdleVisibleIfNeeded() {
-        guard appState.shouldShowIdleNotch, !shouldSuppressIdleForMenuOverlap else { return }
+        guard wantsIdle, !shouldSuppressIdleForMenuOverlap else { return }
         if !isVisible || isExpanded {
             presentIdle()
         }
@@ -525,7 +587,7 @@ final class NotchPanelController: ObservableObject {
                 }
                 if self.suppressAutoShow {
                     self.dismissImmediately()
-                } else if self.appState.shouldShowIdleNotch, !self.shouldSuppressIdleForMenuOverlap {
+                } else if self.wantsIdle, !self.shouldSuppressIdleForMenuOverlap {
                     if self.displayManager.geometry != nil {
                         self.presentIdle()
                     } else {
@@ -555,8 +617,8 @@ final class NotchPanelController: ObservableObject {
         panel?.orderOut(nil)
     }
 
-    private func repositionIfVisible(animated: Bool) {
-        guard isVisible, let geometry = displayManager.geometry, let panel else { return }
+    private func repositionIfVisible(animated: Bool, geometry newGeometry: NotchGeometry? = nil) {
+        guard isVisible, let geometry = newGeometry ?? displayManager.geometry, let panel else { return }
         let frame = geometry.frame(
             isExpanded: isExpanded,
             isIdle: !isExpanded,

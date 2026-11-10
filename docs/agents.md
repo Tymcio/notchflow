@@ -14,6 +14,8 @@ Supported: **Claude Code**, **Codex**, **Cursor**, **Grok Build**, **Grok Bot**,
 
 Setup lives only in Settings (not in the island Agents tab).
 
+**How config files are edited.** NotchFlow merges its hooks into `~/.claude/settings.json`, `~/.cursor/hooks.json` and `~/.grok/hooks/notchflow.json` without disturbing the rest of the file: a symlinked file stays a symlink (the real file is updated), its permissions are kept, and the first time NotchFlow changes a file it saves the original next to it as `<file>.notchflow-backup`. If a file exists but is not a JSON object (or does not parse), NotchFlow stops with an error and leaves it untouched.
+
 ## Cursor vs Claude Code
 
 | | Cursor | Claude Code |
@@ -30,8 +32,9 @@ Grok Build hooks are monitor-only too (`SessionStart`, `PostToolUse`, `Stop`, `S
 
 With the Agents addon, the island can show **remaining 5-hour and 7-day quota** for Claude Code and Codex — the same windows `/usage` reports. Cursor shows the included allowance already on this Mac: two monthly pools on a legacy plan (Cursor models and third-party models), or one weekly pool on The X Subscription. Grok Build and Grok Bot each show one weekly remaining bar (the shared Grok Build credit pool, and Grok Bot’s included weekly usage).
 
-- Reuses the login already on this Mac (Claude Code Keychain or `~/.claude/.credentials.json`, Claude Desktop’s local login, `~/.codex/auth.json`, Cursor’s local login, `~/.grok/auth.json`, and the Grok Bot app login). Claude Desktop and Grok Build refresh tokens are never rotated. When a Cursor or Grok Bot access token is rejected, NotchFlow refreshes it into its own cache and does not write that login back into Cursor or the Grok Bot app.
+- Reuses the login already on this Mac (Claude Code Keychain or `~/.claude/.credentials.json`, Claude Desktop’s local login, `~/.codex/auth.json`, Cursor’s local login, `~/.grok/auth.json`, and the Grok Bot app login). Claude Desktop and Grok Build refresh tokens are never rotated. When a Cursor or Grok Bot access token is rejected, NotchFlow refreshes it and keeps the new pair in memory until it quits; it never writes another app’s decrypted tokens to disk and does not write that login back into Cursor or the Grok Bot app. Files older builds left behind (`cursor-oauth.json`, `grokbot-oauth.json` in `~/Library/Application Support/NotchFlow/Agents`) are deleted at launch.
 - Asks Anthropic, OpenAI, Cursor, and xAI usage endpoints only. Tokens are not sent to NotchFlow servers.
+- Keychain prompts: Claude Desktop, Cursor and Grok Bot encrypt their local data with a key stored in the Keychain as “Claude Safe Storage”, “Cursor Safe Storage” and “Grok Bot Safe Storage”. Granting NotchFlow access (especially **Always Allow**) gives it that whole key — it could decrypt everything that app keeps encrypted on this Mac, not only the login. NotchFlow uses it only to read the login for usage meters. Settings → Integrations says this next to the usage toggle.
 - Toggle in **Settings → Integrations**. Off = no usage network calls.
 - Idle wing shows the tighter window as a remaining percentage while that agent is running. Grok Bot never starts a session, so its bar stays in the Agents tab.
 

@@ -38,7 +38,8 @@ struct MediaPlayerView: View {
             .animation(IslandMotion.quick, value: state.lyricsSnippet)
 
             if state.hasUsableDuration {
-                TimelineView(.periodic(from: .now, by: 0.25)) { _ in
+                // Ticks only while playing — a paused position does not move.
+                TimelineView(.animation(minimumInterval: 0.25, paused: !state.isPlaying)) { _ in
                     MediaScrubberView(
                         position: state.interpolatedPosition(),
                         duration: state.duration,
@@ -127,11 +128,11 @@ struct ArtworkView: View {
             let expectedTrackKey = trackKey
             let url = artworkURL
             Task.detached(priority: .utility) {
-                let data = try? Data(contentsOf: url)
-                let image = data.flatMap { NSImage(data: $0) }
+                // Downsampled Data is Sendable; the small NSImage is built on the main actor.
+                let data = (try? Data(contentsOf: url)).flatMap { ArtworkDownsampler.downsample($0) }
                 await MainActor.run {
                     guard expectedTrackKey == trackKey else { return }
-                    loadedImage = image
+                    loadedImage = data.flatMap { NSImage(data: $0) }
                     loadedTrackKey = trackKey
                 }
             }
@@ -140,7 +141,9 @@ struct ArtworkView: View {
 
         let expectedTrackKey = trackKey
         Task {
-            let data = await MusicArtworkFetcher.fetchFromURL(artworkURL)
+            let data = await Task.detached(priority: .utility) {
+                await MusicArtworkFetcher.fetchFromURL(artworkURL).flatMap { ArtworkDownsampler.downsample($0) }
+            }.value
             guard let data else { return }
             await MainActor.run {
                 decodeImage(from: data, expectedTrackKey: expectedTrackKey)
@@ -148,16 +151,11 @@ struct ArtworkView: View {
         }
     }
 
+    /// `data` is already downsampled to thumbnail size, so building the NSImage here is cheap.
     private func decodeImage(from data: Data, expectedTrackKey: String) {
-        let expectedKey = expectedTrackKey
-        Task.detached(priority: .utility) {
-            let image = NSImage(data: data)
-            await MainActor.run {
-                guard expectedKey == trackKey else { return }
-                loadedImage = image
-                loadedTrackKey = trackKey
-            }
-        }
+        guard expectedTrackKey == trackKey else { return }
+        loadedImage = NSImage(data: data)
+        loadedTrackKey = trackKey
     }
 
     private var placeholder: some View {

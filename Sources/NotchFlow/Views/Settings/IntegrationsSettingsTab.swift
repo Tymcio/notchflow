@@ -8,6 +8,7 @@ struct IntegrationsSettingsTab: View {
     @State private var copiedURL = false
     @State private var apiBaseURL = ""
     @State private var agentsMessage = ""
+    @State private var agentsMessageIsError = false
     @State private var isInstallingAgents = false
 
     private var agentsSetup: AgentHooksInstaller.SetupStatus {
@@ -120,6 +121,11 @@ struct IntegrationsSettingsTab: View {
                             appState.applyAgentUsagePolling()
                         }
 
+                    Text(loc("macOS may ask whether NotchFlow can use “Claude Safe Storage”, “Cursor Safe Storage” or “Grok Bot Safe Storage”. That item is the key to all of that app’s encrypted data on this Mac, not only its login. NotchFlow uses it only to read the login for usage limits and keeps tokens in memory. “Always Allow” stops the question for good; “Allow” asks again next time."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
                     VStack(alignment: .leading, spacing: 6) {
                         Text(loc("How to connect Cursor"))
                             .font(.headline)
@@ -144,7 +150,7 @@ struct IntegrationsSettingsTab: View {
                     if !agentsMessage.isEmpty {
                         Text(agentsMessage)
                             .font(.caption)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(agentsMessageIsError ? Color.red : Color.green)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 } else {
@@ -167,6 +173,7 @@ struct IntegrationsSettingsTab: View {
     private func installAgents() {
         isInstallingAgents = true
         agentsMessage = ""
+        agentsMessageIsError = false
         Task {
             do {
                 if !appState.settings.localAPIEnabled {
@@ -179,6 +186,7 @@ struct IntegrationsSettingsTab: View {
                 agentsMessage = locFormat("Hooks installed. Restart Cursor, then use Agent Chat. Folder: %@", url.path)
             } catch {
                 agentsMessage = error.localizedDescription
+                agentsMessageIsError = true
             }
             isInstallingAgents = false
         }

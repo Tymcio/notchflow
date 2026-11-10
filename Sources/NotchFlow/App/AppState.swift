@@ -16,12 +16,7 @@ final class AppState {
     var clipboardEntries: [ClipboardEntry] = []
     var licenseStatus: LicenseStatus = .free
     var isIslandInputFocused = false
-    /// Pointer is inside the notch hover band while idle — drives hover-only wing UI
-    /// (e.g. the End-call button). SwiftUI onHover is unreliable in the idle panel.
-    var isIdleWingHoverActive = false
     var hubNotifications: [HubNotification] = []
-    /// Wymusza odświeżenie widoku idle po zmianie połączenia (CallManager nie jest @Observable).
-    private(set) var callLiveActivityRevision = 0
     /// Wymusza odświeżenie idle po zmianie sesji agentów.
     private(set) var agentLiveActivityRevision = 0
     /// Wymusza odświeżenie idle / zakładki Agents po zmianie limitów Claude/Codex.
@@ -40,7 +35,6 @@ final class AppState {
     let clipboardManager: ClipboardManager
     let cameraMirrorManager: CameraMirrorManager
     let localAPIServer: LocalAPIServer
-    let callManager: CallManager
     let notificationHub: NotificationHubManager
     let notificationCenterObserver: NotificationCenterObserver
     let agentSessionManager: AgentSessionManager
@@ -52,21 +46,25 @@ final class AppState {
         let menuBarLayoutManager = MenuBarLayoutManager(settings: sharedSettings)
         self.menuBarLayoutManager = menuBarLayoutManager
         displayManager = DisplayManager(settings: sharedSettings, menuBarLayoutManager: menuBarLayoutManager)
+        // Debug demo mode (DemoMode.swift) keeps notes and clipboard in memory, and shelf and
+        // license files in a scratch folder, so the real install's data is never touched.
+        let demoDirectory = DemoMode.scratchDirectory
         mediaMonitor = MediaMonitor()
-        shelfManager = ShelfManager()
+        shelfManager = ShelfManager(directory: demoDirectory?.appendingPathComponent("Shelf", isDirectory: true))
         hudManager = HUDManager()
         focusTimerManager = FocusTimerManager()
         calendarManager = CalendarManager()
-        licenseManager = LicenseManager()
-        notesManager = NotesManager()
-        clipboardManager = ClipboardManager()
+        licenseManager = demoDirectory.map {
+            LicenseManager(storage: LicenseStorage(fileURL: $0.appendingPathComponent("License/license.json")))
+        } ?? LicenseManager()
+        notesManager = demoDirectory == nil ? NotesManager() : NotesManager(storageURL: nil)
+        clipboardManager = demoDirectory == nil ? ClipboardManager() : ClipboardManager(storageURL: nil)
         cameraMirrorManager = CameraMirrorManager()
         localAPIServer = LocalAPIServer()
-        callManager = CallManager()
         notificationHub = NotificationHubManager()
         notificationCenterObserver = NotificationCenterObserver()
         agentSessionManager = AgentSessionManager()
-        agentUsageMonitor = AgentUsageMonitor()
+        agentUsageMonitor = AgentUsageMonitor(removesLegacyTokenCaches: demoDirectory == nil)
         bindManagers()
     }
 
@@ -83,11 +81,8 @@ final class AppState {
     }
 
     var activeLiveActivity: LiveActivityKind? {
-        _ = callLiveActivityRevision
         _ = agentLiveActivityRevision
         return LiveActivityResolver.resolve(
-            incomingCall: callManager.incomingCall,
-            activeCall: callManager.activeCall,
             agentSession: hasAgentsAddon ? agentSessionManager.primaryActivity : nil,
             timer: focusTimerState.showsInIdleNotch ? focusTimerState.activity : nil,
             notification: notificationHub.peek,
@@ -109,12 +104,9 @@ final class AppState {
         }
     }
 
-    /// Active-call peeks widen the right wing so content is readable.
+    /// Agent and muted-timer peeks widen the right wing so content is readable.
     var idleRightWingWidthOverride: CGFloat? {
         switch activeLiveActivity {
-        case .activeCall:
-            // Compact Live Activity: avatar+timer left, waveform (or End on hover) right.
-            return IdleCallMetrics.activeCallRightWingWidth
         case .agentSession(let session):
             return IdleAgentMetrics.preferredRightWingWidth(
                 needsAttention: session.needsAttention
@@ -126,13 +118,11 @@ final class AppState {
         }
     }
 
-    /// Incoming calls and app notifications hang below the cutout (not wing peeks).
+    /// App notifications hang below the cutout (not wing peeks).
     var idleDropBannerWidth: CGFloat? {
         let cutout = displayManager.geometry?.physicalNotchCutoutWidth
             ?? NotchFlowConstants.defaultNotchCutoutWidth
         switch activeLiveActivity {
-        case .incomingCall(let call):
-            return IncomingCallBannerMetrics.preferredWidth(for: call, cutoutWidth: cutout)
         case .notification(let peek):
             return NotificationBannerMetrics.preferredWidth(for: peek, cutoutWidth: cutout)
         default:
@@ -140,30 +130,16 @@ final class AppState {
         }
     }
 
+    /// Same height as the panel frame (`NotchGeometry.dropBannerHeight`), so no transparent,
+    /// click-catching strip is left below the banner.
     var idleDropBannerHeight: CGFloat? {
         guard idleDropBannerWidth != nil else { return nil }
-        let topInset = displayManager.geometry?.notchTopInset
-            ?? displayManager.geometry?.idleSize.height
-            ?? 32
-        let content: CGFloat
-        switch activeLiveActivity {
-        case .incomingCall:
-            content = NotchFlowConstants.incomingCallDropContentHeight
-        default:
-            content = NotchFlowConstants.dropBannerContentHeight
-        }
-        return NotchFlowConstants.dropBannerHeight(topInset: topInset, contentHeight: content)
+        return displayManager.geometry?.dropBannerHeight
+            ?? NotchFlowConstants.dropBannerHeight(topInset: idleDropBannerTopInset)
     }
 
     var idleDropBannerTopInset: CGFloat {
-        displayManager.geometry?.notchTopInset
-            ?? displayManager.geometry?.idleSize.height
-            ?? 32
-    }
-
-    /// Kept for call sites that still name the call banner specifically.
-    var idleIncomingCallBannerWidth: CGFloat? {
-        idleDropBannerWidth
+        displayManager.geometry?.dropBannerTopInset ?? 32
     }
 
     var shelfBadgeCount: Int {
@@ -178,6 +154,12 @@ final class AppState {
     }
 
     func start() async {
+        #if DEBUG
+        if DemoMode.isEnabled {
+            startDemo()
+            return
+        }
+        #endif
         licenseStatus = licenseManager.status
         settings.isPremiumEnabled = isPremium
         await licenseManager.refreshIfNeeded()
@@ -187,7 +169,6 @@ final class AppState {
         displayManager.refreshGeometryNow()
 
         mediaMonitor.start()
-        hudManager.start()
         focusTimerManager.startMonitoring()
         // Only read the current status here; the system prompt is shown from the
         // calendar tab's "Udziel dostępu" button, where the user expects it.
@@ -218,36 +199,18 @@ final class AppState {
     }
 
     func applyNotificationSettings() {
-        let notificationsEnabled = isPremium && settings.appNotificationsEnabled
-
-        // Calls-in-notch is shelved: Continuity gives no public API for caller identity
-        // or Answer/Decline, and the AX/OCR/synthetic-click stack proved too fragile.
-        callManager.isEnabled = false
+        // Demo mode never reads other apps' notification banners (Accessibility).
+        let notificationsEnabled = !DemoMode.isEnabled && isPremium && settings.appNotificationsEnabled
         notificationHub.isEnabled = notificationsEnabled
         notificationHub.allowedNativeBundleIDs = Set(settings.allowedNativeNotificationBundleIDs)
         notificationHub.hideMessageBody = settings.hideNotificationBody
 
-        notificationCenterObserver.setEnabled(notificationsEnabled, callsPriority: false)
+        notificationCenterObserver.setEnabled(notificationsEnabled)
         notifyLiveActivityChange()
     }
 
     func applyAgentUsagePolling() {
         agentUsageMonitor.setEnabled(hasAgentsAddon && settings.agentUsagePollingEnabled)
-    }
-
-    func answerIncomingCall() {
-        callManager.answerCall(using: notificationCenterObserver)
-        notifyLiveActivityChange()
-    }
-
-    func declineIncomingCall() {
-        callManager.declineCall(using: notificationCenterObserver)
-        notifyLiveActivityChange()
-    }
-
-    func endActiveCall() {
-        callManager.endCall(using: notificationCenterObserver)
-        notifyLiveActivityChange()
     }
 
     func allowActiveAgentPermission() {
@@ -272,10 +235,16 @@ final class AppState {
     }
 
     func replyToHubNotification(_ text: String) {
-        if !notificationHub.replyToActivePeek(text: text, using: notificationCenterObserver) {
-            notificationHub.openActivePeekApp()
+        let peekID = notificationHub.peek?.id
+        Task { @MainActor in
+            // The AX reply runs off the main thread; only fall back to opening the app if the
+            // same notification is still shown.
+            if await !notificationHub.replyToActivePeek(text: text, using: notificationCenterObserver),
+               notificationHub.peek?.id == peekID {
+                notificationHub.openActivePeekApp()
+            }
+            notifyLiveActivityChange()
         }
-        notifyLiveActivityChange()
     }
 
     func setClipboardMonitoringEnabled(_ enabled: Bool) {
@@ -374,12 +343,6 @@ final class AppState {
             self.applyAgentUsagePolling()
         }
 
-        callManager.onStateChange = { [weak self] in
-            guard let self else { return }
-            self.callLiveActivityRevision += 1
-            self.notifyLiveActivityChange()
-        }
-
         agentSessionManager.onStateChange = { [weak self] in
             guard let self else { return }
             self.agentLiveActivityRevision += 1
@@ -408,11 +371,10 @@ final class AppState {
             self.notifyLiveActivityChange()
         }
 
+        // Call banners never reach this callback — the observer drops them, because
+        // Continuity has no public API for caller identity or Answer/Decline.
         notificationCenterObserver.onBannerDetected = { [weak self] banner in
             guard let self else { return }
-            // Call banners are ignored — the calls-in-notch feature is shelved.
-            if banner.isLikelyCall { return }
-
             let shownInNotch = self.notificationHub.handleBanner(banner)
             if shownInNotch, self.settings.dismissSystemBanners {
                 self.notificationCenterObserver.dismissBanner(banner)

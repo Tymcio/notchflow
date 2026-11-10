@@ -1,6 +1,10 @@
 import Foundation
 
 /// Installs local hook scripts and wires Claude Code + Cursor configs.
+///
+/// Other tools' config files go through `ExternalConfigFile`: symlinks are followed,
+/// permissions kept, a one-time `.notchflow-backup` is saved, and a file that is not a
+/// JSON object is left alone with an error instead of being replaced.
 enum AgentHooksInstaller {
     private static var supportDirectory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -78,17 +82,17 @@ enum AgentHooksInstaller {
 
     // MARK: - Paths
 
-    private static var claudeSettingsURL: URL {
+    static var claudeSettingsURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/settings.json")
     }
 
-    private static var cursorHooksURL: URL {
+    static var cursorHooksURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".cursor/hooks.json")
     }
 
-    private static var grokHooksURL: URL {
+    static var grokHooksURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".grok/hooks/notchflow.json")
     }
@@ -96,20 +100,14 @@ enum AgentHooksInstaller {
     // MARK: - Claude
 
     private static func installClaudeHooks() throws {
-        let settingsURL = claudeSettingsURL
-        try FileManager.default.createDirectory(
-            at: settingsURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-
-        var root: [String: Any] = [:]
-        if let data = try? Data(contentsOf: settingsURL),
-           let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            root = existing
+        try ExternalConfigFile.updateJSONObject(at: claudeSettingsURL) { root in
+            mergeClaudeHooks(into: &root, scriptPath: hookScriptURL.path)
         }
+    }
 
+    static func mergeClaudeHooks(into root: inout [String: Any], scriptPath: String) {
         var hooks = root["hooks"] as? [String: Any] ?? [:]
-        let command = "'\(hookScriptURL.path)'"
+        let command = "'\(scriptPath)'"
 
         for event in ["PermissionRequest", "SessionStart", "Stop", "Notification", "PostToolUse"] {
             var entries = (hooks[event] as? [Any]) ?? []
@@ -126,26 +124,19 @@ enum AgentHooksInstaller {
         }
 
         root["hooks"] = hooks
-        let out = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
-        try SecureFileWriter.write(out, to: settingsURL)
     }
 
     // MARK: - Cursor
 
     private static func installCursorHooks() throws {
-        let hooksURL = cursorHooksURL
-        try FileManager.default.createDirectory(
-            at: hooksURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
+        try ExternalConfigFile.updateJSONObject(at: cursorHooksURL) { root in
+            mergeCursorHooks(into: &root, scriptPath: hookScriptURL.path)
+        }
+    }
 
-        var root: [String: Any] = ["version": 1]
-        if let data = try? Data(contentsOf: hooksURL),
-           let existing = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            root = existing
-            if root["version"] == nil {
-                root["version"] = 1
-            }
+    static func mergeCursorHooks(into root: inout [String: Any], scriptPath: String) {
+        if root["version"] == nil {
+            root["version"] = 1
         }
 
         var hooks = root["hooks"] as? [String: Any] ?? [:]
@@ -174,7 +165,7 @@ enum AgentHooksInstaller {
             var entries = (hooks[event] as? [Any]) ?? []
             entries = scrubNotchFlowHooks(from: entries) as? [Any] ?? []
             let command =
-                "env NOTCHFLOW_AGENT=cursor NOTCHFLOW_HOOK_EVENT=\(event) '\(hookScriptURL.path)'"
+                "env NOTCHFLOW_AGENT=cursor NOTCHFLOW_HOOK_EVENT=\(event) '\(scriptPath)'"
             entries.append([
                 "command": command,
             ] as [String: Any])
@@ -182,23 +173,23 @@ enum AgentHooksInstaller {
         }
 
         root["hooks"] = hooks
-        let out = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
-        try SecureFileWriter.write(out, to: hooksURL)
     }
 
     // MARK: - Grok Build
 
     /// Monitor-only. Grok Build keeps its own permission prompts; PreToolUse is not installed.
     private static func installGrokHooks() throws {
-        let hooksURL = grokHooksURL
-        try FileManager.default.createDirectory(
-            at: hooksURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
+        // NotchFlow owns this file, but it still must not clobber something else saved there.
+        try ExternalConfigFile.updateJSONObject(at: grokHooksURL) { root in
+            root = grokHooksRoot(scriptPath: hookScriptURL.path)
+        }
+    }
+
+    static func grokHooksRoot(scriptPath: String) -> [String: Any] {
         var hooks: [String: Any] = [:]
         let events = ["SessionStart", "PostToolUse", "Stop", "SessionEnd", "StopFailure", "Notification"]
         for event in events {
-            let command = "env NOTCHFLOW_AGENT=grok NOTCHFLOW_HOOK_EVENT=\(event) '\(hookScriptURL.path)'"
+            let command = "env NOTCHFLOW_AGENT=grok NOTCHFLOW_HOOK_EVENT=\(event) '\(scriptPath)'"
             hooks[event] = [[
                 "hooks": [[
                     "type": "command",
@@ -207,20 +198,18 @@ enum AgentHooksInstaller {
                 ] as [String: Any]],
             ] as [String: Any]]
         }
-        let root: [String: Any] = ["hooks": hooks]
-        let out = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
-        try SecureFileWriter.write(out, to: hooksURL)
+        return ["hooks": hooks]
     }
 
     // MARK: - Shared
 
     private static func scrubHooksFile(at url: URL, isCursorFormat: Bool) throws {
-        guard FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url),
-              var root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return
+        try ExternalConfigFile.updateJSONObject(at: url, createIfMissing: false) { root in
+            scrubHooks(in: &root, isCursorFormat: isCursorFormat)
         }
+    }
 
+    static func scrubHooks(in root: inout [String: Any], isCursorFormat: Bool) {
         guard var hooks = root["hooks"] as? [String: Any] else { return }
         for key in Array(hooks.keys) {
             hooks[key] = scrubNotchFlowHooks(from: hooks[key])
@@ -236,8 +225,6 @@ enum AgentHooksInstaller {
         if isCursorFormat, root["version"] == nil {
             root["version"] = 1
         }
-        let out = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
-        try SecureFileWriter.write(out, to: url)
     }
 
     private static func scrubNotchFlowHooks(from value: Any?) -> Any? {

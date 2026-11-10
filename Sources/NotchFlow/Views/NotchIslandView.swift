@@ -47,6 +47,8 @@ struct NotchIslandView: View {
                 expandedIsland(geometry: geometry)
             } else if let activity = appState.activeLiveActivity {
                 idleIsland(geometry: geometry, activity: activity)
+            } else if geometry.showsCapsuleWhileIdle {
+                bareCapsule(geometry: geometry)
             }
         }
     }
@@ -72,21 +74,9 @@ struct NotchIslandView: View {
 
     @ViewBuilder
     private func idleIsland(geometry: NotchGeometry, activity: LiveActivityKind) -> some View {
-        if case .incomingCall(let call) = activity,
+        if case .notification(let peek) = activity,
            let bannerWidth = appState.idleDropBannerWidth,
            let bannerHeight = appState.idleDropBannerHeight {
-            IncomingCallBannerView(
-                call: call,
-                bannerWidth: bannerWidth,
-                bannerHeight: bannerHeight,
-                topInset: appState.idleDropBannerTopInset,
-                onAnswer: { appState.answerIncomingCall() },
-                onDecline: { appState.declineIncomingCall() }
-            )
-            .frame(width: bannerWidth, height: bannerHeight, alignment: .top)
-        } else if case .notification(let peek) = activity,
-                  let bannerWidth = appState.idleDropBannerWidth,
-                  let bannerHeight = appState.idleDropBannerHeight {
             NotificationBannerView(
                 notification: peek,
                 bannerWidth: bannerWidth,
@@ -105,9 +95,6 @@ struct NotchIslandView: View {
                 mediaState: appState.mediaState,
                 accent: appState.settings.selectedTheme.accent,
                 wingLayout: wingLayout,
-                onAnswerCall: { appState.answerIncomingCall() },
-                onDeclineCall: { appState.declineIncomingCall() },
-                onEndCall: { appState.endActiveCall() },
                 onOpenNotification: { appState.openHubNotificationApp() },
                 onReplyNotification: { text in appState.replyToHubNotification(text) },
                 onDismissFinishedTimer: { appState.focusTimerManager.reset() },
@@ -115,7 +102,6 @@ struct NotchIslandView: View {
                 onDenyAgent: { appState.denyActiveAgentPermission() },
                 onJumpAgent: { appState.jumpToActiveAgentSession() },
                 supportsQuickReply: appState.notificationHub.supportsQuickReply,
-                isWingHoverActive: appState.isIdleWingHoverActive,
                 agentUsageHint: {
                     _ = appState.agentUsageRevision
                     if case .agentSession(let session) = activity {
@@ -125,8 +111,25 @@ struct NotchIslandView: View {
                 }()
             )
             .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight, alignment: .topLeading)
+            .background {
+                // No hardware notch behind the wings: paint the virtual one so wings and
+                // center read as a single capsule hanging from the top of the screen.
+                if geometry.fillsIdleCenter {
+                    MenuBarCapsuleShape().fill(islandFill)
+                }
+            }
             .clipShape(Rectangle())
         }
+    }
+
+    /// "Top center" on a display without a notch, with nothing playing or running: the empty
+    /// virtual notch, so there is always something in the menu bar to hover.
+    private func bareCapsule(geometry: NotchGeometry) -> some View {
+        let wingLayout = geometry.idleWingLayout()
+        return MenuBarCapsuleShape()
+            .fill(islandFill)
+            .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight)
+            .accessibilityLabel(Text(verbatim: "NotchFlow"))
     }
 
     @ViewBuilder

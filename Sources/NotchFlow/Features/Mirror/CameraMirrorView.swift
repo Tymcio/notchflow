@@ -33,6 +33,22 @@ struct CameraMirrorView: View {
                     .buttonStyle(.plain)
                 }
 
+                if appState.cameraMirrorManager.issue == .noCameraFound {
+                    VStack(alignment: .leading, spacing: 6) {
+                        LocText("No camera found.")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(IslandStyle.primaryText)
+                        LocText("Connect a webcam or use your iPhone as a Continuity Camera.")
+                            .font(.caption2)
+                            .foregroundStyle(IslandStyle.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else if appState.cameraMirrorManager.issue == .startFailed {
+                    LocText("The camera could not be started.")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(IslandStyle.primaryText)
+                }
+
                 if appState.cameraMirrorManager.permissionDenied {
                     VStack(alignment: .leading, spacing: 6) {
                         LocText("Camera access denied.")

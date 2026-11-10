@@ -1,6 +1,6 @@
 # NotchFlow
 
-Native macOS notch utility for Apple Silicon MacBooks. Transparent, lightweight, privacy-first.
+Your coding agents and daily controls in an island at the top of your Mac's screen. Approve Claude Code from the notch, watch Claude, Codex and Cursor usage limits, and keep music, files and timers one hover away. Native, open source, privacy-first.
 
 [![CI](https://github.com/Tymcio/notchflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Tymcio/notchflow/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
@@ -8,20 +8,31 @@ Native macOS notch utility for Apple Silicon MacBooks. Transparent, lightweight,
 **[Download](https://github.com/Tymcio/notchflow/releases/latest)** · **[Website](https://notchflow.eu)** · **[Roadmap](docs/roadmap.md)** · **[Free vs Premium](docs/free-vs-premium.md)** · **[Contributing](CONTRIBUTING.md)**
 
 <p align="center">
-  <img src="website/assets/screenshots/01-music.png" alt="NotchFlow — music player in the notch island" width="900"/>
+  <img src="docs/media/notchflow-demo.gif" alt="NotchFlow: Claude Code asks for permission in the notch and is approved there, then music, usage limits, calendar and file shelf open from the same island" width="760"/>
 </p>
 
-<p align="center"><em>Hover the top of your screen — the island expands into music, calendar, shelf, timers, notes, clipboard, and mirror.</em></p>
+<p align="center"><em>Hover the top of your screen — the island expands into coding agents, music, calendar, shelf, timers, notes, clipboard, and mirror.</em></p>
 
 ---
 
 ## What is NotchFlow?
 
-NotchFlow turns the MacBook notch into a useful, non-intrusive island — a floating `NSPanel` around the physical notch on the built-in display. With an external monitor attached, the island follows your cursor; on screens without a hardware notch it uses a centered capsule at the top. **Requires a notched MacBook** — does not run on Macs without a notch (Mac mini, iMac, Mac Studio, etc.).
+NotchFlow turns the top of your screen into a useful, non-intrusive island — a floating `NSPanel` around the physical notch on a MacBook, or a small capsule in the middle of the menu bar on Macs and displays without one (Mac mini, Mac Studio, iMac, external monitors). With several displays, the island follows your cursor or stays on the display you pick in Settings.
 
 - Menu bar app (no Dock icon) — look for the capsule icon after launch
 - Hover the **top-center of your screen** to expand the island
 - Built with SwiftUI + AppKit, distributed as a signed & notarized DMG with Sparkle updates
+
+## Coding agents
+
+The Agents add-on keeps an eye on your AI coding agents while you work in other windows:
+
+- **Claude Code**: permission prompts appear in the island; read the exact command and click Allow or Deny (uses Claude Code's own `PermissionRequest` hook)
+- **Session status** for Claude Code, Cursor, Grok Build and others: running, waiting for you, or done, with one click back to the right terminal or editor
+- **Usage limits**: remaining 5-hour and weekly quota for Claude and Codex with reset times, Cursor's included usage, Grok Build and Grok Bot weekly limits
+- Reuses the logins already on your Mac; requests go only to Anthropic, OpenAI, Cursor and xAI. Cursor and Grok hooks are monitor-only and never answer permission prompts for you
+
+Setup and details: [docs/agents.md](docs/agents.md)
 
 ## Features
 

@@ -1,4 +1,6 @@
+import AppKit
 import Foundation
+import IOKit.ps
 import SwiftUI
 
 @Observable
@@ -76,6 +78,24 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(timerAlertSoundName, forKey: Keys.timerAlertSoundName) }
     }
 
+    /// What to show on displays without a hardware notch (Mac mini, iMac, external monitors…).
+    var nonNotchIslandPlacement: NonNotchIslandPlacement {
+        didSet {
+            guard oldValue != nonNotchIslandPlacement else { return }
+            UserDefaults.standard.set(nonNotchIslandPlacement.rawValue, forKey: Keys.nonNotchIslandPlacement)
+            onDisplayPlacementChange?()
+        }
+    }
+
+    /// Which display hosts the island when several are connected.
+    var islandDisplay: IslandDisplayPreference {
+        didSet {
+            guard oldValue != islandDisplay else { return }
+            UserDefaults.standard.set(islandDisplay.rawValue, forKey: Keys.islandDisplay)
+            onDisplayPlacementChange?()
+        }
+    }
+
     var isPremiumEnabled: Bool = false {
         didSet {
             guard oldValue != isPremiumEnabled else { return }
@@ -84,6 +104,7 @@ final class NotchSettings {
     }
     var onAvoidMenuOverlapChange: (() -> Void)?
     var onDimensionsChange: (() -> Void)?
+    var onDisplayPlacementChange: (() -> Void)?
 
     private var dimensionPersistTask: Task<Void, Never>?
 
@@ -108,10 +129,51 @@ final class NotchSettings {
         static let dismissSystemBanners = "dismissSystemBanners"
         static let timerAlertSoundName = "timerAlertSoundName"
         static let ramboxAllowlistMigrated = "notificationAllowlistRamboxRemoved"
+        static let nonNotchIslandPlacement = "nonNotchIslandPlacement"
+        static let islandDisplay = "islandDisplay"
+
+        static let all = [
+            launchAtLogin, customIslandWidth, customIslandHeight, selectedTheme, hiddenAppBundleIDs,
+            clipboardMonitoringEnabled, localAPIEnabled, agentUsagePollingEnabled, avoidMenuOverlap,
+            urlSchemeAutomationEnabled, lyricsSharingEnabled, appNotificationsEnabled,
+            allowedNotificationBundleIDs, allowedNativeNotificationBundleIDs,
+            allowedRamboxAggregatorBundleIDs, allowedRamboxServiceBundleIDs, hideNotificationBody,
+            dismissSystemBanners, timerAlertSoundName, ramboxAllowlistMigrated,
+            nonNotchIslandPlacement, islandDisplay,
+        ]
+    }
+
+    /// Whether this Mac's built-in display has a camera notch: `nil` when it cannot be seen
+    /// (a MacBook with its lid closed), `false` on Macs without a built-in display.
+    private static func builtInDisplayHasNotch() -> Bool? {
+        for screen in NSScreen.screens {
+            guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
+                  CGDisplayIsBuiltin(displayID) != 0 else { continue }
+            if case .hardwareNotch = NotchGeometry.classifyTopCutout(ScreenMetrics(screen: screen)) {
+                return true
+            }
+            return false
+        }
+        return hasInternalBattery() ? nil : false
+    }
+
+    private static func hasInternalBattery() -> Bool {
+        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] else {
+            return false
+        }
+        return sources.contains { source in
+            guard let description = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any] else {
+                return false
+            }
+            return description[kIOPSTypeKey] as? String == kIOPSInternalBatteryType
+        }
     }
 
     private init() {
         let defaults = UserDefaults.standard
+        // Before anything below writes a key: did an earlier NotchFlow version run here?
+        let isExistingInstall = Keys.all.contains { $0 != Keys.nonNotchIslandPlacement && defaults.object(forKey: $0) != nil }
         launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         customIslandWidth = defaults.object(forKey: Keys.customIslandWidth) as? CGFloat ?? NotchFlowConstants.defaultExpandedWidth
         let savedHeight = defaults.object(forKey: Keys.customIslandHeight) as? CGFloat
@@ -140,6 +202,23 @@ final class NotchSettings {
         dismissSystemBanners = defaults.object(forKey: Keys.dismissSystemBanners) as? Bool ?? true
         let savedTimerSound = defaults.string(forKey: Keys.timerAlertSoundName) ?? TimerAlertSound.defaultID
         timerAlertSoundName = TimerAlertSound.migratedID(savedTimerSound)
+        if let saved = defaults.string(forKey: Keys.nonNotchIslandPlacement)
+            .flatMap(NonNotchIslandPlacement.init(rawValue:)) {
+            nonNotchIslandPlacement = saved
+        } else {
+            let resolved = NonNotchIslandPlacement.defaultPlacement(
+                isExistingInstall: isExistingInstall,
+                builtInDisplayHasNotch: Self.builtInDisplayHasNotch()
+            )
+            nonNotchIslandPlacement = resolved
+            // Saved once, so the next launch (which would look like an existing install) keeps it.
+            // Demo mode leaves the defaults of the real install alone.
+            if !DemoMode.isEnabled {
+                defaults.set(resolved.rawValue, forKey: Keys.nonNotchIslandPlacement)
+            }
+        }
+        islandDisplay = defaults.string(forKey: Keys.islandDisplay)
+            .flatMap(IslandDisplayPreference.init(rawValue:)) ?? .followPointer
     }
 
     private func scheduleDimensionPersist() {
@@ -163,7 +242,7 @@ final class NotchSettings {
         }
 
         // One-time: fold previously enabled Rambox *native* service IDs into the single allowlist.
-        if !defaults.bool(forKey: Keys.ramboxAllowlistMigrated) {
+        if !defaults.bool(forKey: Keys.ramboxAllowlistMigrated), !DemoMode.isEnabled {
             let ramboxServices = defaults.stringArray(forKey: Keys.allowedRamboxServiceBundleIDs) ?? []
             ids.append(contentsOf: ramboxServices)
             defaults.set(true, forKey: Keys.ramboxAllowlistMigrated)
@@ -184,6 +263,60 @@ final class NotchSettings {
             result.append(canonical)
         }
         return result
+    }
+}
+
+enum NonNotchIslandPlacement: String, CaseIterable, Identifiable, Sendable {
+    /// A compact island in the middle of the menu bar, opened by hovering it.
+    case topCenter
+    /// Nothing is shown while idle; hovering the middle of the menu bar still opens the island.
+    /// How displays without a notch behaved before the menu bar capsule existed.
+    case hoverOnly
+    /// No island on such displays; it opens only from the menu bar icon.
+    case off
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .topCenter: loc("Top center")
+        case .hoverOnly: loc("Show on hover only")
+        case .off: loc("Off (menu bar icon only)")
+        }
+    }
+
+    /// No idle capsule is drawn into the menu bar.
+    var hidesIdleIsland: Bool {
+        self != .topCenter
+    }
+
+    /// Default when the user never chose a placement. Existing installs on a notched MacBook
+    /// keep what they had (an external display showed nothing until hovered), so an update does
+    /// not suddenly put a capsule into their external menu bar. New installs and Macs without
+    /// a notch get the visible capsule. A built-in display that cannot be seen (lid closed)
+    /// counts as notched for existing installs, which again keeps their old behaviour.
+    static func defaultPlacement(isExistingInstall: Bool, builtInDisplayHasNotch: Bool?) -> NonNotchIslandPlacement {
+        guard isExistingInstall, builtInDisplayHasNotch != false else { return .topCenter }
+        return .hoverOnly
+    }
+}
+
+enum IslandDisplayPreference: String, CaseIterable, Identifiable, Sendable {
+    /// The island moves to whichever display the pointer is on.
+    case followPointer
+    /// The display that holds the menu bar in System Settings → Displays.
+    case mainDisplay
+    /// The MacBook's own screen; falls back to the main display when the lid is closed.
+    case builtInDisplay
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .followPointer: loc("Display with the pointer")
+        case .mainDisplay: loc("Main display")
+        case .builtInDisplay: loc("Built-in display")
+        }
     }
 }
 

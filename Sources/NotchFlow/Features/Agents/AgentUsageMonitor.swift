@@ -15,10 +15,20 @@ final class AgentUsageMonitor {
     private var pollTask: Task<Void, Never>?
     private var inFlight: Task<Void, Never>?
     private var isEnabled = false
+    /// Set by `showFixedSnapshots`: polling stays off and nothing is fetched again.
+    private var isPinnedToFixedSnapshots = false
     private var nextFetchAllowedAt: [AgentKind: Date] = [:]
 
     private let cacheTTL: TimeInterval = 5 * 60
     private let defaultBackoff: TimeInterval = 5 * 60
+
+    init(removesLegacyTokenCaches: Bool = true) {
+        guard removesLegacyTokenCaches else { return }
+        // Older builds kept refreshed Cursor / Grok Bot tokens in plain-text files.
+        Task.detached(priority: .utility) {
+            AgentUsageClient.removeLegacyTokenCaches()
+        }
+    }
 
     var snapshots: [AgentUsageSnapshot] {
         [claude, codex, cursor, grok, grokBot].compactMap { $0 }
@@ -35,8 +45,21 @@ final class AgentUsageMonitor {
         }
     }
 
+    /// Shows these snapshots instead of fetched ones (debug demo mode). Polling stops for
+    /// good: no credentials, files, Keychain items or network are touched afterwards.
+    func showFixedSnapshots(_ fixed: [AgentUsageSnapshot]) {
+        setEnabled(false)
+        isPinnedToFixedSnapshots = true
+        claude = fixed.first { $0.agent == .claude }
+        codex = fixed.first { $0.agent == .codex }
+        cursor = fixed.first { $0.agent == .cursor }
+        grok = fixed.first { $0.agent == .grok }
+        grokBot = fixed.first { $0.agent == .grokbot }
+        onChange?()
+    }
+
     func setEnabled(_ enabled: Bool) {
-        guard isEnabled != enabled else { return }
+        guard !isPinnedToFixedSnapshots, isEnabled != enabled else { return }
         isEnabled = enabled
         if enabled {
             startPolling()
@@ -93,7 +116,7 @@ final class AgentUsageMonitor {
         if !force, !isFetchDue(.claude, current: claude) {
             return
         }
-        let hasCredentials = AgentUsageClient.hasClaudeCredentials
+        let hasCredentials = await Self.offMain { AgentUsageClient.hasClaudeCredentials }
         guard hasCredentials else {
             if claude == nil {
                 claude = statusSnapshot(agent: .claude, status: .signedOut)
@@ -111,8 +134,9 @@ final class AgentUsageMonitor {
     }
 
     private func refreshCodex(force: Bool) async {
-        guard shouldFetch(.codex, current: codex, force: force, hasCredentials: AgentUsageClient.hasCodexCredentials) else {
-            if codex == nil, !AgentUsageClient.hasCodexCredentials {
+        let hasCredentials = await Self.offMain { AgentUsageClient.hasCodexCredentials }
+        guard shouldFetch(.codex, current: codex, force: force, hasCredentials: hasCredentials) else {
+            if codex == nil, !hasCredentials {
                 codex = statusSnapshot(agent: .codex, status: .signedOut)
             }
             return
@@ -128,8 +152,9 @@ final class AgentUsageMonitor {
     }
 
     private func refreshCursor(force: Bool) async {
-        guard shouldFetch(.cursor, current: cursor, force: force, hasCredentials: AgentUsageClient.hasCursorCredentials) else {
-            if cursor == nil, !AgentUsageClient.hasCursorCredentials {
+        let hasCredentials = await Self.offMain { AgentUsageClient.hasCursorCredentials }
+        guard shouldFetch(.cursor, current: cursor, force: force, hasCredentials: hasCredentials) else {
+            if cursor == nil, !hasCredentials {
                 cursor = statusSnapshot(agent: .cursor, status: .signedOut)
             }
             return
@@ -145,8 +170,9 @@ final class AgentUsageMonitor {
     }
 
     private func refreshGrokBuild(force: Bool) async {
-        guard shouldFetch(.grok, current: grok, force: force, hasCredentials: AgentUsageClient.hasGrokBuildCredentials) else {
-            if grok == nil, !AgentUsageClient.hasGrokBuildCredentials {
+        let hasCredentials = await Self.offMain { AgentUsageClient.hasGrokBuildCredentials }
+        guard shouldFetch(.grok, current: grok, force: force, hasCredentials: hasCredentials) else {
+            if grok == nil, !hasCredentials {
                 grok = statusSnapshot(agent: .grok, status: .signedOut)
             }
             return
@@ -162,8 +188,9 @@ final class AgentUsageMonitor {
     }
 
     private func refreshGrokBot(force: Bool) async {
-        guard shouldFetch(.grokbot, current: grokBot, force: force, hasCredentials: AgentUsageClient.hasGrokBotCredentials) else {
-            if grokBot == nil, !AgentUsageClient.hasGrokBotCredentials {
+        let hasCredentials = await Self.offMain { AgentUsageClient.hasGrokBotCredentials }
+        guard shouldFetch(.grokbot, current: grokBot, force: force, hasCredentials: hasCredentials) else {
+            if grokBot == nil, !hasCredentials {
                 grokBot = statusSnapshot(agent: .grokbot, status: .signedOut)
             }
             return
@@ -176,6 +203,12 @@ final class AgentUsageMonitor {
         } catch {
             apply(.http(-1), to: .grokbot, current: &grokBot)
         }
+    }
+
+    /// Credential checks read files, Cursor's SQLite database (with a busy timeout) and
+    /// the Keychain. Run them off the main thread so the island never stalls on them.
+    private nonisolated static func offMain(_ check: @escaping @Sendable () -> Bool) async -> Bool {
+        await Task.detached(priority: .utility) { check() }.value
     }
 
     /// False while a recent result or backoff is still in force. Checked before

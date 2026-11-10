@@ -114,13 +114,15 @@ final class NotificationHubManager {
 
     /// Attempts AX quick reply on the retained banner. Returns false when unavailable.
     @discardableResult
-    func replyToActivePeek(text: String, using observer: NotificationCenterObserver) -> Bool {
+    func replyToActivePeek(text: String, using observer: NotificationCenterObserver) async -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, supportsQuickReply, let banner = activeReplyBanner else {
             return false
         }
-        let ok = observer.sendReply(on: banner, text: trimmed)
-        if ok {
+        let peekID = peek?.id
+        let ok = await observer.sendReply(on: banner, text: trimmed)
+        // A newer notification may have replaced the peek while the reply was being sent.
+        if ok, peek?.id == peekID {
             clearPeek()
         }
         return ok

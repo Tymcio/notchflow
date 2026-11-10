@@ -6,6 +6,12 @@ enum LanguageResolver {
 
     /// Active UI language: per-app override, then first supported system language, else English.
     static var languageCode: String {
+        #if DEBUG
+        // Demo recordings pick their language without touching the user's settings.
+        if let demo = ProcessInfo.processInfo.environment["NOTCHFLOW_DEMO_LANGUAGE"], supported.contains(demo) {
+            return demo
+        }
+        #endif
         if let override = appLanguageOverride, supported.contains(override) {
             return override
         }
@@ -16,6 +22,19 @@ enum LanguageResolver {
             }
         }
         return "en"
+    }
+
+    /// Locale for dates and names shown in the app: the app's language with the user's region,
+    /// so month and weekday names match the UI while week start and 12/24 h stay regional.
+    static var locale: Locale {
+        let current = Locale.current
+        if current.language.languageCode?.identifier == languageCode {
+            return current
+        }
+        if let region = current.region?.identifier {
+            return Locale(identifier: "\(languageCode)_\(region)")
+        }
+        return Locale(identifier: languageCode)
     }
 
     private static var appLanguageOverride: String? {
@@ -29,7 +48,7 @@ enum LanguageResolver {
     }
 }
 
-private enum L10nCatalog {
+enum L10nCatalog {
     static let languageCode = LanguageResolver.languageCode
 
     private static let translations: [String: [String: String]] = {
@@ -67,11 +86,43 @@ private enum L10nCatalog {
         return table
     }()
 
+    /// SwiftPM compiles `Localizable.xcstrings` into `<lang>.lproj/Localizable.strings` inside the
+    /// resource bundle, so packaged apps have no `.xcstrings` file to parse. Read the compiled
+    /// table for the active language; the raw catalog above only exists in some dev layouts.
+    static let compiledTable: Bundle? = {
+        guard let path = ResourceBundle.bundle.path(forResource: languageCode, ofType: "lproj") else {
+            return nil
+        }
+        return Bundle(path: path)
+    }()
+
+    private static let missingMarker = "\u{1}NotchFlowMissing\u{1}"
+
     static func localized(_ key: String) -> String {
+        localized(key, languageCode: languageCode, catalog: translations, compiled: compiledTable)
+    }
+
+    /// Testable lookup: raw catalog first, then the compiled `.strings` table, else the English key.
+    static func localized(
+        _ key: String,
+        languageCode: String,
+        catalog: [String: [String: String]],
+        compiled: Bundle?
+    ) -> String {
         guard languageCode != "en" else { return key }
-        return translations[key]?[languageCode] ?? key
+        if let text = catalog[key]?[languageCode] {
+            return text
+        }
+        if let compiled {
+            let text = compiled.localizedString(forKey: key, value: missingMarker, table: "Localizable")
+            if text != missingMarker {
+                return text
+            }
+        }
+        return key
     }
 }
+
 
 /// Resolves a localized string from the NotchFlow String Catalog.
 func loc(_ key: String) -> String {

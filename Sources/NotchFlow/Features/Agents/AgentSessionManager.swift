@@ -6,8 +6,19 @@ final class AgentSessionManager {
     var onStateChange: (() -> Void)?
     /// Fired when a session newly needs the user (notch approval or jump-to-agent).
     var onNeedsAttention: ((AgentSession) -> Void)?
+    /// Fired after a consent prompt was answered in the notch and the session updated.
+    var onPermissionDecided: ((String, AgentPermissionDecision) -> Void)?
+    /// When false, jumping never activates or opens another app (debug demo mode).
+    var jumpsToAgentApps = true
+    /// When false, quiet running sessions are never treated as finished (debug demo mode,
+    /// where no hook reports progress).
+    var finishesQuietSessions = true {
+        didSet { updateStaleWatchdog() }
+    }
 
-    private(set) var sessions: [AgentSession] = []
+    private(set) var sessions: [AgentSession] = [] {
+        didSet { updateStaleWatchdog() }
+    }
     private var permissionDecisions: [String: AgentPermissionDecision] = [:]
     /// Consent prompts displaced by a newer one in the same session, newest last.
     /// Shown again one by one, so every Allow in the notch answers a prompt the user saw.
@@ -23,9 +34,7 @@ final class AgentSessionManager {
     /// Placeholder "Working…" rows (after jump-only attention) go away faster.
     private let stalePlaceholderInterval: TimeInterval = 8
 
-    init() {
-        startStaleWatchdog()
-    }
+    init() {}
 
     deinit {
         staleWatchdogTask?.cancel()
@@ -200,6 +209,7 @@ final class AgentSessionManager {
     }
 
     func decidePermission(id: String, decision: AgentPermissionDecision) {
+        defer { onPermissionDecided?(id, decision) }
         permissionDecisions[id] = decision
         for key in Array(queuedPermissions.keys) {
             queuedPermissions[key]?.removeAll { $0.id == id }
@@ -264,6 +274,7 @@ final class AgentSessionManager {
     }
 
     func jump(to session: AgentSession) {
+        guard jumpsToAgentApps else { return }
         // Prefer bringing an already-running agent/IDE forward.
         let candidates = ([session.terminalBundleID].compactMap { $0 } + session.agent.preferredBundleIDs)
         var didActivate = false
@@ -414,16 +425,25 @@ final class AgentSessionManager {
         }
     }
 
-    private func startStaleWatchdog() {
-        staleWatchdogTask?.cancel()
-        staleWatchdogTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(5))
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    self?.finishStaleRunningSessions()
+    /// Only running / placeholder-permission sessions can go stale.
+    private var hasStaleCandidates: Bool {
+        sessions.contains { $0.phase == .running || $0.phase == .waitingPermission }
+    }
+
+    /// The watchdog only runs while a session could go stale — no wakeups without agents.
+    private func updateStaleWatchdog() {
+        if finishesQuietSessions, hasStaleCandidates {
+            guard staleWatchdogTask == nil else { return }
+            staleWatchdogTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(5), tolerance: .seconds(1))
+                    guard !Task.isCancelled, let self else { return }
+                    self.finishStaleRunningSessions()
                 }
             }
+        } else {
+            staleWatchdogTask?.cancel()
+            staleWatchdogTask = nil
         }
     }
 

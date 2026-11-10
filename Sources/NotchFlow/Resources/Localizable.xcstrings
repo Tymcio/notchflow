@@ -1,6 +1,34 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "in %@": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "za %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tra %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en %@"
+          }
+        }
+      }
+    },
     "\"%@\" is unavailable. Remove the shortcut from the shelf and add it again.": {
       "localizations": {
         "pl": {
@@ -165,34 +193,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Accesibilidad activada — NotchFlow puede leer banners de notificaciones del sistema."
-          }
-        }
-      }
-    },
-    "Accessibility permission is required to detect calls and Notification Center alerts.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wymagane uprawnienie Dostępności, aby wykrywać połączenia i powiadomienia z Notification Center."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bedienungshilfen sind erforderlich, um Anrufe und Mitteilungszentrale-Banner zu erkennen."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Serve Accessibilità per rilevare chiamate e avvisi del Centro notifiche."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Se requiere Accesibilidad para detectar llamadas y avisos del Centro de notificaciones."
           }
         }
       }
@@ -561,34 +561,6 @@
         }
       }
     },
-    "Answer call": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Odbierz połączenie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anruf annehmen"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rispondi alla chiamata"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Contestar llamada"
-          }
-        }
-      }
-    },
     "App menu": {
       "localizations": {
         "pl": {
@@ -949,62 +921,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Calendario y otras pestañas ajustan la altura al contenido automáticamente."
-          }
-        }
-      }
-    },
-    "Calls in the notch": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Połączenia w notchu"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anrufe in der Notch"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chiamate nel notch"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Llamadas en el notch"
-          }
-        }
-      }
-    },
-    "Calls in the notch require a Premium license.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Połączenia w notchu wymagają licencji Premium."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anrufe in der Notch erfordern eine Premium-Lizenz."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le chiamate nel notch richiedono licenza Premium."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Las llamadas en el notch requieren licencia Premium."
           }
         }
       }
@@ -1597,34 +1513,6 @@
         }
       }
     },
-    "Decline call": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Odrzuć połączenie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anruf ablehnen"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rifiuta chiamata"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rechazar llamada"
-          }
-        }
-      }
-    },
     "Delete note": {
       "localizations": {
         "pl": {
@@ -1961,34 +1849,6 @@
         }
       }
     },
-    "End call": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zakończ połączenie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anruf beenden"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Termina chiamata"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Finalizar llamada"
-          }
-        }
-      }
-    },
     "Enter license key…": {
       "localizations": {
         "pl": {
@@ -2013,34 +1873,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Introducir clave de licencia…"
-          }
-        }
-      }
-    },
-    "FaceTime and calls relayed from iPhone appear in the island instead of only as a side banner.": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FaceTime i połączenia przekazywane z iPhone'a pojawią się w wyspie zamiast tylko jako banner z boku."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FaceTime und vom iPhone weitergeleitete Anrufe erscheinen in der Insel statt nur als Seitenbanner."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FaceTime e chiamate inoltrate dall'iPhone compaiono nell'isola invece che solo come banner laterale."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "FaceTime y llamadas reenviadas desde el iPhone aparecen en la isla en lugar de solo como banner lateral."
           }
         }
       }
@@ -2433,34 +2265,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "En la extensión Raycast basta el Token API — la dirección se lee automáticamente de api.json. Puerto fijo: %lld."
-          }
-        }
-      }
-    },
-    "Incoming call": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Połączenie przychodzące"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eingehender Anruf"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chiamata in arrivo"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Llamada entrante"
           }
         }
       }
@@ -3613,58 +3417,308 @@
         }
       }
     },
-    "NotchFlow only works on MacBooks with a display notch. This Mac has no notch, so the app cannot start.\n\nSupported: MacBook Pro / Air with notch (macOS 14+, Apple Silicon).": {
+    "Displays": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Displays"
+          }
+        },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow działa tylko na MacBookach z wycięciem (notch) w ekranie. Ten Mac nie ma notcha, więc aplikacja nie może się uruchomić.\n\nObsługiwane: MacBook Pro / Air z notchem (macOS 14+, Apple Silicon)."
+            "value": "Ekrany"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow funktioniert nur auf MacBooks mit Display-Notch. Dieser Mac hat keine Notch, daher kann die App nicht starten.\n\nUnterstützt: MacBook Pro / Air mit Notch (macOS 14+, Apple Silicon)."
+            "value": "Bildschirme"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow funziona solo su MacBook con notch nel display. Questo Mac non ha notch, quindi l'app non può avviarsi.\n\nSupportati: MacBook Pro / Air con notch (macOS 14+, Apple Silicon)."
+            "value": "Schermi"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow solo funciona en MacBook con notch en la pantalla. Este Mac no tiene notch, por lo que la app no puede iniciarse.\n\nCompatible: MacBook Pro / Air con notch (macOS 14+, Apple Silicon)."
+            "value": "Pantallas"
           }
         }
       }
     },
-    "NotchFlow requires a MacBook with a notch": {
+    "Island position on screens without a notch": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Island position on screens without a notch"
+          }
+        },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow wymaga MacBooka z notchem"
+            "value": "Położenie wyspy na ekranach bez notcha"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow erfordert ein MacBook mit Notch"
+            "value": "Position der Insel auf Bildschirmen ohne Notch"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow richiede un MacBook con notch"
+            "value": "Posizione dell'isola sugli schermi senza notch"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow requiere un MacBook con notch"
+            "value": "Posición de la isla en pantallas sin notch"
+          }
+        }
+      }
+    },
+    "Top center": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top center"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na górze, pośrodku"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oben mittig"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In alto al centro"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arriba en el centro"
+          }
+        }
+      }
+    },
+    "Off (menu bar icon only)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off (menu bar icon only)"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyłączona (tylko ikona na pasku menu)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus (nur Symbol in der Menüleiste)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disattivata (solo icona nella barra dei menu)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivada (solo icono en la barra de menús)"
+          }
+        }
+      }
+    },
+    "Show the island on": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the island on"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokazuj wyspę na"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insel anzeigen auf"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra l'isola su"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar la isla en"
+          }
+        }
+      }
+    },
+    "Display with the pointer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display with the pointer"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekranie z kursorem"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildschirm mit dem Zeiger"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schermo con il puntatore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla con el puntero"
+          }
+        }
+      }
+    },
+    "Main display": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Main display"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekranie głównym"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hauptbildschirm"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schermo principale"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla principal"
+          }
+        }
+      }
+    },
+    "Built-in display": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in display"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wbudowanym ekranie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Integrierter Bildschirm"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schermo integrato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla integrada"
+          }
+        }
+      }
+    },
+    "On Macs and displays without a notch, the island sits in the middle of the menu bar. Hover there to open it.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On Macs and displays without a notch, the island sits in the middle of the menu bar. Hover there to open it."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na Macach i ekranach bez notcha wyspa jest na środku paska menu. Najedź tam kursorem, aby ją otworzyć."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf Macs und Bildschirmen ohne Notch sitzt die Insel in der Mitte der Menüleiste. Bewege den Zeiger dorthin, um sie zu öffnen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sui Mac e sugli schermi senza notch, l'isola si trova al centro della barra dei menu. Passa lì il puntatore per aprirla."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En Mac y pantallas sin notch, la isla está en el centro de la barra de menús. Pasa el puntero por ahí para abrirla."
           }
         }
       }
@@ -5377,34 +5431,6 @@
         }
       }
     },
-    "Show incoming calls in the island": {
-      "localizations": {
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pokazuj połączenia przychodzące w wyspie"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eingehende Anrufe in der Insel anzeigen"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mostra chiamate in arrivo nell'isola"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mostrar llamadas entrantes en la isla"
-          }
-        }
-      }
-    },
     "Show notifications from selected apps in the island": {
       "localizations": {
         "pl": {
@@ -6252,6 +6278,24 @@
             "state": "translated",
             "value": "Addon Agents"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents-Addon"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Addon Agents"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complemento Agents"
+          }
         }
       }
     },
@@ -6261,6 +6305,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Monitoruj Claude Code, Codex, Cursor i inne z notcha. Jednorazowo €14,90."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behalte Claude Code, Codex, Cursor und mehr in der Notch im Blick. Einmalig 14,90 €."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitora Claude Code, Codex, Cursor e altro dal notch. Pagamento unico di 14,90 €."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supervisa Claude Code, Codex, Cursor y más desde el notch. Pago único de 14,90 €."
           }
         }
       }
@@ -6272,6 +6334,24 @@
             "state": "translated",
             "value": "Brak aktywnych sesji agentów"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine aktiven Agent-Sitzungen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna sessione agente attiva"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay sesiones de agentes activas"
+          }
         }
       }
     },
@@ -6281,6 +6361,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Włącz hooki, żeby Claude Code i inne agenty pojawiały się tutaj. Local API musi być włączone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiviere die Hooks, damit Claude Code und andere Agents hier erscheinen. Die Local API muss eingeschaltet bleiben."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attiva gli hook perché Claude Code e gli altri agenti compaiano qui. La Local API deve restare attiva."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activa los hooks para que Claude Code y otros agentes aparezcan aquí. La Local API debe seguir activada."
           }
         }
       }
@@ -6292,6 +6390,24 @@
             "state": "translated",
             "value": "Włącz Agents"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents aktivieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attiva Agents"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activar Agents"
+          }
         }
       }
     },
@@ -6301,6 +6417,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Instalowanie…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird installiert…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installazione…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instalando…"
           }
         }
       }
@@ -6312,6 +6446,24 @@
             "state": "translated",
             "value": "Wyczyść zakończone"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgeschlossene entfernen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancella completate"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borrar finalizadas"
+          }
         }
       }
     },
@@ -6321,6 +6473,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hooki zainstalowane w %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooks installiert in %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hook installati in %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooks instalados en %@"
           }
         }
       }
@@ -6332,6 +6502,24 @@
             "state": "translated",
             "value": "Agenci"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agentes"
+          }
         }
       }
     },
@@ -6341,6 +6529,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skocz do agenta"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zum Agent springen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vai all’agente"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ir al agente"
           }
         }
       }
@@ -6352,6 +6558,24 @@
             "state": "translated",
             "value": "Odrzuć"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ablehnen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rifiuta"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denegar"
+          }
         }
       }
     },
@@ -6361,6 +6585,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zezwól"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlauben"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consenti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permitir"
           }
         }
       }
@@ -6372,6 +6614,24 @@
             "state": "translated",
             "value": "Działa"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läuft"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In esecuzione"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En ejecución"
+          }
         }
       }
     },
@@ -6381,6 +6641,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Czeka na zgodę"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Freigabe erforderlich"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richiede approvazione"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requiere aprobación"
           }
         }
       }
@@ -6392,6 +6670,24 @@
             "state": "translated",
             "value": "Czeka"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In attesa"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando"
+          }
         }
       }
     },
@@ -6401,6 +6697,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gotowe"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fatto"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo"
           }
         }
       }
@@ -6412,6 +6726,24 @@
             "state": "translated",
             "value": "Pracuje…"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arbeitet…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al lavoro…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trabajando…"
+          }
         }
       }
     },
@@ -6421,6 +6753,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Błąd"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fehler"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Errore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error"
           }
         }
       }
@@ -6432,6 +6782,24 @@
             "state": "translated",
             "value": "Status addonu"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Addon-Status"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stato dell’addon"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado del complemento"
+          }
         }
       }
     },
@@ -6441,6 +6809,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odblokowany"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Freigeschaltet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sbloccato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desbloqueado"
           }
         }
       }
@@ -6452,6 +6838,24 @@
             "state": "translated",
             "value": "Zablokowany"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesperrt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloccato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqueado"
+          }
         }
       }
     },
@@ -6461,6 +6865,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zainstaluj / odśwież hooki agentów"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agent-Hooks installieren / aktualisieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installa / aggiorna gli hook degli agenti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instalar / actualizar hooks de agentes"
           }
         }
       }
@@ -6472,6 +6894,24 @@
             "state": "translated",
             "value": "Monitoruj Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Kimi i DeepSeek w notchu. Wymaga addonu Agents (€14,90) i Local API."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behalte Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Kimi und DeepSeek in der Notch im Blick. Erfordert das Agents-Addon (14,90 €) und die Local API."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monitora Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Kimi e DeepSeek nel notch. Richiede l’addon Agents (14,90 €) e la Local API."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supervisa Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Kimi y DeepSeek en el notch. Requiere el complemento Agents (14,90 €) y la Local API."
+          }
         }
       }
     },
@@ -6481,6 +6921,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Połączenie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindung"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connessione"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conexión"
           }
         }
       }
@@ -6492,6 +6950,24 @@
             "state": "translated",
             "value": "Gotowe"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereit"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronto"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo"
+          }
         }
       }
     },
@@ -6502,12 +6978,48 @@
             "state": "translated",
             "value": "Wymaga konfiguracji"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einrichtung erforderlich"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Da configurare"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requiere configuración"
+          }
         }
       }
     },
     "Local API": {
       "localizations": {
         "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local API"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local API"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local API"
+          }
+        },
+        "es": {
           "stringUnit": {
             "state": "translated",
             "value": "Local API"
@@ -6522,6 +7034,24 @@
             "state": "translated",
             "value": "Łączenie…"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connessione…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando…"
+          }
         }
       }
     },
@@ -6531,6 +7061,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Połącz agentów"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents verbinden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega gli agenti"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar agentes"
           }
         }
       }
@@ -6542,6 +7090,24 @@
             "state": "translated",
             "value": "Jak połączyć"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So verbindest du"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Come collegare"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo conectar"
+          }
         }
       }
     },
@@ -6551,6 +7117,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kliknij „Połącz agentów” — włącza Local API i zapisuje hooki."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippe auf „Agents verbinden“ – schaltet die Local API ein und schreibt die Hooks."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tocca «Collega gli agenti»: attiva la Local API e scrive gli hook."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulsa «Conectar agentes»: activa la Local API y escribe los hooks."
           }
         }
       }
@@ -6562,6 +7146,24 @@
             "state": "translated",
             "value": "Cursor: zamknij Cursor całkowicie (Cmd+Q), otwórz ponownie, uruchom Agent Chat."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursor: Cursor vollständig beenden (Cmd+Q), erneut öffnen, Agent Chat starten."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursor: chiudi completamente Cursor (Cmd+Q), riaprilo e avvia Agent Chat."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cursor: cierra Cursor por completo (Cmd+Q), vuelve a abrirlo e inicia Agent Chat."
+          }
         }
       }
     },
@@ -6571,6 +7173,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gdy Cursor chce uruchomić shell/tool, w notchu pojawia się Allow / Deny."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn Cursor einen Shell-Befehl/ein Tool ausführen möchte, erscheint Erlauben / Ablehnen in der Notch."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quando Cursor chiede di eseguire una shell/un tool, nel notch compare Consenti / Rifiuta."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando Cursor pide ejecutar un shell/herramienta, aparece Permitir / Denegar en el notch."
           }
         }
       }
@@ -6582,6 +7202,24 @@
             "state": "translated",
             "value": "Claude Code: hooki trafiają automatycznie do ~/.claude/settings.json."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code: Hooks werden automatisch in ~/.claude/settings.json eingetragen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code: gli hook vengono scritti automaticamente in ~/.claude/settings.json."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code: los hooks se añaden automáticamente a ~/.claude/settings.json."
+          }
         }
       }
     },
@@ -6591,6 +7229,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Szczegóły: Ustawienia → Integracje → Agents."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details: Einstellungen → Integrationen → Agents."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dettagli: Impostazioni → Integrazioni → Agents."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detalles: Ajustes → Integraciones → Agents."
           }
         }
       }
@@ -6602,6 +7258,24 @@
             "state": "translated",
             "value": "Czekam na sesję agenta"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warte auf eine Agent-Sitzung"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In attesa di una sessione agente"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando una sesión de agente"
+          }
         }
       }
     },
@@ -6611,6 +7285,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Po połączeniu uruchom agenta w Cursor lub Claude Code — aktywność pojawi się tutaj."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starte nach dem Verbinden einen Agent in Cursor oder Claude Code – die Aktivität erscheint hier."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dopo il collegamento, avvia un agente in Cursor o Claude Code: l’attività comparirà qui."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tras conectar, ejecuta un agente en Cursor o Claude Code: la actividad aparecerá aquí."
           }
         }
       }
@@ -6622,6 +7314,24 @@
             "state": "translated",
             "value": "Aktywne sesje"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktive Sitzungen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessioni attive"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesiones activas"
+          }
         }
       }
     },
@@ -6631,6 +7341,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Połączono. Zrestartuj Cursor (Cmd+Q), potem uruchom Agent Chat."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbunden. Starte Cursor neu (Cmd+Q) und öffne dann Agent Chat."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collegato. Riavvia Cursor (Cmd+Q), poi avvia Agent Chat."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectado. Reinicia Cursor (Cmd+Q) y luego ejecuta Agent Chat."
           }
         }
       }
@@ -6642,6 +7370,24 @@
             "state": "translated",
             "value": "Opcjonalny addon do kodowania — monitoruj agentów w notchu. Osobno od Premium (€14,90)."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optionales Coding-Addon – behalte Agents in der Notch im Blick. Separat von Premium (14,90 €)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Addon opzionale per il coding: monitora gli agenti nel notch. Separato da Premium (14,90 €)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complemento opcional para programar: supervisa agentes en el notch. Independiente de Premium (14,90 €)."
+          }
         }
       }
     },
@@ -6651,6 +7397,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Włączone"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attivo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activado"
           }
         }
       }
@@ -6662,6 +7426,24 @@
             "state": "translated",
             "value": "Wyłączone"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disattivo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desactivado"
+          }
         }
       }
     },
@@ -6671,6 +7453,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Połączono"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbunden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collegato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectado"
           }
         }
       }
@@ -6682,6 +7482,24 @@
             "state": "translated",
             "value": "Niepołączono"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht verbunden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non collegato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No conectado"
+          }
         }
       }
     },
@@ -6691,6 +7509,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Połącz agentów (Claude + Cursor)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents verbinden (Claude + Cursor)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega gli agenti (Claude + Cursor)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar agentes (Claude + Cursor)"
           }
         }
       }
@@ -6702,6 +7538,24 @@
             "state": "translated",
             "value": "Pokaż folder z hookami"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooks-Ordner anzeigen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra la cartella degli hook"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar carpeta de hooks"
+          }
         }
       }
     },
@@ -6711,6 +7565,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Jak połączyć Cursor"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So verbindest du Cursor"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Come collegare Cursor"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo conectar Cursor"
           }
         }
       }
@@ -6722,6 +7594,24 @@
             "state": "translated",
             "value": "1. Kliknij „Połącz agentów” — zapisuje ~/.cursor/hooks.json i włącza Local API."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Klicke auf „Agents verbinden“ – schreibt ~/.cursor/hooks.json und aktiviert die Local API."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Fai clic su «Collega gli agenti»: scrive ~/.cursor/hooks.json e attiva la Local API."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Haz clic en «Conectar agentes»: escribe ~/.cursor/hooks.json y activa la Local API."
+          }
         }
       }
     },
@@ -6731,6 +7621,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "2. Całkowicie zamknij Cursor (Cmd+Q) i otwórz ponownie."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Beende Cursor vollständig (Cmd+Q) und öffne es erneut."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Chiudi completamente Cursor (Cmd+Q) e riaprilo."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Cierra Cursor por completo (Cmd+Q) y vuelve a abrirlo."
           }
         }
       }
@@ -6742,6 +7650,24 @@
             "state": "translated",
             "value": "3. Uruchom Agent Chat — status pojawia się w notchu i znika po zakończeniu pracy agenta."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Starte Agent Chat – der Live-Status erscheint in der Notch und verschwindet, wenn der Agent fertig ist."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Avvia Agent Chat: lo stato in tempo reale compare nel notch e scompare quando l’agente termina."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Inicia Agent Chat: el estado en directo aparece en el notch y desaparece cuando el agente termina."
+          }
         }
       }
     },
@@ -6751,6 +7677,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Claude Code: Allow / Deny w notchu. Cursor: własne Skip/Run — notch pulsuje przy prawdopodobnej zgodzie; kliknij, żeby skoczyć (bez auto-focusu)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code: Erlauben / Ablehnen in der Notch. Cursor: behält sein eigenes Skip/Run – die Notch pulsiert bei wahrscheinlichen Freigabemomenten; tippe, um hinzuspringen (kein Auto-Fokus)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code: Consenti / Rifiuta nel notch. Cursor: mantiene i propri Skip/Run; il notch pulsa nei probabili momenti di consenso: tocca per saltare (senza auto-focus)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code: Permitir / Denegar en el notch. Cursor: mantiene sus propios Skip/Run; el notch pulsa en los probables momentos de consentimiento: pulsa para saltar (sin enfoque automático)."
           }
         }
       }
@@ -6762,6 +7706,24 @@
             "state": "translated",
             "value": "Claude Code łączy się automatycznie przez ~/.claude/settings.json."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code wird automatisch über ~/.claude/settings.json verbunden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code viene collegato automaticamente tramite ~/.claude/settings.json."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code se conecta automáticamente mediante ~/.claude/settings.json."
+          }
         }
       }
     },
@@ -6771,6 +7733,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hooki zainstalowane. Zrestartuj Cursor, potem użyj Agent Chat. Folder: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooks installiert. Starte Cursor neu und nutze dann Agent Chat. Ordner: %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hook installati. Riavvia Cursor, poi usa Agent Chat. Cartella: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hooks instalados. Reinicia Cursor y luego usa Agent Chat. Carpeta: %@"
           }
         }
       }
@@ -6782,6 +7762,24 @@
             "state": "translated",
             "value": "Hooki zostają na Twoim Macu. Kod i prompty agentów nie są wysyłane na serwery NotchFlow."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Hooks bleiben auf deinem Mac. Es werden weder Agent-Code noch Prompts an NotchFlow-Server gesendet."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gli hook restano sul tuo Mac. Nessun codice o prompt degli agenti viene inviato ai server di NotchFlow."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los hooks se quedan en tu Mac. No se envía código ni prompts de los agentes a los servidores de NotchFlow."
+          }
         }
       }
     },
@@ -6791,6 +7789,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kup addon Agents (€14,90)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents-Addon kaufen (14,90 €)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acquista l’addon Agents (14,90 €)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprar el complemento Agents (14,90 €)"
           }
         }
       }
@@ -6802,6 +7818,24 @@
             "state": "translated",
             "value": "Addon Agents aktywowany."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents-Addon aktiviert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Addon Agents attivato."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complemento Agents activado."
+          }
         }
       }
     },
@@ -6811,6 +7845,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Addon Agents usunięty z tego Maca."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents-Addon von diesem Mac entfernt."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Addon Agents rimosso da questo Mac."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complemento Agents eliminado de este Mac."
           }
         }
       }
@@ -6822,6 +7874,24 @@
             "state": "translated",
             "value": "Aktywacja Agents zwolniona w Polar."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents-Aktivierung in Polar freigegeben."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attivazione di Agents rilasciata in Polar."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activación de Agents liberada en Polar."
+          }
         }
       }
     },
@@ -6831,6 +7901,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zarządzaj Agents"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents verwalten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestisci Agents"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionar Agents"
           }
         }
       }
@@ -6842,6 +7930,24 @@
             "state": "translated",
             "value": "Usuń Agents z tego Maca"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents von diesem Mac entfernen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rimuovi Agents da questo Mac"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar Agents de este Mac"
+          }
         }
       }
     },
@@ -6851,6 +7957,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zwolnij aktywację Agents (Polar)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents-Aktivierung freigeben (Polar)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rilascia l’attivazione di Agents (Polar)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liberar la activación de Agents (Polar)"
           }
         }
       }
@@ -6862,6 +7986,24 @@
             "state": "translated",
             "value": "Nieaktywowany"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht aktiviert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non attivato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No activado"
+          }
         }
       }
     },
@@ -6871,6 +8013,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aktywny"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiv"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attivo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo"
           }
         }
       }
@@ -6882,6 +8042,24 @@
             "state": "translated",
             "value": "Okres beta — wszystkie funkcje Premium i Agents są odblokowane. W stabilnej wersji klucz będzie wymagany; wpisany teraz klucz zostanie zapamiętany."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betaphase – alle Premium- und Agents-Funktionen sind freigeschaltet. In der stabilen Version ist ein Schlüssel erforderlich; ein jetzt eingegebener Schlüssel wird gespeichert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Periodo beta: tutte le funzioni Premium e Agents sono sbloccate. Nella versione stabile servirà una chiave; quella inserita ora verrà ricordata."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Periodo beta: todas las funciones Premium y Agents están desbloqueadas. En la versión estable se necesitará una clave; la que introduzcas ahora se recordará."
+          }
         }
       }
     },
@@ -6891,6 +8069,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Wklej klucz Premium (NOTCHFLOW_…) lub Agents (NOTCHFLOW_AGENTS_…) z notchflow.eu."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Füge einen Premium-Schlüssel (NOTCHFLOW_…) oder Agents-Schlüssel (NOTCHFLOW_AGENTS_…) von notchflow.eu ein."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incolla una chiave Premium (NOTCHFLOW_…) o Agents (NOTCHFLOW_AGENTS_…) da notchflow.eu."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pega una clave Premium (NOTCHFLOW_…) o de Agents (NOTCHFLOW_AGENTS_…) de notchflow.eu."
           }
         }
       }
@@ -6902,6 +8098,24 @@
             "state": "translated",
             "value": "Zarządzaj Premium"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Premium verwalten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestisci Premium"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionar Premium"
+          }
         }
       }
     },
@@ -6911,6 +8125,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zatwierdzono"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genehmigt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approvato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aprobado"
           }
         }
       }
@@ -6922,6 +8154,24 @@
             "state": "translated",
             "value": "Odrzucono"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgelehnt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rifiutato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denegado"
+          }
         }
       }
     },
@@ -6931,6 +8181,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Odpowiedziano"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beantwortet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Risposto"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respondido"
           }
         }
       }
@@ -6942,6 +8210,24 @@
             "state": "translated",
             "value": "Odpowiedź: %@"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beantwortet: %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Risposta: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respuesta: %@"
+          }
         }
       }
     },
@@ -6952,6 +8238,24 @@
             "state": "translated",
             "value": "Połącz agentów w Ustawienia → Integracje, potem uruchom Cursor Agent lub Claude Code."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde Agents unter Einstellungen → Integrationen und starte dann Cursor Agent oder Claude Code."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega gli agenti in Impostazioni → Integrazioni, poi avvia Cursor Agent o Claude Code."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta los agentes en Ajustes → Integraciones y luego ejecuta Cursor Agent o Claude Code."
+          }
         }
       }
     },
@@ -6961,6 +8265,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Otwórz Integracje"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Integrationen öffnen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri Integrazioni"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir Integraciones"
           }
         }
       }
@@ -7477,6 +8799,30 @@
         "es": { "stringUnit": { "state": "translated", "value": "Vuelve a iniciar sesión en Cursor para ver los límites" } }
       }
     },
+    "macOS may ask whether NotchFlow can use “Claude Safe Storage”, “Cursor Safe Storage” or “Grok Bot Safe Storage”. That item is the key to all of that app’s encrypted data on this Mac, not only its login. NotchFlow uses it only to read the login for usage limits and keeps tokens in memory. “Always Allow” stops the question for good; “Allow” asks again next time.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "macOS może zapytać, czy NotchFlow może użyć elementu „Claude Safe Storage”, „Cursor Safe Storage” lub „Grok Bot Safe Storage”. Ten element to klucz do wszystkich zaszyfrowanych danych tej aplikacji na tym Macu, nie tylko do logowania. NotchFlow używa go wyłącznie do odczytu logowania na potrzeby limitów użycia i trzyma tokeny tylko w pamięci. „Zawsze pozwalaj” wyłącza to pytanie na stałe; „Pozwól” zapyta ponownie następnym razem." } },
+        "de": { "stringUnit": { "state": "translated", "value": "macOS fragt eventuell, ob NotchFlow „Claude Safe Storage“, „Cursor Safe Storage“ oder „Grok Bot Safe Storage“ verwenden darf. Dieses Objekt ist der Schlüssel zu allen verschlüsselten Daten dieser App auf diesem Mac, nicht nur zur Anmeldung. NotchFlow liest damit nur die Anmeldung für die Nutzungslimits und behält Tokens nur im Arbeitsspeicher. „Immer erlauben“ beendet die Abfrage dauerhaft; „Erlauben“ fragt beim nächsten Mal erneut." } },
+        "it": { "stringUnit": { "state": "translated", "value": "macOS potrebbe chiedere se NotchFlow può usare «Claude Safe Storage», «Cursor Safe Storage» o «Grok Bot Safe Storage». Quell’elemento è la chiave di tutti i dati cifrati di quell’app su questo Mac, non solo del login. NotchFlow lo usa solo per leggere il login per i limiti di utilizzo e tiene i token solo in memoria. «Consenti sempre» elimina la domanda in modo definitivo; «Consenti» la ripropone la volta successiva." } },
+        "es": { "stringUnit": { "state": "translated", "value": "macOS puede preguntar si NotchFlow puede usar «Claude Safe Storage», «Cursor Safe Storage» o «Grok Bot Safe Storage». Ese elemento es la clave de todos los datos cifrados de esa app en este Mac, no solo de su inicio de sesión. NotchFlow solo lo usa para leer el inicio de sesión para los límites de uso y guarda los tokens solo en memoria. «Permitir siempre» deja de preguntar para siempre; «Permitir» volverá a preguntar la próxima vez." } }
+      }
+    },
+    "%@ is not a valid JSON settings file. NotchFlow left it unchanged. Fix or remove it, then connect agents again.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "%@ nie jest prawidłowym plikiem ustawień JSON. NotchFlow go nie zmienił. Popraw go lub usuń, a potem ponownie połącz agentów." } },
+        "de": { "stringUnit": { "state": "translated", "value": "%@ ist keine gültige JSON-Einstellungsdatei. NotchFlow hat sie nicht verändert. Korrigiere oder entferne sie und verbinde die Agenten dann erneut." } },
+        "it": { "stringUnit": { "state": "translated", "value": "%@ non è un file di impostazioni JSON valido. NotchFlow non l’ha modificato. Correggilo o rimuovilo, poi collega di nuovo gli agenti." } },
+        "es": { "stringUnit": { "state": "translated", "value": "%@ no es un archivo de ajustes JSON válido. NotchFlow no lo ha modificado. Corrígelo o elimínalo y vuelve a conectar los agentes." } }
+      }
+    },
+    "%@ changed while NotchFlow was updating it. Try again in a moment.": {
+      "localizations": {
+        "pl": { "stringUnit": { "state": "translated", "value": "%@ zmienił się podczas aktualizacji przez NotchFlow. Spróbuj ponownie za chwilę." } },
+        "de": { "stringUnit": { "state": "translated", "value": "%@ wurde geändert, während NotchFlow die Datei aktualisierte. Versuche es gleich noch einmal." } },
+        "it": { "stringUnit": { "state": "translated", "value": "%@ è cambiato mentre NotchFlow lo aggiornava. Riprova tra un momento." } },
+        "es": { "stringUnit": { "state": "translated", "value": "%@ cambió mientras NotchFlow lo actualizaba. Vuelve a intentarlo en un momento." } }
+      }
+    },
     "Sign in with Codex to see limits": {
       "localizations": {
         "pl": {
@@ -7723,6 +9069,142 @@
         "de": { "stringUnit": { "state": "translated", "value": "Netzwerkzugriff dient der Lizenzprüfung, Updates, optionalen Songtexten und der Nutzung von Claude, Codex, Cursor, Grok Build und Grok Bot bei aktiviertem Agents-Addon." } },
         "it": { "stringUnit": { "state": "translated", "value": "L’accesso di rete serve per la verifica della licenza, gli aggiornamenti, i testi opzionali e l’utilizzo di Claude, Codex, Cursor, Grok Build e Grok Bot con l’addon Agents attivo." } },
         "es": { "stringUnit": { "state": "translated", "value": "El acceso de red se usa para verificar la licencia, actualizaciones, letras opcionales y el uso de Claude, Codex, Cursor, Grok Build y Grok Bot con el complemento Agents activado." } }
+      }
+    },
+    "No camera found.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No camera found."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie znaleziono kamery."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Kamera gefunden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessuna fotocamera trovata."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha encontrado ninguna cámara."
+          }
+        }
+      }
+    },
+    "Connect a webcam or use your iPhone as a Continuity Camera.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect a webcam or use your iPhone as a Continuity Camera."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podłącz kamerę internetową lub użyj iPhone’a jako Kamery w Ciągłości."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließe eine Webcam an oder verwende dein iPhone als Integrationskamera."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega una webcam o usa l’iPhone come fotocamera con Continuity."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta una webcam o usa tu iPhone como cámara de Continuidad."
+          }
+        }
+      }
+    },
+    "The camera could not be started.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The camera could not be started."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie udało się uruchomić kamery."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kamera konnte nicht gestartet werden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile avviare la fotocamera."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se ha podido iniciar la cámara."
+          }
+        }
+      }
+    },
+    "Show on hover only": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show on hover only"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tylko po najechaniu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur beim Darüberfahren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo al passaggio del puntatore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo al pasar el puntero"
+          }
+        }
       }
     }
   },

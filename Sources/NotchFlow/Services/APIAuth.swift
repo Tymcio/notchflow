@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import os
 
 enum APIAuthError: Error {
     case tokenPersistenceFailed
@@ -8,14 +9,15 @@ enum APIAuthError: Error {
 enum APIAuth {
     private static let keychain = KeychainStore(service: "eu.notchflow.app.api")
     private static let tokenKey = "local_api_token"
-    private static var cachedToken: String?
+    /// Read from the main actor (Local API, Settings) and from background tasks.
+    private static let cachedToken = OSAllocatedUnfairLock<String?>(initialState: nil)
 
     static func token() throws -> String {
-        if let cachedToken {
-            return cachedToken
+        if let cached = cachedToken.withLock({ $0 }) {
+            return cached
         }
         if let existing = keychain.read(key: tokenKey) {
-            cachedToken = existing
+            cachedToken.withLock { $0 = existing }
             persistTokenFile(existing)
             return existing
         }
@@ -25,7 +27,7 @@ enum APIAuth {
         }
         do {
             try keychain.save(key: tokenKey, value: generated)
-            cachedToken = generated
+            cachedToken.withLock { $0 = generated }
             persistTokenFile(generated)
             return generated
         } catch {

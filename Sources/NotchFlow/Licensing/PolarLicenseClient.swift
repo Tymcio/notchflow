@@ -1,6 +1,66 @@
 import Foundation
 
+/// Polar benefit IDs that identify NotchFlow's products. They are injected into Info.plist
+/// at packaging time (`POLAR_PREMIUM_BENEFIT_IDS`, `POLAR_AGENTS_BENEFIT_IDS`, comma-separated).
+/// When none are configured, the product is guessed from the key prefix and product names.
+struct PolarBenefitIDs: Equatable, Sendable {
+    var premium: Set<String>
+    var agents: Set<String>
+
+    static let none = PolarBenefitIDs(premium: [], agents: [])
+
+    var isConfigured: Bool { !premium.isEmpty || !agents.isEmpty }
+
+    static func parse(_ raw: String?) -> Set<String> {
+        guard let raw else { return [] }
+        let separators = CharacterSet(charactersIn: ",;").union(.whitespacesAndNewlines)
+        return Set(raw.components(separatedBy: separators)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+            .filter { !$0.isEmpty })
+    }
+
+    static func fromBundle(
+        _ bundle: Bundle = .main,
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        allowEnvironment: Bool = !LicenseMode.current.isEnforced
+    ) -> PolarBenefitIDs {
+        // Release builds (license enforced) trust only the IDs baked into Info.plist, so a
+        // `launchctl setenv` cannot reclassify a key. Local builds may use env vars.
+        func value(_ plistKey: String, _ envKey: String) -> Set<String> {
+            let bundled = parse(bundle.object(forInfoDictionaryKey: plistKey) as? String)
+            guard bundled.isEmpty, allowEnvironment else { return bundled }
+            return parse(environment[envKey])
+        }
+        return PolarBenefitIDs(
+            premium: value("PolarPremiumBenefitIDs", "POLAR_PREMIUM_BENEFIT_IDS"),
+            agents: value("PolarAgentsBenefitIDs", "POLAR_AGENTS_BENEFIT_IDS")
+        )
+    }
+
+    enum Product: Equatable {
+        case premium
+        case agents
+    }
+
+    /// The product a Polar `benefit_id` belongs to, or nil when it is not in either list.
+    /// Never infers one product from the absence of the other: an old or retired benefit
+    /// must not silently turn a paid Premium key into an Agents key (or the reverse).
+    func product(forBenefitID raw: String?) -> Product? {
+        let id = raw?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        guard !id.isEmpty else { return nil }
+        if agents.contains(id) { return .agents }
+        if premium.contains(id) { return .premium }
+        return nil
+    }
+}
+
 struct PolarLicenseClient: LicenseAPI {
+    private let benefitIDs: PolarBenefitIDs
+
+    init(benefitIDs: PolarBenefitIDs = .fromBundle()) {
+        self.benefitIDs = benefitIDs
+    }
+
     private let activateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/activate")!
     private let validateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/validate")!
     private let deactivateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/deactivate")!
@@ -117,6 +177,15 @@ struct PolarLicenseClient: LicenseAPI {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw LicenseValidationError.networkFailure
         }
+        return try Self.parseSession(json: json, key: key, benefitIDs: benefitIDs)
+    }
+
+    static func parseSession(
+        json: [String: Any],
+        key: String,
+        benefitIDs: PolarBenefitIDs,
+        now: Date = Date()
+    ) throws -> PolarLicenseSession {
 
         let licenseObject = (json["license_key"] as? [String: Any]) ?? json
         guard let status = licenseObject["status"] as? String, status == "granted" else {
@@ -124,11 +193,31 @@ struct PolarLicenseClient: LicenseAPI {
         }
 
         let expiresAt = parseDate(licenseObject["expires_at"] as? String)
-        if let expiresAt, expiresAt < Date() {
+        if let expiresAt, expiresAt < now {
             throw LicenseValidationError.expired
         }
 
-        let isAgents = Self.detectAgentsProduct(key: key, licenseObject: licenseObject, root: json)
+        // The benefit the key was issued for decides the product, not its name. A granted key
+        // from a benefit we don't list (an older product, or IDs not configured) is still a
+        // paid key: fall back to the name-based guess instead of revoking it.
+        let isAgents: Bool
+        let verifiedByBenefit: Bool
+        let benefitID = (licenseObject["benefit_id"] as? String) ?? (json["benefit_id"] as? String)
+        switch benefitIDs.product(forBenefitID: benefitID) {
+        case .agents:
+            isAgents = true
+            verifiedByBenefit = true
+        case .premium:
+            isAgents = false
+            verifiedByBenefit = true
+        case nil:
+            if benefitIDs.isConfigured {
+                NotchFlowLog.license.notice("License key comes from a Polar benefit that is not configured; using the product name")
+            }
+            isAgents = detectAgentsProduct(key: key, licenseObject: licenseObject, root: json)
+            verifiedByBenefit = false
+        }
+        // Annual vs lifetime only changes the label; access is enforced by expiry and validation.
         let tier: LicenseTier = isAgents ? .free : (expiresAt == nil ? .lifetime : .annual)
 
         let activationID: String?
@@ -146,17 +235,19 @@ struct PolarLicenseClient: LicenseAPI {
             status: LicenseStatus(
                 tier: tier,
                 key: isAgents ? nil : key,
-                validatedAt: isAgents ? nil : Date(),
+                validatedAt: isAgents ? nil : now,
                 expiresAt: isAgents ? nil : expiresAt,
                 hasAgentsAddon: isAgents,
                 agentsKey: isAgents ? key : nil,
-                agentsValidatedAt: isAgents ? Date() : nil
+                agentsValidatedAt: isAgents ? now : nil
             ),
             activationID: activationID,
-            isAgentsProduct: isAgents
+            isAgentsProduct: isAgents,
+            productVerifiedByBenefit: verifiedByBenefit
         )
     }
 
+    /// Fallback guess used when the key's benefit is not in the configured lists.
     static func looksLikeAgentsKey(_ key: String) -> Bool {
         let upper = key.uppercased()
         return upper.contains("AGENTS") || upper.contains("NOTCHFLOW_AGENT")
@@ -186,7 +277,7 @@ struct PolarLicenseClient: LicenseAPI {
         return false
     }
 
-    private func parseDate(_ value: String?) -> Date? {
+    private static func parseDate(_ value: String?) -> Date? {
         guard let value else { return nil }
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -202,4 +293,12 @@ struct PolarLicenseSession: Equatable, Sendable {
     let status: LicenseStatus
     let activationID: String
     let isAgentsProduct: Bool
+    /// True when `isAgentsProduct` came from a configured Polar benefit ID rather than a guess.
+    var productVerifiedByBenefit: Bool = false
+
+    /// Whether `key` should be stored as the Agents addon key.
+    func isAgentsKey(_ key: String) -> Bool {
+        if productVerifiedByBenefit { return isAgentsProduct }
+        return isAgentsProduct || PolarLicenseClient.looksLikeAgentsKey(key)
+    }
 }

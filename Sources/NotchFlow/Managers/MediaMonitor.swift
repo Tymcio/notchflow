@@ -1,6 +1,9 @@
 import AppKit
 import Foundation
 
+/// Publishes the now-playing state. Source updates are merged and published immediately;
+/// artwork and lyrics are added afterwards by per-track tasks whose results are cached
+/// (hits and misses) and dropped if the track has changed in the meantime.
 @MainActor
 final class MediaMonitor {
     private static let trackedPlayerBundleIDs: Set<String> = [
@@ -9,89 +12,131 @@ final class MediaMonitor {
         "com.apple.iTunes"
     ]
 
+    /// How long a failed (network / AppleScript) lookup is remembered before retrying.
+    static let failedLookupRetryInterval: TimeInterval = 120
+    /// The player answered for a different track although this one is still current (its
+    /// metadata differs from the notification's); retry later instead of on every update.
+    static let trackMismatchRetryInterval: TimeInterval = 10
+
     var onStateChange: ((MediaPlaybackState) -> Void)?
 
     private let source: MediaSourceProviding
     private let scriptingSource = ScriptingBridgeMediaSource()
     private let lyricsService = LyricsService()
     private var currentState = MediaPlaybackState.empty
-    private var lastFetchedArtworkTrackKey: String?
-    private var artworkRequestID = 0
     private var islandVisible = false
     private var islandExpanded = false
     private var activeModule: IslandModule = .media
     private var scriptingPollingActive = false
+    private var scriptingPollingRequest = 0
     private var playerTerminateObserver: NSObjectProtocol?
+    /// A fixed track with no player behind it (debug demo mode); see `showSimulatedTrack`.
+    private var isSimulated = false
+
+    private var artworkCache = MediaEnrichmentCache<Data>(capacity: 32)
+    private var lyricsCache = MediaEnrichmentCache<String>(capacity: 64)
+    private var artworkTask: (key: String, task: Task<Void, Never>)?
+    private var lyricsTask: (key: String, task: Task<Void, Never>)?
 
     init(source: MediaSourceProviding = DistributedMediaSource()) {
         self.source = source
     }
 
-    deinit {
-        if let playerTerminateObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(playerTerminateObserver)
-        }
-    }
-
     func start() {
         registerPlayerTerminationObserver()
 
-        Task {
-            await source.startMonitoring { [weak self] state in
-                guard let self else { return }
-                Task { @MainActor in
-                    await self.applyState(state)
-                }
+        let sourceHandler: @Sendable (MediaPlaybackState) -> Void = { [weak self] state in
+            Task { @MainActor [weak self] in
+                self?.applyState(state)
             }
         }
-
-        Task {
-            await scriptingSource.startMonitoring { [weak self] scriptState in
-                guard let self else { return }
-                Task { @MainActor in
-                    await self.mergeScriptingState(scriptState)
-                }
+        let scriptingHandler: @Sendable (MediaPlaybackState) -> Void = { [weak self] state in
+            Task { @MainActor [weak self] in
+                self?.mergeScriptingState(state)
             }
         }
+        let source = source
+        let scriptingSource = scriptingSource
+        Task { await source.startMonitoring(handler: sourceHandler) }
+        Task { await scriptingSource.startMonitoring(handler: scriptingHandler) }
     }
 
     func updateIslandPresentation(isVisible: Bool, isExpanded: Bool, activeModule: IslandModule) {
         islandVisible = isVisible
         islandExpanded = isExpanded
         self.activeModule = activeModule
-        Task {
-            await refreshScriptingPolling()
-        }
+        refreshScriptingPolling()
+    }
+
+    /// Publishes `state` with no player behind it, instead of calling `start()`. Players are
+    /// never observed, polled or scripted afterwards, no artwork or lyrics are looked up, and
+    /// the transport controls only move this in-memory track.
+    func showSimulatedTrack(_ state: MediaPlaybackState) {
+        isSimulated = true
+        publish(state)
     }
 
     func togglePlayPause() {
+        guard !isSimulated else {
+            let now = Date()
+            publishSimulated(elapsed: currentState.interpolatedPosition(at: now), isPlaying: !currentState.isPlaying, at: now)
+            return
+        }
         MediaPlayerController.perform(.playPause, playerBundleID: currentState.bundleIdentifier)
     }
 
     func nextTrack() {
+        guard !isSimulated else {
+            publishSimulated(elapsed: 0, isPlaying: currentState.isPlaying, at: Date())
+            return
+        }
         MediaPlayerController.perform(.next, playerBundleID: currentState.bundleIdentifier)
     }
 
     func previousTrack() {
+        guard !isSimulated else {
+            publishSimulated(elapsed: 0, isPlaying: currentState.isPlaying, at: Date())
+            return
+        }
         MediaPlayerController.perform(.previous, playerBundleID: currentState.bundleIdentifier)
     }
 
     func seek(to position: Double) {
+        guard !isSimulated else {
+            publishSimulated(elapsed: position, isPlaying: currentState.isPlaying, at: Date())
+            return
+        }
         MediaPlayerController.seek(to: position, playerBundleID: currentState.bundleIdentifier)
     }
 
+    private func publishSimulated(elapsed: Double, isPlaying: Bool, at date: Date) {
+        let state = currentState
+        publish(MediaPlaybackState(
+            title: state.title,
+            artist: state.artist,
+            album: state.album,
+            artworkURL: state.artworkURL,
+            artworkData: state.artworkData,
+            isPlaying: isPlaying,
+            elapsed: min(max(0, elapsed), state.duration),
+            duration: state.duration,
+            bundleIdentifier: state.bundleIdentifier,
+            lyricsSnippet: state.lyricsSnippet,
+            positionSampledAt: date
+        ))
+    }
+
     private func registerPlayerTerminationObserver() {
+        guard playerTerminateObserver == nil else { return }
         playerTerminateObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didTerminateApplicationNotification,
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard let self else { return }
-            guard let bundleID = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? String else {
-                return
-            }
-            Task { @MainActor in
-                self.handlePlayerTerminated(bundleID: bundleID)
+            guard let bundleID = (notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?
+                .bundleIdentifier else { return }
+            MainActor.assumeIsolated {
+                self?.handlePlayerTerminated(bundleID: bundleID)
             }
         }
     }
@@ -99,189 +144,178 @@ final class MediaMonitor {
     private func handlePlayerTerminated(bundleID: String) {
         guard Self.trackedPlayerBundleIDs.contains(bundleID) else { return }
         guard currentState.bundleIdentifier == bundleID else { return }
-        Task {
-            await applyState(.empty)
-        }
+        applyState(.empty)
     }
 
-    private func mergeScriptingState(_ scriptState: MediaPlaybackState) async {
+    private func mergeScriptingState(_ scriptState: MediaPlaybackState) {
         if scriptState == .empty {
             if currentState.hasActiveTrack {
-                await applyState(.empty)
+                applyState(.empty)
             }
             return
         }
-
-        if !scriptState.isPlaying,
-           currentState.isPlaying,
-           let scriptBundle = scriptState.bundleIdentifier,
-           let currentBundle = currentState.bundleIdentifier,
-           scriptBundle != currentBundle {
-            return
-        }
-
-        var merged = currentState
-        let sameTrack = scriptState.isSameTrack(as: merged)
-
-        if scriptState.hasActiveTrack {
-            merged = MediaPlaybackState(
-                title: scriptState.title,
-                artist: scriptState.artist,
-                album: scriptState.album,
-                artworkURL: scriptState.artworkURL ?? (sameTrack ? merged.artworkURL : nil),
-                artworkData: scriptState.artworkData ?? (sameTrack ? merged.artworkData : nil),
-                isPlaying: scriptState.isPlaying,
-                elapsed: MediaPlaybackState.preferredTiming(incoming: scriptState.elapsed, current: merged.elapsed),
-                duration: MediaPlaybackState.preferredTiming(incoming: scriptState.duration, current: merged.duration),
-                bundleIdentifier: scriptState.bundleIdentifier ?? merged.bundleIdentifier,
-                lyricsSnippet: merged.lyricsSnippet,
-                positionSampledAt: Date()
-            )
-        } else if MediaPlaybackState.isUsableTiming(scriptState.elapsed) || MediaPlaybackState.isUsableTiming(scriptState.duration) {
-            merged = MediaPlaybackState(
-                title: merged.title,
-                artist: merged.artist,
-                album: merged.album,
-                artworkURL: merged.artworkURL,
-                artworkData: merged.artworkData,
-                isPlaying: scriptState.isPlaying,
-                elapsed: MediaPlaybackState.preferredTiming(incoming: scriptState.elapsed, current: merged.elapsed),
-                duration: MediaPlaybackState.preferredTiming(incoming: scriptState.duration, current: merged.duration),
-                bundleIdentifier: merged.bundleIdentifier ?? scriptState.bundleIdentifier,
-                lyricsSnippet: merged.lyricsSnippet,
-                positionSampledAt: Date()
-            )
-        }
-        await applyState(merged)
+        guard let merged = MediaStateMerger.mergeScripting(scriptState, into: currentState) else { return }
+        applyState(merged)
     }
 
-    private func applyState(_ state: MediaPlaybackState) async {
-        var enriched = mergePreservingMediaAssets(incoming: state, current: currentState)
+    // MARK: - Publishing
 
-        if !enriched.isPlaying,
-           currentState.isPlaying,
-           let incomingBundle = enriched.bundleIdentifier,
-           let currentBundle = currentState.bundleIdentifier,
-           incomingBundle != currentBundle,
-           enriched.isSameTrack(as: currentState) == false {
-            enriched = currentState
+    private func applyState(_ state: MediaPlaybackState) {
+        // Full-size artwork from a source never goes into the published state; it is
+        // downsampled off the main actor first.
+        let rawArtwork = state.artworkData
+        var merged = MediaStateMerger.merge(incoming: state.with(artworkData: nil), current: currentState)
+
+        if MediaStateMerger.isStaleOtherPlayer(merged, current: currentState) {
+            merged = currentState
         }
 
-        if enriched.isPlaying,
-           enriched.lyricsSnippet == nil,
-           isPremiumEligible(),
-           NotchSettings.shared.lyricsSharingEnabled {
-            enriched = MediaPlaybackState(
-                title: enriched.title,
-                artist: enriched.artist,
-                album: enriched.album,
-                artworkURL: enriched.artworkURL,
-                artworkData: enriched.artworkData,
-                isPlaying: enriched.isPlaying,
-                elapsed: enriched.elapsed,
-                duration: enriched.duration,
-                bundleIdentifier: enriched.bundleIdentifier,
-                lyricsSnippet: await lyricsService.fetchSnippet(title: enriched.title, artist: enriched.artist),
-                positionSampledAt: enriched.positionSampledAt
-            )
+        if merged.hasActiveTrack {
+            let key = merged.trackKey
+            if let artwork = artworkCache.value(for: key) {
+                merged = merged.with(artworkData: artwork)
+            }
+            if merged.lyricsSnippet == nil, let lyrics = lyricsCache.value(for: key) {
+                merged = merged.with(lyricsSnippet: lyrics)
+            }
         }
 
-        let trackChanged = !enriched.isSameTrack(as: currentState)
-        if trackChanged {
-            lastFetchedArtworkTrackKey = nil
-        }
-
-        if enriched.artworkData == nil || trackChanged || lastFetchedArtworkTrackKey != enriched.trackKey {
-            enriched = await enrichArtworkIfNeeded(enriched)
-        }
-
-        guard enriched != currentState else {
-            await refreshScriptingPolling()
-            return
-        }
-
-        currentState = enriched
-        onStateChange?(enriched)
-        await refreshScriptingPolling()
+        publish(merged)
+        scheduleEnrichment(for: merged, rawArtwork: merged.artworkData == nil ? rawArtwork : nil)
+        refreshScriptingPolling()
     }
 
-    private func refreshScriptingPolling() async {
-        let needsPolling = currentState.isPlaying
+    private func publish(_ state: MediaPlaybackState) {
+        guard state != currentState else { return }
+        currentState = state
+        onStateChange?(state)
+    }
+
+    private func refreshScriptingPolling() {
+        let needsPolling = !isSimulated
+            && currentState.isPlaying
             && islandVisible
             && islandExpanded
             && activeModule == .media
         guard needsPolling != scriptingPollingActive else { return }
         scriptingPollingActive = needsPolling
-        await scriptingSource.setPollingActive(needsPolling)
+        scriptingPollingRequest += 1
+        let request = scriptingPollingRequest
+        let scriptingSource = scriptingSource
+        Task {
+            // Tasks may start out of order; the source ignores superseded requests.
+            await scriptingSource.setPollingActive(needsPolling, request: request)
+        }
     }
 
-    private func mergePreservingMediaAssets(incoming: MediaPlaybackState, current: MediaPlaybackState) -> MediaPlaybackState {
-        let sameTrack = incoming.isSameTrack(as: current)
+    // MARK: - Enrichment
 
-        let isPlaying = incoming.isPlaying
-            || (incoming.isPlaying && sameTrack && current.isPlaying && incoming.elapsed > current.elapsed + 0.2)
-
-        let elapsed = MediaPlaybackState.preferredTiming(incoming: incoming.elapsed, current: current.elapsed)
-        let duration = MediaPlaybackState.preferredTiming(incoming: incoming.duration, current: current.duration)
-        let timingUpdated = elapsed != current.elapsed || duration != current.duration
-        let playingChanged = isPlaying != current.isPlaying
-
-        return MediaPlaybackState(
-            title: incoming.title,
-            artist: incoming.artist,
-            album: incoming.album,
-            artworkURL: incoming.artworkURL ?? (sameTrack ? current.artworkURL : nil),
-            artworkData: incoming.artworkData ?? (sameTrack ? current.artworkData : nil),
-            isPlaying: isPlaying,
-            elapsed: elapsed,
-            duration: duration,
-            bundleIdentifier: incoming.bundleIdentifier ?? current.bundleIdentifier,
-            lyricsSnippet: incoming.lyricsSnippet ?? current.lyricsSnippet,
-            positionSampledAt: (timingUpdated || playingChanged) ? Date() : current.positionSampledAt
-        )
-    }
-
-    private func enrichArtworkIfNeeded(_ state: MediaPlaybackState) async -> MediaPlaybackState {
-        guard state.hasActiveTrack else { return state }
-
-        if lastFetchedArtworkTrackKey == state.trackKey, state.artworkData != nil {
-            return state
+    private func scheduleEnrichment(for state: MediaPlaybackState, rawArtwork: Data?) {
+        guard state.hasActiveTrack else {
+            cancelEnrichment()
+            return
+        }
+        let key = state.trackKey
+        if artworkTask?.key != key {
+            artworkTask?.task.cancel()
+            artworkTask = nil
+        }
+        if lyricsTask?.key != key {
+            lyricsTask?.task.cancel()
+            lyricsTask = nil
         }
 
-        let bundleID = state.bundleIdentifier
-        let trackKey = state.trackKey
-        let artworkURL = state.artworkURL
-        artworkRequestID += 1
-        let requestID = artworkRequestID
+        if state.artworkData == nil, artworkTask == nil,
+           rawArtwork != nil || artworkCache.lookup(key) == nil {
+            startArtworkTask(for: state, key: key, rawArtwork: rawArtwork)
+        }
 
-        let artworkData = await Task.detached(priority: .utility) { () async -> Data? in
-            if let url = artworkURL, let data = await MusicArtworkFetcher.fetchFromURL(url) {
-                return data
-            }
-            return await MusicArtworkFetcher.fetch(bundleID: bundleID, trackKey: trackKey)
-        }.value
-
-        guard requestID == artworkRequestID, trackKey == currentState.trackKey else { return state }
-        guard let artworkData else { return state }
-
-        lastFetchedArtworkTrackKey = state.trackKey
-
-        return MediaPlaybackState(
-            title: state.title,
-            artist: state.artist,
-            album: state.album,
-            artworkURL: state.artworkURL,
-            artworkData: artworkData,
-            isPlaying: state.isPlaying,
-            elapsed: state.elapsed,
-            duration: state.duration,
-            bundleIdentifier: state.bundleIdentifier,
-            lyricsSnippet: state.lyricsSnippet,
-            positionSampledAt: state.positionSampledAt
-        )
+        if state.isPlaying,
+           state.lyricsSnippet == nil,
+           lyricsTask == nil,
+           lyricsCache.lookup(key) == nil,
+           NotchSettings.shared.isPremiumEnabled,
+           NotchSettings.shared.lyricsSharingEnabled {
+            startLyricsTask(for: state, key: key)
+        }
     }
 
-    private func isPremiumEligible() -> Bool {
-        NotchSettings.shared.isPremiumEnabled
+    private func startArtworkTask(for state: MediaPlaybackState, key: String, rawArtwork: Data?) {
+        let artworkURL = state.artworkURL
+        let bundleID = state.bundleIdentifier
+        let track = ArtworkTrackIdentity(key: key, title: state.title, artist: state.artist)
+        let task = Task.detached(priority: .utility) { [weak self] in
+            let result = await MusicArtworkFetcher.artwork(
+                rawData: rawArtwork,
+                artworkURL: artworkURL,
+                bundleID: bundleID,
+                track: track
+            )
+            guard !Task.isCancelled else { return }
+            await self?.finishArtwork(result, key: key)
+        }
+        artworkTask = (key, task)
+    }
+
+    private func finishArtwork(_ result: ArtworkLookup, key: String) {
+        if artworkTask?.key == key { artworkTask = nil }
+        let isCurrent = currentState.trackKey == key
+        if let entry = Self.artworkCacheEntry(for: result, isCurrentTrack: isCurrent) {
+            artworkCache.store(entry.data, for: key, ttl: entry.ttl)
+        }
+        guard case .found(let data) = result, isCurrent, currentState.artworkData == nil else { return }
+        publish(currentState.with(artworkData: data))
+    }
+
+    /// What to remember for a finished artwork lookup, or `nil` to remember nothing.
+    /// Artwork is only ever stored under the track it was verified for; a miss is only
+    /// trusted while that track is still playing, since the player answers for its current track.
+    static func artworkCacheEntry(
+        for result: ArtworkLookup,
+        isCurrentTrack: Bool
+    ) -> (data: Data?, ttl: TimeInterval?)? {
+        switch result {
+        case .found(let data):
+            return (data, nil)
+        case .notFound:
+            return isCurrentTrack ? (nil, failedLookupRetryInterval) : nil
+        case .trackChanged:
+            return isCurrentTrack ? (nil, trackMismatchRetryInterval) : nil
+        }
+    }
+
+    private func startLyricsTask(for state: MediaPlaybackState, key: String) {
+        let title = state.title
+        let artist = state.artist
+        let service = lyricsService
+        let task = Task { [weak self] in
+            let result = await service.lookup(title: title, artist: artist)
+            guard !Task.isCancelled else { return }
+            self?.finishLyrics(result, key: key)
+        }
+        lyricsTask = (key, task)
+    }
+
+    private func finishLyrics(_ result: LyricsLookup, key: String) {
+        if lyricsTask?.key == key { lyricsTask = nil }
+        switch result {
+        case .found(let line):
+            lyricsCache.store(line, for: key)
+        case .notFound:
+            lyricsCache.store(nil, for: key)
+        case .failed:
+            lyricsCache.store(nil, for: key, ttl: Self.failedLookupRetryInterval)
+        }
+        guard case .found(let line) = result,
+              currentState.trackKey == key,
+              currentState.lyricsSnippet == nil else { return }
+        publish(currentState.with(lyricsSnippet: line))
+    }
+
+    private func cancelEnrichment() {
+        artworkTask?.task.cancel()
+        artworkTask = nil
+        lyricsTask?.task.cancel()
+        lyricsTask = nil
     }
 }

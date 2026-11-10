@@ -1,6 +1,80 @@
 import AppKit
 import CryptoKit
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
+
+/// Shrinks cover art to what the island draws, so full-size album art (often 1–3 MB)
+/// is neither kept in `MediaPlaybackState` nor decoded on every view update.
+enum ArtworkDownsampler {
+    /// Largest artwork is 52 pt in the expanded player → 2× for Retina.
+    static let maxPixelSize = 104
+
+    static func downsample(_ data: Data, maxPixelSize: Int = maxPixelSize) -> Data? {
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard !data.isEmpty, let source = CGImageSourceCreateWithData(data as CFData, sourceOptions) else {
+            return nil
+        }
+
+        if let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+           let width = properties[kCGImagePropertyPixelWidth] as? Int,
+           let height = properties[kCGImagePropertyPixelHeight] as? Int,
+           max(width, height) <= maxPixelSize {
+            return data
+        }
+
+        let thumbnailOptions = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ] as CFDictionary
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions) else { return nil }
+
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            output, UTType.jpeg.identifier as CFString, 1, nil
+        ) else { return nil }
+        CGImageDestinationAddImage(
+            destination,
+            image,
+            [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary
+        )
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return output as Data
+    }
+}
+
+/// Outcome of an artwork lookup for one track.
+enum ArtworkLookup: Equatable, Sendable {
+    case found(Data)
+    /// The track has no artwork (or it could not be fetched).
+    case notFound
+    /// The player had already moved on to another track; nothing is known about this one.
+    case trackChanged
+}
+
+/// The track an artwork request is for. AppleScript can only ask a player for its *current*
+/// track, and requests queue behind other scripts, so the answer is checked against this
+/// before it is used or cached.
+struct ArtworkTrackIdentity: Sendable {
+    let key: String
+    let title: String
+    let artist: String
+
+    /// True when the player's current track (as reported alongside the artwork) is this one.
+    /// Case and surrounding whitespace are ignored; an empty artist on either side matches.
+    func matches(playerTitle: String, playerArtist: String) -> Bool {
+        func normalized(_ value: String) -> String {
+            value.trimmingCharacters(in: .whitespacesAndNewlines)
+                .folding(options: [.caseInsensitive, .widthInsensitive], locale: nil)
+        }
+        guard normalized(playerTitle) == normalized(title) else { return false }
+        let expectedArtist = normalized(artist)
+        let reportedArtist = normalized(playerArtist)
+        return expectedArtist.isEmpty || reportedArtist.isEmpty || expectedArtist == reportedArtist
+    }
+}
 
 enum MusicArtworkFetcher {
     private static let cacheDirectory: URL = {
@@ -9,8 +83,9 @@ enum MusicArtworkFetcher {
         return dir
     }()
 
-    private static let maxCacheBytes = 50 * 1024 * 1024
+    private static let maxCacheBytes = 10 * 1024 * 1024
     private static let maxCacheFiles = 200
+    private static let legacyCacheEntryBytes = 96 * 1024
 
     private static let allowedArtworkHosts: Set<String> = [
         "i.scdn.co",
@@ -21,10 +96,18 @@ enum MusicArtworkFetcher {
         "wrapped-images.spotifycdn.com"
     ]
 
-    private actor InFlightRequests {
-        private var tasks: [String: Task<Data?, Never>] = [:]
+    private static let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 5
+        configuration.timeoutIntervalForResource = 10
+        configuration.waitsForConnectivity = false
+        return URLSession(configuration: configuration)
+    }()
 
-        func data(for key: String, fetch: @escaping () async -> Data?) async -> Data? {
+    private actor InFlightRequests {
+        private var tasks: [String: Task<ArtworkLookup, Never>] = [:]
+
+        func data(for key: String, fetch: @escaping @Sendable () async -> ArtworkLookup) async -> ArtworkLookup {
             if let existing = tasks[key] {
                 return await existing.value
             }
@@ -38,31 +121,82 @@ enum MusicArtworkFetcher {
 
     private static let inFlight = InFlightRequests()
 
-    static func fetch(bundleID: String?, trackKey: String, forceRefresh: Bool = false) async -> Data? {
-        guard let bundleID else { return nil }
-        let key = cacheKey(for: trackKey)
+    /// Downsampled artwork for `track`: notification bytes, artwork URL, or asking the player.
+    /// Never runs on the main actor's executor.
+    static func artwork(
+        rawData: Data?,
+        artworkURL: URL?,
+        bundleID: String?,
+        track: ArtworkTrackIdentity
+    ) async -> ArtworkLookup {
+        if let rawData, let small = ArtworkDownsampler.downsample(rawData) {
+            return .found(small)
+        }
+        if let artworkURL, let data = await fetchFromURL(artworkURL),
+           let small = ArtworkDownsampler.downsample(data) {
+            return .found(small)
+        }
+        return await fetch(bundleID: bundleID, track: track)
+    }
+
+    static func fetch(bundleID: String?, track: ArtworkTrackIdentity, forceRefresh: Bool = false) async -> ArtworkLookup {
+        guard let bundleID else { return .notFound }
+        let key = cacheKey(for: track.key)
         let cacheURL = cacheDirectory.appendingPathComponent("\(key).jpg")
 
         if !forceRefresh, let cached = try? Data(contentsOf: cacheURL), !cached.isEmpty {
-            return cached
+            // Entries written by older builds hold full-size art — shrink them once.
+            guard cached.count > legacyCacheEntryBytes else { return .found(cached) }
+            guard let small = ArtworkDownsampler.downsample(cached) else { return .notFound }
+            try? small.write(to: cacheURL, options: .atomic)
+            return .found(small)
         }
 
-        return await inFlight.data(for: key) {
-            let data: Data?
+        let result = await inFlight.data(for: key) {
+            let reply: PlayerArtworkReply?
             switch bundleID {
             case "com.apple.Music", "com.apple.iTunes":
-                data = await fetchFromMusicApp(trackKey: trackKey)
+                reply = await fetchFromMusicApp()
             case "com.spotify.client":
-                data = await fetchFromSpotifyApp()
+                reply = await fetchFromSpotifyApp()
             default:
-                data = nil
+                reply = nil
             }
+            guard let reply else { return .notFound }
+            // The script queue may have run after a track skip: never take another track's art.
+            guard track.matches(playerTitle: reply.title, playerArtist: reply.artist) else {
+                return .trackChanged
+            }
+            guard let raw = reply.artwork, let data = ArtworkDownsampler.downsample(raw) else { return .notFound }
+            return .found(data)
+        }
 
-            if let data, !data.isEmpty {
-                try? data.write(to: cacheURL, options: .atomic)
-                await trimCacheIfNeeded()
-            }
-            return data
+        if case .found(let data) = result, !Task.isCancelled {
+            try? data.write(to: cacheURL, options: .atomic)
+            trimCacheIfNeeded()
+        }
+        return result
+    }
+
+    /// What a player reported for its current track.
+    private struct PlayerArtworkReply: Sendable {
+        let title: String
+        let artist: String
+        let artwork: Data?
+    }
+
+    /// Splits a `{name, artist, payload}` AppleScript list.
+    private struct ScriptTrackReply: Sendable {
+        let title: String
+        let artist: String
+        let payload: String
+
+        init?(_ descriptor: NSAppleEventDescriptor) {
+            guard descriptor.numberOfItems >= 3,
+                  let title = descriptor.atIndex(1)?.stringValue else { return nil }
+            self.title = title
+            self.artist = descriptor.atIndex(2)?.stringValue ?? ""
+            self.payload = descriptor.atIndex(3)?.stringValue ?? ""
         }
     }
 
@@ -76,74 +210,86 @@ enum MusicArtworkFetcher {
         return await httpData(from: url)
     }
 
-    /// Synchronous read from disk cache only — safe for hot paths that already have artwork on disk.
-    static func cachedData(trackKey: String) -> Data? {
-        let cacheURL = cacheDirectory.appendingPathComponent("\(cacheKey(for: trackKey)).jpg")
-        guard let data = try? Data(contentsOf: cacheURL), !data.isEmpty else { return nil }
-        return data
-    }
-
     private static func cacheKey(for trackKey: String) -> String {
         let digest = SHA256.hash(data: Data(trackKey.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 
-    private static func fetchFromMusicApp(trackKey: String) async -> Data? {
-        let fileName = "notchflow-cover-\(cacheKey(for: trackKey))"
+    /// Music can only hand artwork over as a file; it is read and deleted straight away.
+    /// The script reports which track the artwork belongs to.
+    private static func fetchFromMusicApp() async -> PlayerArtworkReply? {
+        let fileName = "notchflow-cover-\(UUID().uuidString)"
         let script = """
-        tell application "Music"
-            try
-                if player state is not stopped then
-                    if (count of artworks of current track) > 0 then
-                        set artData to data of artwork 1 of current track
-                        set f to (POSIX path of (path to temporary items)) & "\(fileName)"
-                        set fileRef to open for access POSIX file f with write permission
-                        set eof of fileRef to 0
-                        write artData to fileRef
-                        close access fileRef
-                        return f
+        with timeout of 5 seconds
+            tell application "Music"
+                try
+                    if player state is not stopped then
+                        set t to current track
+                        set trackName to name of t
+                        set trackArtist to artist of t
+                        if (count of artworks of t) > 0 then
+                            set artData to data of artwork 1 of t
+                            set f to (POSIX path of (path to temporary items)) & "\(fileName)"
+                            set fileRef to open for access POSIX file f with write permission
+                            set eof of fileRef to 0
+                            write artData to fileRef
+                            close access fileRef
+                            return {trackName, trackArtist, f}
+                        end if
+                        return {trackName, trackArtist, ""}
                     end if
-                end if
-            end try
-        end tell
+                end try
+            end tell
+        end timeout
         """
-        return readExportedFile(runAppleScript(script))
+        guard case .success(let reply?) = await AppleScriptExecutor.shared.run(
+            script,
+            transform: { ScriptTrackReply($0) }
+        ) else { return nil }
+        guard !reply.payload.isEmpty else {
+            return PlayerArtworkReply(title: reply.title, artist: reply.artist, artwork: nil)
+        }
+        let url = URL(fileURLWithPath: reply.payload)
+        defer { try? FileManager.default.removeItem(at: url) }
+        return PlayerArtworkReply(title: reply.title, artist: reply.artist, artwork: try? Data(contentsOf: url))
     }
 
-    private static func fetchFromSpotifyApp() async -> Data? {
+    private static func fetchFromSpotifyApp() async -> PlayerArtworkReply? {
         let script = """
-        tell application "Spotify"
-            try
-                if player state is not stopped then
-                    set artURL to artwork url of current track
-                    return artURL
-                end if
-            end try
-        end tell
+        with timeout of 5 seconds
+            tell application "Spotify"
+                try
+                    if player state is not stopped then
+                        set t to current track
+                        return {name of t, artist of t, artwork url of t}
+                    end if
+                end try
+            end tell
+        end timeout
         """
-        guard let urlString = runAppleScript(script), let url = URL(string: urlString) else { return nil }
-        return await fetchFromURL(url)
-    }
-
-    private static func readExportedFile(_ path: String?) -> Data? {
-        guard let path, !path.isEmpty else { return nil }
-        return try? Data(contentsOf: URL(fileURLWithPath: path))
-    }
-
-    private static func runAppleScript(_ source: String) -> String? {
-        guard let script = NSAppleScript(source: source) else { return nil }
-        var error: NSDictionary?
-        return script.executeAndReturnError(&error).stringValue
+        guard case .success(let reply?) = await AppleScriptExecutor.shared.run(
+            script,
+            cacheCompiled: true,
+            transform: { ScriptTrackReply($0) }
+        ) else { return nil }
+        let artwork: Data?
+        if let url = URL(string: reply.payload), !reply.payload.isEmpty {
+            artwork = await fetchFromURL(url)
+        } else {
+            artwork = nil
+        }
+        return PlayerArtworkReply(title: reply.title, artist: reply.artist, artwork: artwork)
     }
 
     private static func httpData(from url: URL) async -> Data? {
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await session.data(from: url)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
                 return nil
             }
             return data
         } catch {
+            NotchFlowLog.media.debug("Artwork download failed: \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
@@ -153,7 +299,7 @@ enum MusicArtworkFetcher {
         return allowedArtworkHosts.contains(host)
     }
 
-    private static func trimCacheIfNeeded() async {
+    private static func trimCacheIfNeeded() {
         let fileManager = FileManager.default
         guard let files = try? fileManager.contentsOfDirectory(
             at: cacheDirectory,
@@ -175,10 +321,11 @@ enum MusicArtworkFetcher {
         guard entries.count > maxCacheFiles || totalSize > maxCacheBytes else { return }
 
         entries.sort { $0.date < $1.date }
+        var remaining = entries.count
         for entry in entries {
-            guard entries.count > maxCacheFiles || totalSize > maxCacheBytes else { break }
+            guard remaining > maxCacheFiles || totalSize > maxCacheBytes else { break }
             if (try? fileManager.removeItem(at: entry.url)) != nil {
-                entries.removeAll { $0.url == entry.url }
+                remaining -= 1
                 totalSize -= entry.size
             }
         }
