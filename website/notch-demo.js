@@ -9,9 +9,15 @@
     "agents",
     "mirror",
   ];
-  const AUTOPLAY_CYCLE = ["media", "shelf", "focus", "agents", "calendar", "notes"];
+  const AUTOPLAY_CYCLE = ["agents", "media", "shelf", "focus", "calendar", "notes"];
   const IDLE_MS = 1400;
   const MODULE_MS = 3400;
+  // Agents step timings (autoplay only)
+  const AGENT_NEEDS_YOU_MS = 1500; // idle notch shows "needs you"
+  const AGENT_APPROVE_MS = 1500; // expanded, before the simulated Allow
+  const AGENT_PRESS_MS = 260; // Allow button pressed highlight
+  const AGENT_RUN_MS = 2500; // Claude row: running -> done
+  const AGENT_DONE_MS = 1300; // keep "Done" on screen before moving on
 
   function prefersReducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -54,8 +60,15 @@
       root.classList.toggle("is-expanded", expanded);
       island.setAttribute("data-state", expanded ? "expanded" : "idle");
       root.setAttribute("aria-expanded", String(expanded));
-      if (expandedEl) expandedEl.setAttribute("aria-hidden", String(!expanded));
-      if (idleEl) idleEl.setAttribute("aria-hidden", String(expanded));
+      if (expandedEl) {
+        expandedEl.setAttribute("aria-hidden", String(!expanded));
+        if (expanded) expandedEl.removeAttribute("inert");
+        else expandedEl.setAttribute("inert", "");
+      }
+      if (idleEl) {
+        idleEl.setAttribute("aria-hidden", String(expanded));
+        idleEl.tabIndex = expanded ? -1 : 0;
+      }
     }
 
     function setModule(id, fromUser) {
@@ -93,6 +106,7 @@
         requestAnimationFrame(syncFocusCountdown);
       }
 
+      syncIdleAlert();
       if (fromUser) userLocked = true;
     }
 
@@ -177,6 +191,12 @@
     }
 
     function tickFocus(now) {
+      if (!inView || document.hidden) {
+        focusRaf = 0;
+        lastFocusTick = 0;
+        return;
+      }
+
       const focusActive =
         expanded &&
         current === "focus" &&
@@ -194,6 +214,11 @@
       } else {
         lastFocusTick = 0;
       }
+      focusRaf = requestAnimationFrame(tickFocus);
+    }
+
+    function ensureFocusLoop() {
+      if (prefersReducedMotion() || focusRaf || !inView || document.hidden) return;
       focusRaf = requestAnimationFrame(tickFocus);
     }
 
@@ -235,74 +260,199 @@
       };
       ruler.addEventListener("pointerup", endDrag);
       ruler.addEventListener("pointercancel", endDrag);
+
+      ruler.addEventListener("keydown", (event) => {
+        const step = event.shiftKey ? 5 : 1;
+        let minutes = remainingSeconds / 60;
+        if (event.key === "ArrowRight" || event.key === "ArrowUp") minutes += step;
+        else if (event.key === "ArrowLeft" || event.key === "ArrowDown") minutes -= step;
+        else if (event.key === "Home") minutes = 1;
+        else if (event.key === "End") minutes = 90;
+        else return;
+        event.preventDefault();
+        event.stopPropagation();
+        stopAutoplay();
+        remainingSeconds = Math.min(90, Math.max(1, Math.round(minutes))) * 60;
+        syncFocusCountdown();
+        expandTo("focus", true);
+        setFocusMode("countdown", true);
+      });
     }
 
     root.querySelectorAll("[data-focus-ruler]").forEach(bindRulerDrag);
     syncFocusCountdown();
-    if (!prefersReducedMotion()) {
-      focusRaf = requestAnimationFrame(tickFocus);
+
+    // --- Claude Allow / Deny + usage meters ---
+    const COPY = {
+      en: {
+        claude: {
+          pending: { phase: "Needs approval", pre: "Run ", post: "?" },
+          running: { phase: "Running", pre: "Running ", post: "…" },
+          done: { phase: "Done ✓", pre: "", post: " passed" },
+          denied: { phase: "Denied", pre: "", post: " blocked" },
+        },
+        live: {
+          waiting: "Claude Code is waiting for approval",
+          approved: "Approved",
+          done: "Done",
+          denied: "Denied",
+        },
+        idleAlert: "Claude Code needs approval. Expand NotchFlow",
+      },
+      pl: {
+        claude: {
+          pending: { phase: "Wymaga zgody", pre: "Uruchom ", post: "?" },
+          running: { phase: "Pracuje", pre: "Uruchamiam ", post: "…" },
+          done: { phase: "Gotowe ✓", pre: "", post: " zaliczony" },
+          denied: { phase: "Odrzucono", pre: "", post: " zablokowany" },
+        },
+        live: {
+          waiting: "Claude Code czeka na zgodę",
+          approved: "Zatwierdzono",
+          done: "Gotowe",
+          denied: "Odrzucono",
+        },
+        idleAlert: "Claude Code wymaga zgody. Rozwiń NotchFlow",
+      },
+    };
+    const copy = COPY[isPolish ? "pl" : "en"];
+
+    const CLAUDE_DONE_HOLD_MS = 3200; // done -> back to pending
+    const CLAUDE_DENIED_HOLD_MS = 2800; // denied -> back to pending
+    const USAGE_CLAUDE_5H = 62;
+    const USAGE_COST = 3;
+
+    const claudeRow = root.querySelector("[data-agent-claude]");
+    const liveEl = root.querySelector("[data-agent-live]");
+    const idleBaseLabel = idleEl ? idleEl.getAttribute("aria-label") || "" : "";
+    let claudeState = "pending";
+    let claudeTimers = [];
+    let liveTimer = 0;
+
+    function clearClaudeTimers() {
+      claudeTimers.forEach((id) => clearTimeout(id));
+      claudeTimers = [];
     }
 
-    // --- Claude Allow / Deny ---
-    const claudeCopy = isPolish
-      ? {
-          pending: {
-            phase: "Wymaga zatwierdzenia",
-            body: "Zapis do Package.swift?",
-          },
-          allowed: {
-            phase: "Uruchomione",
-            body: "Zapisuję Package.swift…",
-          },
-          denied: {
-            phase: "Odrzucono",
-            body: "Zapis zablokowany",
-          },
-        }
-      : {
-          pending: {
-            phase: "Needs approval",
-            body: "Write to Package.swift?",
-          },
-          allowed: {
-            phase: "Running",
-            body: "Writing Package.swift…",
-          },
-          denied: {
-            phase: "Denied",
-            body: "Write blocked",
-          },
-        };
+    function announce(message) {
+      if (!liveEl || !message) return;
+      clearTimeout(liveTimer);
+      liveEl.textContent = "";
+      // Re-set after a tick so repeated messages are announced again.
+      liveTimer = window.setTimeout(() => {
+        liveEl.textContent = message;
+      }, 60);
+    }
 
-    let claudeResetTimer = 0;
+    function setUsage(key, percent) {
+      root.querySelectorAll(`[data-usage-fill="${key}"]`).forEach((fill) => {
+        fill.style.setProperty("--usage", `${percent}%`);
+      });
+      root.querySelectorAll(`[data-usage-value="${key}"]`).forEach((value) => {
+        value.textContent = String(percent);
+      });
+    }
 
-    function setClaudeState(row, state) {
-      if (!row) return;
-      row.setAttribute("data-agent-state", state);
-      const copy = claudeCopy[state] || claudeCopy.pending;
-      const phase = row.querySelector(".agent-phase");
-      const body = row.querySelector(".agent-body");
-      if (phase) phase.textContent = copy.phase;
-      if (body) body.textContent = copy.body;
-      row.classList.toggle("agent-cursor", false);
+    function syncIdleAlert() {
+      const alert = current === "agents" && claudeState === "pending" && Boolean(claudeRow);
+      root.classList.toggle("is-agent-alert", alert);
+      if (idleEl) {
+        idleEl.setAttribute("aria-label", alert ? copy.idleAlert : idleBaseLabel);
+      }
+    }
+
+    function setClaudeState(state) {
+      claudeState = copy.claude[state] ? state : "pending";
+      root.querySelectorAll(".agent-actions .is-pressed").forEach((btn) => {
+        btn.classList.remove("is-pressed");
+      });
+      if (claudeRow) {
+        const text = copy.claude[claudeState];
+        claudeRow.setAttribute("data-agent-state", claudeState);
+        const phase = claudeRow.querySelector(".agent-phase");
+        const pre = claudeRow.querySelector(".agent-body-pre");
+        const post = claudeRow.querySelector(".agent-body-post");
+        if (phase) phase.textContent = text.phase;
+        if (pre) pre.textContent = text.pre;
+        if (post) post.textContent = text.post;
+        // Buttons stay in the layout (hidden via CSS) so the row keeps its height.
+        claudeRow.querySelectorAll("[data-agent-decide]").forEach((btn) => {
+          btn.disabled = claudeState !== "pending";
+        });
+      }
+      if (claudeState === "pending") setUsage("claude-5h", USAGE_CLAUDE_5H);
+      if (claudeState === "done") setUsage("claude-5h", USAGE_CLAUDE_5H - USAGE_COST);
+      syncIdleAlert();
+    }
+
+    function resetClaude() {
+      clearClaudeTimers();
+      if (claudeState !== "pending") setClaudeState("pending");
+    }
+
+    // Runs the Allow / Deny sequence. `speak` controls the live region so the
+    // looping autoplay never floods screen readers.
+    function runClaude(decision, speak) {
+      if (!claudeRow) return;
+      clearClaudeTimers();
+      const focusWasOnActions = claudeRow.contains(document.activeElement);
+      if (decision === "allow") {
+        setClaudeState("running");
+        if (speak) announce(copy.live.approved);
+        claudeTimers.push(
+          window.setTimeout(() => {
+            setClaudeState("done");
+            if (speak) announce(copy.live.done);
+          }, AGENT_RUN_MS)
+        );
+        claudeTimers.push(
+          window.setTimeout(() => {
+            setClaudeState("pending");
+            if (speak) announce(copy.live.waiting);
+          }, AGENT_RUN_MS + CLAUDE_DONE_HOLD_MS)
+        );
+      } else {
+        setClaudeState("denied");
+        if (speak) announce(copy.live.denied);
+        claudeTimers.push(
+          window.setTimeout(() => {
+            setClaudeState("pending");
+            if (speak) announce(copy.live.waiting);
+          }, CLAUDE_DENIED_HOLD_MS)
+        );
+      }
+      // The buttons hide while the row is busy; keep keyboard focus in place.
+      if (focusWasOnActions) claudeRow.focus({ preventScroll: true });
     }
 
     function decideClaude(decision) {
-      const row = root.querySelector("[data-agent-claude]");
-      if (!row) return;
+      if (!claudeRow || claudeState !== "pending") return;
       stopAutoplay();
       expandTo("agents", true);
-      clearTimeout(claudeResetTimer);
-      setClaudeState(row, decision === "allow" ? "allowed" : "denied");
-      claudeResetTimer = window.setTimeout(() => {
-        setClaudeState(row, "pending");
-      }, 2800);
+      runClaude(decision === "allow" ? "allow" : "deny", true);
+    }
+
+    // --- MacBook / Mac without a notch ---
+    function setDevice(device) {
+      const menubar = device === "menubar";
+      root.classList.toggle("is-menubar", menubar);
+      root.setAttribute("data-device", menubar ? "menubar" : "notch");
+      root.querySelectorAll("[data-device-choice]").forEach((btn) => {
+        btn.setAttribute(
+          "aria-pressed",
+          String(btn.getAttribute("data-device-choice") === (menubar ? "menubar" : "notch"))
+        );
+      });
     }
 
     function expandTo(moduleId, fromUser) {
+      const wasShowing = expanded && current === moduleId;
       setModule(moduleId, fromUser);
       setExpanded(true);
       if (moduleId === "focus") syncFocusCountdown();
+      if (fromUser && moduleId === "agents" && !wasShowing && claudeState === "pending") {
+        announce(copy.live.waiting);
+      }
     }
 
     function collapse(fromUser) {
@@ -316,10 +466,50 @@
       userLocked = true;
     }
 
+    function autoplayBlocked() {
+      return userLocked || !inView || document.hidden || prefersReducedMotion();
+    }
+
+    function userIsOnIsland() {
+      return island.matches(":hover") || island.contains(document.activeElement);
+    }
+
+    // Agents scenario: idle "needs you" -> expand -> cursor-less Allow ->
+    // running -> done -> continue the cycle.
+    function playAgentsScenario() {
+      autoplayIndex = 0;
+      resetClaude();
+      setModule("agents", false);
+      schedule(() => {
+        if (autoplayBlocked()) return;
+        expandTo("agents", false);
+        schedule(() => {
+          if (autoplayBlocked()) return;
+          if (claudeState !== "pending" || userIsOnIsland()) {
+            // Never approve on the visitor's behalf while they are on the island.
+            schedule(runAutoplayStep, MODULE_MS);
+            return;
+          }
+          const allowBtn = claudeRow && claudeRow.querySelector('[data-agent-decide="allow"]');
+          if (allowBtn) allowBtn.classList.add("is-pressed");
+          schedule(() => {
+            if (allowBtn) allowBtn.classList.remove("is-pressed");
+            if (autoplayBlocked() || claudeState !== "pending") return;
+            runClaude("allow", false);
+            schedule(runAutoplayStep, AGENT_RUN_MS + AGENT_DONE_MS);
+          }, AGENT_PRESS_MS);
+        }, AGENT_APPROVE_MS);
+      }, AGENT_NEEDS_YOU_MS);
+    }
+
     function runAutoplayStep() {
-      if (userLocked || !inView || document.hidden || prefersReducedMotion()) return;
+      if (autoplayBlocked()) return;
 
       if (!expanded) {
+        if (AUTOPLAY_CYCLE[0] === "agents" && claudeRow) {
+          playAgentsScenario();
+          return;
+        }
         expandTo(AUTOPLAY_CYCLE[0], false);
         autoplayIndex = 0;
         schedule(runAutoplayStep, MODULE_MS);
@@ -340,7 +530,9 @@
     function startAutoplay() {
       if (!isAutoplay || userLocked) return;
       clearTimers();
-      schedule(runAutoplayStep, IDLE_MS);
+      // Collapsed on the agents scenario: go straight into "needs you".
+      const delay = !expanded && current === "agents" ? 0 : IDLE_MS;
+      schedule(runAutoplayStep, delay);
     }
 
     // Initial state
@@ -351,6 +543,8 @@
       false
     );
     setExpanded(expanded);
+    setDevice(root.getAttribute("data-device") === "menubar" ? "menubar" : "notch");
+    setClaudeState("pending");
 
     // Event delegation — reliable for icon tabs, chips, and focus picker
     root.addEventListener("click", (event) => {
@@ -378,6 +572,13 @@
         event.stopPropagation();
         stopAutoplay();
         setFocusMode(focusBtn.getAttribute("data-focus-mode"), true);
+        return;
+      }
+
+      const deviceBtn = event.target.closest("[data-device-choice]");
+      if (deviceBtn && root.contains(deviceBtn)) {
+        event.preventDefault();
+        setDevice(deviceBtn.getAttribute("data-device-choice"));
         return;
       }
 
@@ -452,8 +653,13 @@
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         clearTimers();
-      } else if (isAutoplay && inView && !userLocked) {
-        startAutoplay();
+        if (focusRaf) {
+          cancelAnimationFrame(focusRaf);
+          focusRaf = 0;
+        }
+      } else if (inView) {
+        ensureFocusLoop();
+        if (isAutoplay && !userLocked) startAutoplay();
       }
     });
 
@@ -470,12 +676,19 @@
       const io = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
+            const wasInView = inView;
             inView = entry.isIntersecting && entry.intersectionRatio > 0.2;
             root.classList.toggle("is-in-view", inView);
-            if (inView && isAutoplay && !userLocked) {
+            // Only (re)start on entering view so threshold changes don't cut a step short.
+            if (inView && !wasInView && isAutoplay && !userLocked) {
               startAutoplay();
             } else if (!inView) {
               clearTimers();
+            }
+            if (inView) ensureFocusLoop();
+            else if (focusRaf) {
+              cancelAnimationFrame(focusRaf);
+              focusRaf = 0;
             }
           });
         },
@@ -484,6 +697,7 @@
       io.observe(root);
     } else {
       inView = true;
+      ensureFocusLoop();
       if (isAutoplay) startAutoplay();
     }
   }

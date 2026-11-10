@@ -9,7 +9,7 @@
   <link rel="alternate" hreflang="en" href="https://notchflow.eu/pricing/" />
   <link rel="alternate" hreflang="pl" href="https://notchflow.eu/pl/pricing/" />
   <link rel="icon" href="../../assets/favicon.png" type="image/png" />
-  <link rel="stylesheet" href="../../styles.css?v=20260714-2002" />
+  <link rel="stylesheet" href="../../styles.css?v=20261023-redesign" />
   <script src="../../consent-init.js?v=20260714-2002"></script>
   <script src="../../analytics-config.js?v=20260714-2002"></script>
   <script src="../../theme-init.js?v=20260714-2002"></script>
@@ -43,11 +43,11 @@
           <a href="../../pricing/">EN</a>
           <a href="../../pl/pricing/" aria-current="page">PL</a>
         </div>
-        <button class="theme-toggle" type="button" aria-label="Zmień motyw">
+        <button class="theme-toggle" type="button" aria-label="Zmień motyw" data-label-light="Włącz jasny motyw" data-label-dark="Włącz ciemny motyw">
           <svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
           <svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
         </button>
-        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Otwórz menu">
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav" aria-label="Otwórz menu" data-label-open="Otwórz menu" data-label-close="Zamknij menu">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 5h14v1.5H3V5zm0 5h14v1.5H3V10zm0 5h14v1.5H3V15z"/></svg>
         </button>
       </div>
@@ -68,12 +68,13 @@
           <p class="price">€0</p>
           <ul>
             <li>Wyspa z rozwijaniem po najechaniu</li>
-            <li>Wsparcie wielu monitorów (MacBook z notchem)</li>
+            <li>Każdy Mac, z notchem i bez</li>
             <li>Sterowanie muzyką (Spotify, Apple Music)</li>
             <li>Siatka kalendarza</li>
             <li>5 szybkich notatek</li>
             <li>5 wpisów schowka (opcjonalnie)</li>
-            <li>1 plik na shelf</li>
+            <li>Minutnik i stoper</li>
+            <li>3 przypięte elementy półki i 1 tymczasowy zrzut</li>
             <li>HUD głośności i jasności</li>
             <li>URL scheme, lokalne API (muzyka)</li>
           </ul>
@@ -83,9 +84,13 @@
           <h2>Premium Dożywotnia</h2>
           <p class="price">€24 <span>jednorazowo</span></p>
           <ul>
-            <li>Wszystko z rocznej</li>
-            <li>Licencja bezterminowa</li>
-            <li>Bez odnowień</li>
+            <li>Własny rozmiar oraz motywy Midnight, Aurora i Ember</li>
+            <li>Tekst piosenki, lustro kamery i Pomodoro</li>
+            <li>Notatki bez limitu i przypinanie</li>
+            <li>50 wpisów schowka z wyszukiwaniem</li>
+            <li>20 przypiętych elementów, 12 zrzutów i ZIP</li>
+            <li>Powiadomienia w notchu</li>
+            <li>Licencja bezterminowa, bez odnowień</li>
           </ul>
           <a class="btn btn-primary" data-polar-checkout="lifetime" href="#">Kup dożywotnią</a>
         </article>
@@ -98,7 +103,7 @@
             <li>Lustro kamery</li>
             <li>Notatki bez limitu + przypinanie</li>
             <li>50 wpisów schowka + wyszukiwanie</li>
-            <li>12 plików na shelf + ZIP</li>
+            <li>20 przypiętych elementów, 12 zrzutów i ZIP</li>
             <li>Ukrywanie wyspy dla wybranych aplikacji</li>
             <li>Powiadomienia aplikacji w notchu</li>
             <li>Lokalne API (notatki, schowek, lustro)</li>
@@ -119,6 +124,7 @@
         </div>
       </aside>
 
+      <div class="table-scroll">
       <table class="compare-table" aria-label="Porównanie funkcji">
         <thead>
           <tr>
@@ -129,7 +135,7 @@
         </thead>
         <tbody>
           <tr><td>Wyspa z rozwijaniem po najechaniu</td><td class="check">✓</td><td class="check">✓</td></tr>
-          <tr><td>Wsparcie wielu monitorów (MacBook z notchem)</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Każdy Mac, z notchem i bez</td><td class="check">✓</td><td class="check">✓</td></tr>
           <tr><td>Własna szerokość (280–420) i wysokość schowka (168–480)</td><td>—</td><td class="check">✓</td></tr>
           <tr><td>Dynamiczna wysokość wyspy (kalendarz, media, półka)</td><td class="check">✓</td><td class="check">✓</td></tr>
           <tr><td>Motywy Północ / Zorza / Żar</td><td>—</td><td class="check">✓</td></tr>
@@ -140,7 +146,10 @@
           <tr><td>Szybkie notatki</td><td>max 5</td><td>Bez limitu + pin</td></tr>
           <tr><td>Historia schowka</td><td>max 5</td><td>50 + wyszukiwanie</td></tr>
           <tr><td>Lustro kamery</td><td>Zablokowane</td><td class="check">✓</td></tr>
-          <tr><td>Pliki na shelf</td><td>1</td><td>12 + ZIP</td></tr>
+          <tr><td>Minutnik i stoper</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Pomodoro</td><td>—</td><td class="check">✓</td></tr>
+          <tr><td>Przypięte elementy półki</td><td>3</td><td>20</td></tr>
+          <tr><td>Tymczasowe zrzuty na półkę</td><td>1</td><td>12 + ZIP</td></tr>
           <tr><td>HUD głośności / jasności</td><td class="check">✓</td><td class="check">✓</td></tr>
           <tr><td>Lokalne API — muzyka i wyspa</td><td class="check">✓</td><td class="check">✓</td></tr>
           <tr><td>Lokalne API — notatki, schowek, lustro</td><td>—</td><td class="check">✓</td></tr>
@@ -152,10 +161,12 @@
           <tr><td>Automatyczne aktualizacje Sparkle</td><td>Oficjalne buildy</td><td>Oficjalne buildy</td></tr>
         </tbody>
       </table>
+      </div>
 
       <div class="section-header compare-section">
         <h2>Self-build vs oficjalny build</h2>
       </div>
+      <div class="table-scroll">
       <table class="compare-table">
         <thead>
           <tr>
@@ -173,6 +184,7 @@
           <tr><td>Zaufanie Gatekeeper</td><td>Ręczne</td><td>Automatyczne</td></tr>
         </tbody>
       </table>
+      </div>
     </div>
   </main>
 
@@ -198,8 +210,8 @@
     </div>
   </footer>
 
-  <script src="../../checkout-urls.js?v=20260714-2002"></script>
-  <script src="../../site.js?v=20260714-2002"></script>
-  <script src="../../analytics.js?v=20260714-2002"></script>
+  <script src="../../checkout-urls.js?v=20261023-redesign"></script>
+  <script src="../../site.js?v=20261023-redesign"></script>
+  <script src="../../analytics.js?v=20261023-redesign"></script>
 </body>
 </html>

@@ -16,5 +16,4 @@
   });
 
   window.gtag("set", "ads_data_redaction", true);
-  window.gtag("set", "url_passthrough", true);
 })();
