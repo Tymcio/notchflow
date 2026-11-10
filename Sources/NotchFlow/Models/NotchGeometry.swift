@@ -122,7 +122,9 @@ struct NotchGeometry: Equatable {
         )
         let rightSlotWidth = idleRightSlotFrameWidth(innerOverlap: innerOverlap, rightWingWidth: rightWingWidth)
         return IdleWingLayout(
-            visibleLeftWidth: resolvedLeftWing,
+            // The slot keeps its width so the notch cutout does not move, but a wing hidden for
+            // menu overlap must not be drawn over the app menu.
+            visibleLeftWidth: idleLeftWingWidth > 0 ? resolvedLeftWing : 0,
             visibleRightWidth: resolvedRightWing,
             leftSlotWidth: leftSlotWidth,
             centerClearWidth: centerClearWidth,
