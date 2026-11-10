@@ -29,7 +29,7 @@ enum LanguageResolver {
     }
 }
 
-private enum L10nCatalog {
+enum L10nCatalog {
     static let languageCode = LanguageResolver.languageCode
 
     private static let translations: [String: [String: String]] = {
@@ -67,11 +67,43 @@ private enum L10nCatalog {
         return table
     }()
 
+    /// SwiftPM compiles `Localizable.xcstrings` into `<lang>.lproj/Localizable.strings` inside the
+    /// resource bundle, so packaged apps have no `.xcstrings` file to parse. Read the compiled
+    /// table for the active language; the raw catalog above only exists in some dev layouts.
+    static let compiledTable: Bundle? = {
+        guard let path = ResourceBundle.bundle.path(forResource: languageCode, ofType: "lproj") else {
+            return nil
+        }
+        return Bundle(path: path)
+    }()
+
+    private static let missingMarker = "\u{1}NotchFlowMissing\u{1}"
+
     static func localized(_ key: String) -> String {
+        localized(key, languageCode: languageCode, catalog: translations, compiled: compiledTable)
+    }
+
+    /// Testable lookup: raw catalog first, then the compiled `.strings` table, else the English key.
+    static func localized(
+        _ key: String,
+        languageCode: String,
+        catalog: [String: [String: String]],
+        compiled: Bundle?
+    ) -> String {
         guard languageCode != "en" else { return key }
-        return translations[key]?[languageCode] ?? key
+        if let text = catalog[key]?[languageCode] {
+            return text
+        }
+        if let compiled {
+            let text = compiled.localizedString(forKey: key, value: missingMarker, table: "Localizable")
+            if text != missingMarker {
+                return text
+            }
+        }
+        return key
     }
 }
+
 
 /// Resolves a localized string from the NotchFlow String Catalog.
 func loc(_ key: String) -> String {
