@@ -98,7 +98,7 @@ struct CalendarTabView: View {
             return loc("Today")
         }
         let formatter = DateFormatter()
-        formatter.locale = Locale.current
+        formatter.locale = LanguageResolver.locale
         formatter.setLocalizedDateFormatFromTemplate("d MMM")
         return formatter.string(from: selectedDay)
     }

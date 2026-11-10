@@ -6,6 +6,12 @@ enum LanguageResolver {
 
     /// Active UI language: per-app override, then first supported system language, else English.
     static var languageCode: String {
+        #if DEBUG
+        // Demo recordings pick their language without touching the user's settings.
+        if let demo = ProcessInfo.processInfo.environment["NOTCHFLOW_DEMO_LANGUAGE"], supported.contains(demo) {
+            return demo
+        }
+        #endif
         if let override = appLanguageOverride, supported.contains(override) {
             return override
         }
@@ -16,6 +22,19 @@ enum LanguageResolver {
             }
         }
         return "en"
+    }
+
+    /// Locale for dates and names shown in the app: the app's language with the user's region,
+    /// so month and weekday names match the UI while week start and 12/24 h stay regional.
+    static var locale: Locale {
+        let current = Locale.current
+        if current.language.languageCode?.identifier == languageCode {
+            return current
+        }
+        if let region = current.region?.identifier {
+            return Locale(identifier: "\(languageCode)_\(region)")
+        }
+        return Locale(identifier: languageCode)
     }
 
     private static var appLanguageOverride: String? {

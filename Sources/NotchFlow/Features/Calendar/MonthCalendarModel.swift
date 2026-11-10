@@ -19,14 +19,14 @@ struct CalendarWeek: Identifiable, Equatable {
 enum MonthCalendarModel {
     static var displayCalendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = Locale.current
+        calendar.locale = LanguageResolver.locale
         calendar.firstWeekday = 2
         return calendar
     }
 
     static var weekdaySymbols: [String] {
         let formatter = DateFormatter()
-        formatter.locale = Locale.current
+        formatter.locale = LanguageResolver.locale
         let symbols = formatter.veryShortWeekdaySymbols ?? formatter.shortWeekdaySymbols ?? []
         guard symbols.count == 7 else { return symbols }
         return Array(symbols[1...]) + [symbols[0]]
@@ -34,7 +34,7 @@ enum MonthCalendarModel {
 
     static func monthTitle(for date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale.current
+        formatter.locale = LanguageResolver.locale
         formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
         let title = formatter.string(from: date)
         return title.prefix(1).uppercased() + title.dropFirst()
