@@ -223,6 +223,8 @@ ${POLAR_PLIST}
   <string>NotchFlow controls Spotify and Music playback when you grant Automation access.</string>
   <key>NSCalendarsUsageDescription</key>
   <string>NotchFlow shows upcoming calendar events in the notch island.</string>
+  <key>NSCalendarsFullAccessUsageDescription</key>
+  <string>NotchFlow shows upcoming calendar events in the notch island.</string>
   <key>NSContactsUsageDescription</key>
   <string>NotchFlow shows the contact photo for incoming phone calls in the notch.</string>
   <key>NSCameraUsageDescription</key>
