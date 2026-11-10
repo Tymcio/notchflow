@@ -76,6 +76,24 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(timerAlertSoundName, forKey: Keys.timerAlertSoundName) }
     }
 
+    /// What to show on displays without a hardware notch (Mac mini, iMac, external monitors…).
+    var nonNotchIslandPlacement: NonNotchIslandPlacement {
+        didSet {
+            guard oldValue != nonNotchIslandPlacement else { return }
+            UserDefaults.standard.set(nonNotchIslandPlacement.rawValue, forKey: Keys.nonNotchIslandPlacement)
+            onDisplayPlacementChange?()
+        }
+    }
+
+    /// Which display hosts the island when several are connected.
+    var islandDisplay: IslandDisplayPreference {
+        didSet {
+            guard oldValue != islandDisplay else { return }
+            UserDefaults.standard.set(islandDisplay.rawValue, forKey: Keys.islandDisplay)
+            onDisplayPlacementChange?()
+        }
+    }
+
     var isPremiumEnabled: Bool = false {
         didSet {
             guard oldValue != isPremiumEnabled else { return }
@@ -84,6 +102,7 @@ final class NotchSettings {
     }
     var onAvoidMenuOverlapChange: (() -> Void)?
     var onDimensionsChange: (() -> Void)?
+    var onDisplayPlacementChange: (() -> Void)?
 
     private var dimensionPersistTask: Task<Void, Never>?
 
@@ -108,6 +127,8 @@ final class NotchSettings {
         static let dismissSystemBanners = "dismissSystemBanners"
         static let timerAlertSoundName = "timerAlertSoundName"
         static let ramboxAllowlistMigrated = "notificationAllowlistRamboxRemoved"
+        static let nonNotchIslandPlacement = "nonNotchIslandPlacement"
+        static let islandDisplay = "islandDisplay"
     }
 
     private init() {
@@ -140,6 +161,10 @@ final class NotchSettings {
         dismissSystemBanners = defaults.object(forKey: Keys.dismissSystemBanners) as? Bool ?? true
         let savedTimerSound = defaults.string(forKey: Keys.timerAlertSoundName) ?? TimerAlertSound.defaultID
         timerAlertSoundName = TimerAlertSound.migratedID(savedTimerSound)
+        nonNotchIslandPlacement = defaults.string(forKey: Keys.nonNotchIslandPlacement)
+            .flatMap(NonNotchIslandPlacement.init(rawValue:)) ?? .topCenter
+        islandDisplay = defaults.string(forKey: Keys.islandDisplay)
+            .flatMap(IslandDisplayPreference.init(rawValue:)) ?? .followPointer
     }
 
     private func scheduleDimensionPersist() {
@@ -184,6 +209,41 @@ final class NotchSettings {
             result.append(canonical)
         }
         return result
+    }
+}
+
+enum NonNotchIslandPlacement: String, CaseIterable, Identifiable, Sendable {
+    /// A compact island in the middle of the menu bar, opened by hovering it.
+    case topCenter
+    /// No island on such displays; it opens only from the menu bar icon.
+    case off
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .topCenter: loc("Top center")
+        case .off: loc("Off (menu bar icon only)")
+        }
+    }
+}
+
+enum IslandDisplayPreference: String, CaseIterable, Identifiable, Sendable {
+    /// The island moves to whichever display the pointer is on.
+    case followPointer
+    /// The display that holds the menu bar in System Settings → Displays.
+    case mainDisplay
+    /// The MacBook's own screen; falls back to the main display when the lid is closed.
+    case builtInDisplay
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .followPointer: loc("Display with the pointer")
+        case .mainDisplay: loc("Main display")
+        case .builtInDisplay: loc("Built-in display")
+        }
     }
 }
 

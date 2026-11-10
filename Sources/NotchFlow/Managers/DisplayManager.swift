@@ -20,28 +20,55 @@ final class DisplayManager: ObservableObject {
         isPointerNearNotch || isDragNearNotch
     }
 
-    private var screenChangeObserver: NSObjectProtocol?
-    private var workspaceObserver: NSObjectProtocol?
-    private var mouseMonitor: Any?
-    private var localMouseMonitor: Any?
-    private var dragMonitor: Any?
-    private var localDragMonitor: Any?
-    private var dragEndMonitor: Any?
-    private var localDragEndMonitor: Any?
-    private var localMouseDownMonitor: Any?
+    // Observer and monitor tokens are nonisolated(unsafe): they are only touched on the main
+    // actor, and the nonisolated deinit reads them once after the last reference is gone.
+    nonisolated(unsafe) private var screenChangeObserver: NSObjectProtocol?
+    nonisolated(unsafe) private var workspaceObserver: NSObjectProtocol?
+    nonisolated(unsafe) private var mouseMonitor: Any?
+    nonisolated(unsafe) private var localMouseMonitor: Any?
+    nonisolated(unsafe) private var dragMonitor: Any?
+    nonisolated(unsafe) private var localDragMonitor: Any?
+    nonisolated(unsafe) private var dragEndMonitor: Any?
+    nonisolated(unsafe) private var localDragEndMonitor: Any?
+    nonisolated(unsafe) private var localMouseDownMonitor: Any?
+    nonisolated(unsafe) private var activationObserver: NSObjectProtocol?
     private let settings: NotchSettings
     private let menuBarLayoutManager: MenuBarLayoutManager
     private var cancellables = Set<AnyCancellable>()
-    private var mouseMoveCoalesceTask: Task<Void, Never>?
+    /// At most one pending task that replays the latest pointer position after throttled events.
+    private var trailingMouseMoveTask: Task<Void, Never>?
+    private var lastMouseMoveTimestamp: TimeInterval = 0
     private var proximityPollTask: Task<Void, Never>?
-    private var activationObserver: NSObjectProtocol?
+    /// Screens and their metrics, rebuilt only when the display configuration changes
+    /// (`NSApplication.didChangeScreenParametersNotification`), never per mouse event.
+    private var cachedScreens: [CachedScreen] = []
+    private var activeScreenEntry: CachedScreen?
+    /// Menu bar occupancy for screens without a hardware notch; refreshed on app switches,
+    /// screen changes and before the idle island is presented.
+    private var capsuleContext = NotchGeometry.MenuBarContext()
     private var measuredExpandedHeight: CGFloat?
     private var measuredHeightsByModule: [IslandModule: CGFloat] = [:]
     private var baselineDragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
 
+    private struct CachedScreen {
+        let screen: NSScreen
+        let frame: CGRect
+        let metrics: ScreenMetrics
+        let isBuiltIn: Bool
+        /// Top band watched by the polling fallback when no global mouse monitor is available.
+        let pollBandHeight: CGFloat
+
+        /// Like `frame.contains`, but includes the top edge where the pointer rests in the menu bar.
+        func containsPointer(_ location: NSPoint) -> Bool {
+            location.x >= frame.minX && location.x < frame.maxX
+                && location.y >= frame.minY && location.y <= frame.maxY
+        }
+    }
+
     init(settings: NotchSettings, menuBarLayoutManager: MenuBarLayoutManager) {
         self.settings = settings
         self.menuBarLayoutManager = menuBarLayoutManager
+        rebuildScreenCache()
         refreshActiveScreen()
         startObservers()
         startWorkspaceObserver()
@@ -54,7 +81,7 @@ final class DisplayManager: ObservableObject {
     }
 
     deinit {
-        mouseMoveCoalesceTask?.cancel()
+        trailingMouseMoveTask?.cancel()
         if let screenChangeObserver {
             NotificationCenter.default.removeObserver(screenChangeObserver)
         }
@@ -89,28 +116,106 @@ final class DisplayManager: ObservableObject {
     }
 
     func refreshActiveScreen() {
-        let mouseLocation = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(mouseLocation) } ?? NSScreen.main
-        activeScreen = screen
-        menuBarLayoutManager.setActiveScreen(screen)
-        menuBarLayoutManager.refresh(for: screen)
-        recomputeGeometry(for: screen)
+        let entry = preferredScreenEntry(at: NSEvent.mouseLocation)
+        activate(entry)
+        menuBarLayoutManager.refresh(for: entry?.screen)
+        refreshCapsuleContext()
+        recomputeGeometry(for: activeScreen)
+    }
+
+    private func activate(_ entry: CachedScreen?) {
+        activeScreenEntry = entry
+        if activeScreen !== entry?.screen {
+            activeScreen = entry?.screen
+        }
+        menuBarLayoutManager.setActiveScreen(entry?.screen)
+    }
+
+    private func rebuildScreenCache() {
+        cachedScreens = NSScreen.screens.map { screen in
+            let metrics = ScreenMetrics(screen: screen)
+            let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+            return CachedScreen(
+                screen: screen,
+                frame: metrics.frame,
+                metrics: metrics,
+                isBuiltIn: displayID.map { CGDisplayIsBuiltin($0) != 0 } ?? false,
+                pollBandHeight: max(
+                    metrics.safeAreaTop,
+                    metrics.reservedMenuBarHeight,
+                    NotchFlowConstants.virtualCapsuleHeight
+                )
+            )
+        }
+    }
+
+    private func cachedEntry(for screen: NSScreen?) -> CachedScreen? {
+        guard let screen else { return nil }
+        return cachedScreens.first { $0.screen === screen }
+    }
+
+    /// The display that should host the island for a pointer at `location`, honoring the
+    /// "Show the island on" preference.
+    private func preferredScreenEntry(at location: NSPoint) -> CachedScreen? {
+        switch settings.islandDisplay {
+        case .followPointer:
+            return cachedScreens.first { $0.containsPointer(location) }
+                ?? cachedEntry(for: NSScreen.main)
+                ?? cachedScreens.first
+        case .mainDisplay:
+            // The first screen is the one with the menu bar in System Settings → Displays.
+            return cachedScreens.first
+        case .builtInDisplay:
+            return cachedScreens.first(where: \.isBuiltIn) ?? cachedScreens.first
+        }
+    }
+
+    private func metrics(for screen: NSScreen) -> ScreenMetrics {
+        cachedEntry(for: screen)?.metrics ?? ScreenMetrics(screen: screen)
+    }
+
+    /// Reads what sits in the menu bar around the island. Only displays without a hardware notch
+    /// draw into the menu bar, so notched MacBooks skip this entirely.
+    private func refreshCapsuleContext(forceRescan: Bool = false) {
+        guard let screen = activeScreen else {
+            capsuleContext = NotchGeometry.MenuBarContext()
+            return
+        }
+        let metrics = metrics(for: screen)
+        if case .hardwareNotch = NotchGeometry.classifyTopCutout(metrics) {
+            capsuleContext = NotchGeometry.MenuBarContext()
+            return
+        }
+        capsuleContext = menuBarLayoutManager.capsuleContext(
+            for: metrics,
+            span: NotchGeometry.menuBarCapsuleSpan(for: metrics),
+            forceRescan: forceRescan
+        )
     }
 
     private func recomputeGeometry(for screen: NSScreen?) {
-        if let screen {
-            let menuEdge = menuBarLayoutManager.menuRightEdgeX(for: screen)
-            var nextGeometry = NotchGeometry.make(
-                for: screen,
-                settings: settings,
-                appMenuRightEdgeX: menuEdge
-            )
-            if let measuredExpandedHeight {
-                nextGeometry = nextGeometry.withExpandedHeight(measuredExpandedHeight)
-            }
-            geometry = nextGeometry
+        guard let screen else {
+            if geometry != nil { geometry = nil }
+            return
+        }
+        let metrics = metrics(for: screen)
+        let context: NotchGeometry.MenuBarContext
+        if case .hardwareNotch = NotchGeometry.classifyTopCutout(metrics) {
+            context = NotchGeometry.MenuBarContext(appMenuRightEdgeX: menuBarLayoutManager.menuRightEdgeX(for: screen))
         } else {
-            geometry = nil
+            context = capsuleContext
+        }
+        var nextGeometry = NotchGeometry.make(
+            metrics: metrics,
+            options: NotchGeometry.Options(settings: settings),
+            context: context
+        )
+        if let measuredExpandedHeight {
+            nextGeometry = nextGeometry.withExpandedHeight(measuredExpandedHeight)
+        }
+        // Publishing an equal value would still re-render every observing view.
+        if geometry != nextGeometry {
+            geometry = nextGeometry
         }
     }
 
@@ -230,6 +335,7 @@ final class DisplayManager: ObservableObject {
     /// Called right before presenting the idle island so wing widths are fresh.
     func refreshMenuLayoutNow() {
         menuBarLayoutManager.refresh(for: activeScreen, publishImmediately: true)
+        refreshCapsuleContext()
         recomputeGeometry(for: activeScreen)
     }
 
@@ -237,30 +343,56 @@ final class DisplayManager: ObservableObject {
         settings.onDimensionsChange = { [weak self] in
             self?.recomputeGeometry(for: self?.activeScreen)
         }
+        settings.onDisplayPlacementChange = { [weak self] in
+            self?.refreshActiveScreen()
+        }
     }
 
     private func bindMenuBarLayout() {
         menuBarLayoutManager.$appMenuRightEdgeX
             .sink { [weak self] _ in
-                self?.recomputeGeometry(for: self?.activeScreen)
+                guard let self else { return }
+                if self.geometry?.hasPhysicalNotch == false {
+                    // @Published emits before storing; read the new edge on the next turn.
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        self.refreshCapsuleContext()
+                        self.recomputeGeometry(for: self.activeScreen)
+                    }
+                    return
+                }
+                self.recomputeGeometry(for: self.activeScreen)
             }
             .store(in: &cancellables)
     }
 
     func updatePointerProximity(at location: NSPoint) {
         guard let geometry else {
-            isPointerNearNotch = false
+            setPointerNearNotch(false)
             return
         }
 
         let inPanel = activePanelFrame.map { $0.insetBy(dx: -8, dy: -8).contains(location) } ?? false
         if inPanel {
-            isPointerNearNotch = true
+            setPointerNearNotch(true)
+            return
+        }
+
+        // "Off" on a display without a notch: only the menu bar icon opens the island.
+        guard geometry.allowsAutomaticPresentation else {
+            setPointerNearNotch(false)
             return
         }
 
         let triggerRect = geometry.hoverProximityRect(forExit: isPointerNearNotch)
-        isPointerNearNotch = triggerRect.contains(location)
+        setPointerNearNotch(triggerRect.contains(location))
+    }
+
+    /// Assigning an unchanged value to a @Published property still notifies every subscriber.
+    private func setPointerNearNotch(_ isNear: Bool) {
+        if isPointerNearNotch != isNear {
+            isPointerNearNotch = isNear
+        }
     }
 
     func refreshHideState() {
@@ -285,6 +417,7 @@ final class DisplayManager: ObservableObject {
             DispatchQueue.main.async { [weak self] in
                 self?.refreshHideState()
                 self?.menuBarLayoutManager.refresh(for: self?.activeScreen, publishImmediately: true)
+                self?.refreshCapsuleContext(forceRescan: true)
                 self?.recomputeGeometry(for: self?.activeScreen)
             }
         }
@@ -297,6 +430,7 @@ final class DisplayManager: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             DispatchQueue.main.async { [weak self] in
+                self?.rebuildScreenCache()
                 self?.refreshActiveScreen()
             }
         }
@@ -351,20 +485,18 @@ final class DisplayManager: ObservableObject {
             return
         }
 
-        isFileDragInProgress = true
-
-        if let screen = NSScreen.screens.first(where: { $0.frame.contains(location) }),
-           screen != activeScreen {
-            activeScreen = screen
-            menuBarLayoutManager.setActiveScreen(screen)
-            menuBarLayoutManager.refresh(for: screen)
-            recomputeGeometry(for: screen)
+        if !isFileDragInProgress {
+            isFileDragInProgress = true
         }
 
+        switchActiveScreenIfNeeded(for: location)
+
         let nearDropZone = isLocationInDragDropZone(location)
-        isDragNearNotch = nearDropZone
+        if isDragNearNotch != nearDropZone {
+            isDragNearNotch = nearDropZone
+        }
         if nearDropZone {
-            isPointerNearNotch = true
+            setPointerNearNotch(true)
         } else {
             updatePointerProximity(at: location)
         }
@@ -418,7 +550,7 @@ final class DisplayManager: ObservableObject {
         let height = geometry.notchTopInset + geometry.expandedSize.height + NotchFlowConstants.dragDropZoneVerticalPadding
 
         let dropZone: CGRect
-        if geometry.hasPhysicalNotch, let notchLeftX = geometry.notchLeftX {
+        if let notchLeftX = geometry.notchLeftX {
             dropZone = CGRect(
                 x: notchLeftX + geometry.physicalNotchCutoutWidth / 2 - width / 2,
                 y: geometry.screenTopY - height,
@@ -439,12 +571,12 @@ final class DisplayManager: ObservableObject {
 
     private func installMouseMonitors() {
         localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
-            self?.scheduleMouseMove(NSEvent.mouseLocation)
+            self?.handleMouseMovedEvent(timestamp: event.timestamp)
             return event
         }
 
-        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] _ in
-            self?.scheduleMouseMove(NSEvent.mouseLocation)
+        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
+            self?.handleMouseMovedEvent(timestamp: event.timestamp)
         }
 
         if mouseMonitor == nil {
@@ -459,8 +591,8 @@ final class DisplayManager: ObservableObject {
 
     private func refreshMouseMonitoringIfNeeded() {
         guard mouseMonitor == nil, AXIsProcessTrusted() else { return }
-        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] _ in
-            self?.scheduleMouseMove(NSEvent.mouseLocation)
+        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
+            self?.handleMouseMovedEvent(timestamp: event.timestamp)
         }
         if mouseMonitor != nil {
             NotchFlowLog.hover.debug("Global mouse monitor restored after Accessibility grant")
@@ -491,37 +623,100 @@ final class DisplayManager: ObservableObject {
     }
 
     private func isNearAnyMenuBar(_ location: NSPoint) -> Bool {
-        for screen in NSScreen.screens {
-            let top = screen.frame.maxY
-            let band = max(screen.safeAreaInsets.top, NotchFlowConstants.virtualCapsuleHeight)
-            if location.y >= top - band - NotchFlowConstants.hoverExpandThreshold,
-               location.y <= top + 4 {
+        for entry in cachedScreens {
+            let top = entry.frame.maxY
+            if location.y >= top - entry.pollBandHeight - NotchFlowConstants.hoverExpandThreshold,
+               location.y <= top + 4,
+               location.x >= entry.frame.minX, location.x <= entry.frame.maxX {
                 return true
             }
         }
         return false
     }
 
-    private func scheduleMouseMove(_ location: NSPoint) {
-        if shouldUpdateProximityImmediately(at: location) {
-            mouseMoveCoalesceTask?.cancel()
-            handleMouseMove(location)
+    /// Entry point for every `mouseMoved` event, global or local. It runs for every pointer move
+    /// on the Mac, so the common case (pointer far from the island, same display) returns
+    /// without allocating, publishing or walking the screen list.
+    private func handleMouseMovedEvent(timestamp: TimeInterval) {
+        let location = NSEvent.mouseLocation
+
+        if canIgnorePointer(at: location) {
             return
         }
 
-        mouseMoveCoalesceTask?.cancel()
-        mouseMoveCoalesceTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(16))
-            guard !Task.isCancelled else { return }
-            handleMouseMove(location)
+        if isInHoverBand(location) {
+            // Inside the menu-bar band: respond immediately for a snappy hover.
+            processMouseMove(at: location, timestamp: timestamp)
+            return
+        }
+
+        guard timestamp - lastMouseMoveTimestamp >= NotchFlowConstants.mouseMoveThrottleInterval else {
+            scheduleTrailingMouseMove()
+            return
+        }
+        processMouseMove(at: location, timestamp: timestamp)
+    }
+
+    /// Nothing to update: no hover in progress, and the pointer is below every hover target on
+    /// the active display (or on another display while the island is pinned to one).
+    private func canIgnorePointer(at location: NSPoint) -> Bool {
+        guard !isPointerNearNotch, !isDragNearNotch, let entry = activeScreenEntry else { return false }
+        guard entry.containsPointer(location) else {
+            // A pinned island never moves, so other displays are irrelevant.
+            return settings.islandDisplay != .followPointer
+        }
+        return location.y < interestBandMinY()
+    }
+
+    /// Lowest Y on the active display where pointer movement can change hover state.
+    private func interestBandMinY() -> CGFloat {
+        guard let geometry else { return .greatestFiniteMagnitude }
+        var minY = geometry.hoverProximityRect(forExit: true).minY
+        if let activePanelFrame {
+            minY = min(minY, activePanelFrame.minY - 8)
+        }
+        return minY
+    }
+
+    private func isInHoverBand(_ location: NSPoint) -> Bool {
+        guard let geometry else { return false }
+        return location.y <= geometry.screenTopY
+            && location.y >= geometry.hoverTriggerRect.minY
+    }
+
+    private func processMouseMove(at location: NSPoint, timestamp: TimeInterval) {
+        lastMouseMoveTimestamp = timestamp
+        if trailingMouseMoveTask != nil {
+            trailingMouseMoveTask?.cancel()
+            trailingMouseMoveTask = nil
+        }
+        handleMouseMove(location)
+    }
+
+    /// Throttled events are not lost: one task replays the latest position after the interval,
+    /// so leaving the island quickly still ends hover.
+    private func scheduleTrailingMouseMove() {
+        guard trailingMouseMoveTask == nil else { return }
+        trailingMouseMoveTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(NotchFlowConstants.mouseMoveThrottleInterval))
+            guard let self, !Task.isCancelled else { return }
+            self.trailingMouseMoveTask = nil
+            self.lastMouseMoveTimestamp = ProcessInfo.processInfo.systemUptime
+            self.handleMouseMove(NSEvent.mouseLocation)
         }
     }
 
-    private func shouldUpdateProximityImmediately(at location: NSPoint) -> Bool {
-        guard let geometry else { return false }
-        // Fast-path only inside the menu-bar band, not the web content below.
-        return location.y <= geometry.screenTopY
-            && location.y >= geometry.screenTopY - geometry.notchTopInset
+    private func switchActiveScreenIfNeeded(for location: NSPoint) {
+        if let entry = activeScreenEntry, entry.containsPointer(location) { return }
+        guard settings.islandDisplay == .followPointer,
+              let entry = cachedScreens.first(where: { $0.containsPointer(location) }),
+              entry.screen !== activeScreen else {
+            return
+        }
+        activate(entry)
+        menuBarLayoutManager.refresh(for: entry.screen)
+        refreshCapsuleContext()
+        recomputeGeometry(for: entry.screen)
     }
 
     private func handleMouseMove(_ location: NSPoint) {
@@ -529,13 +724,7 @@ final class DisplayManager: ObservableObject {
             return
         }
 
-        if let screen = NSScreen.screens.first(where: { $0.frame.contains(location) }),
-           screen != activeScreen {
-            activeScreen = screen
-            menuBarLayoutManager.setActiveScreen(screen)
-            menuBarLayoutManager.refresh(for: screen)
-            recomputeGeometry(for: screen)
-        }
+        switchActiveScreenIfNeeded(for: location)
         updatePointerProximity(at: location)
     }
 }

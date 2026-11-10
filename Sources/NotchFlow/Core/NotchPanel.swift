@@ -86,9 +86,13 @@ final class NotchPanelController: ObservableObject {
     private var hideTask: Task<Void, Never>?
     private var hoverDwellTask: Task<Void, Never>?
     private var hoverExitGraceTask: Task<Void, Never>?
-    private var clickMonitor: Any?
-    private var escapeMonitor: Any?
-    private var spaceChangeObserver: NSObjectProtocol?
+    // nonisolated(unsafe): only touched on the main actor; the nonisolated deinit reads them
+    // once after the last reference is gone.
+    nonisolated(unsafe) private var clickMonitor: Any?
+    nonisolated(unsafe) private var escapeMonitor: Any?
+    nonisolated(unsafe) private var spaceChangeObserver: NSObjectProtocol?
+    /// Last known answer to "may idle wings show on the active display?", to react only to changes.
+    private var lastIdleAllowedByGeometry = true
     private var suppressAutoShow = false
     private var suppressQuickExpandUntilHoverEnd = false
     private let displayManager: DisplayManager
@@ -155,8 +159,12 @@ final class NotchPanelController: ObservableObject {
 
         displayManager.$geometry
             .removeDuplicates()
-            .sink { [weak self] _ in
+            .sink { [weak self] geometry in
                 guard let self else { return }
+                // @Published delivers before the property is stored; finish the update first.
+                DispatchQueue.main.async { [weak self] in
+                    self?.reconcileIdleVisibility()
+                }
                 self.repositionIfVisible(animated: self.isExpanded)
             }
             .store(in: &cancellables)
@@ -255,6 +263,33 @@ final class NotchPanelController: ObservableObject {
         }
 
         scheduleHide()
+    }
+
+    /// On displays without a notch, idle wings can become unavailable (menus under them, the menu
+    /// bar hidden, placement turned Off, pointer moved to such a display) or available again while
+    /// nothing else changes; follow those transitions. Hardware-notch geometry always allows idle
+    /// wings, so notched MacBooks never act here.
+    private func reconcileIdleVisibility() {
+        guard let geometry = displayManager.geometry else { return }
+        let allowed = geometry.allowsAutomaticPresentation && !geometry.shouldHideIdleForMenuOverlap
+        guard allowed != lastIdleAllowedByGeometry else { return }
+        lastIdleAllowedByGeometry = allowed
+        guard !isExpanded else { return }
+
+        if allowed {
+            guard !isVisible,
+                  !suppressAutoShow,
+                  !displayManager.shouldHideIsland,
+                  appState.shouldShowIdleNotch else { return }
+            presentIdle()
+        } else if isVisible {
+            // Calls and notification peeks still show over menus, but not when the user turned
+            // the island off for this kind of display.
+            let keepForPriority = geometry.allowsAutomaticPresentation && hasPriorityLiveActivity
+            if !keepForPriority {
+                dismissImmediately()
+            }
+        }
     }
 
     private var shouldHideIdleForMenuOverlap: Bool {
@@ -358,6 +393,13 @@ final class NotchPanelController: ObservableObject {
             return
         }
         displayManager.refreshMenuLayoutNow()
+        // Placement "Off" on a display without a notch: nothing idle, menu bar icon only.
+        guard displayManager.geometry?.allowsAutomaticPresentation != false else {
+            if isVisible, !isExpanded {
+                dismissImmediately()
+            }
+            return
+        }
         guard !shouldSuppressIdleForMenuOverlap else {
             if isVisible, !isExpanded {
                 dismissImmediately()

@@ -88,6 +88,26 @@ struct GeneralSettingsTab: View {
             }
 
             Section {
+                Picker(loc("Island position on screens without a notch"), selection: $settings.nonNotchIslandPlacement) {
+                    ForEach(NonNotchIslandPlacement.allCases) { placement in
+                        Text(placement.title).tag(placement)
+                    }
+                }
+
+                if NSScreen.screens.count > 1 {
+                    Picker(loc("Show the island on"), selection: $settings.islandDisplay) {
+                        ForEach(IslandDisplayPreference.allCases) { preference in
+                            Text(preference.title).tag(preference)
+                        }
+                    }
+                }
+            } header: {
+                Text(loc("Displays"))
+            } footer: {
+                SettingsFooterCaption("On Macs and displays without a notch, the island sits in the middle of the menu bar. Hover there to open it.")
+            }
+
+            Section {
                 Toggle(loc("Avoid covering the app menu"), isOn: $settings.avoidMenuOverlap)
                     .onChange(of: settings.avoidMenuOverlap) { _, _ in
                         menuBarLayoutManager.refresh()

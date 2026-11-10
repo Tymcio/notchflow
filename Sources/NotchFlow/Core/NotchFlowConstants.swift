@@ -29,6 +29,15 @@ enum NotchFlowConstants {
     static let defaultExpandedHeight: CGFloat = 218
     static let virtualCapsuleWidth: CGFloat = 200
     static let virtualCapsuleHeight: CGFloat = 36
+    /// Width of the virtual notch drawn into the menu bar on displays without a hardware notch.
+    static let menuBarCapsuleCenterWidth: CGFloat = 120
+    /// Menu bar height assumed when the menu bar is hidden (auto-hide, full screen) and cannot be measured.
+    static let fallbackMenuBarHeight: CGFloat = 24
+    /// Gap kept between a system-owned top cutout (Dynamic Island) and the virtual notch edge.
+    /// Wings reach `idleWingInnerOverlap` into the notch, so this leaves 4 pt of air beside the island.
+    static let systemIslandClearance: CGFloat = idleWingInnerOverlap + 4
+    /// Pointer events outside the hover band are handled at most this often (seconds).
+    static let mouseMoveThrottleInterval: TimeInterval = 1.0 / 60.0
     static let hoverTriggerWidth: CGFloat = 200
     static let hoverExpandThreshold: CGFloat = 32
     /// Slight horizontal forgiveness when aiming at the physical notch cutout.
