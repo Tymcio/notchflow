@@ -88,11 +88,16 @@ Without the Raycast extension:
 ```bash
 TOKEN="$(security find-generic-password -s eu.notchflow.app.api -w 2>/dev/null || true)"
 BASE="$(python3 -c 'import json, pathlib; print(json.load(open(pathlib.Path.home()/\"Library/Application Support/NotchFlow/api.json\"))[\"baseURL\"])')"
-curl -s -H "Authorization: Bearer $TOKEN" -X POST "$BASE/v1/media/play-pause"
+printf 'Authorization: Bearer %s\n' "$TOKEN" | curl -s -H @- -X POST "$BASE/v1/media/play-pause"
 ```
+
+Passing the header on stdin (`-H @-`) keeps the token out of the process list; NotchFlow's own agent hook does the same.
 
 ## Security
 
 - API binds to loopback only (`127.0.0.1`).
 - Token stored in macOS Keychain.
+- Requests from web pages are refused: any request with an `Origin` header, or with a `Host` other than `127.0.0.1`, `localhost` or `[::1]` (optionally with NotchFlow's port), gets `403`.
+- Bodies must use `Content-Length` (no chunked encoding) and the whole request is capped at 1 MB (`413`). A client has 5 seconds to send its request; at most 16 connections are served at once.
+- `POST` endpoints answer `400` when the JSON body is missing or invalid.
 - Disable Local API in Settings when not needed.
