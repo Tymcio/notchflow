@@ -27,9 +27,9 @@ struct NotchIslandView: View {
     var body: some View {
         ZStack {
             islandBody
-            if let hud = appState.hudState {
-                HUDOverlayView(state: hud)
-                    .transition(.opacity.combined(with: .scale))
+            // Collapsed, the level is a live activity in the wings (`IdleHUDView`).
+            if isExpanded, let hud = appState.hudState {
+                HUDOverlayView(state: hud, accent: appState.settings.selectedTheme.accent)
             }
         }
         .frame(

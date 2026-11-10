@@ -37,6 +37,8 @@ struct IdleLiveActivityView: View {
         case .notification:
             // Rendered as NotificationBannerView from NotchIslandView (hanging drip).
             EmptyView()
+        case .hud(let hud):
+            IdleHUDView(hud: hud, accent: accent, wingLayout: wingLayout)
         case .media:
             IdleMediaView(state: mediaState, wingLayout: wingLayout)
         }

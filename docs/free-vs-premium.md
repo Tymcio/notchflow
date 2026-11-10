@@ -72,7 +72,7 @@ Purchase: [notchflow.eu](https://notchflow.eu) (checkout via [Polar](https://pol
 
 | Feature | Free | Premium | Agents addon |
 |---------|------|---------|--------------|
-| Volume / brightness HUD | ✓ | ✓ | — |
+| Volume and brightness levels in the notch | ✓ | ✓ | — |
 | Launch at login | ✓ | ✓ | — |
 | URL scheme (`notchflow://`) | ✓ | ✓ | — |
 | Local API — media & island | ✓ | ✓ | — |

@@ -352,7 +352,8 @@ final class DemoAgentScenario {
 
 extension AppState {
     /// Replaces `start()` in demo mode: fictional content, and no monitoring of players,
-    /// calendars, notifications, the clipboard, licenses, agent hooks or usage APIs.
+    /// calendars, notifications, the clipboard, licenses, agent hooks, usage APIs or the
+    /// volume / brightness keys.
     func startDemo() {
         let now = Date()
         licenseStatus = DemoMode.licenseStatus(now: now)

@@ -9206,6 +9206,62 @@
           }
         }
       }
+    },
+    "Show volume and brightness in the notch": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokazuj głośność i jasność w notchu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lautstärke und Helligkeit in der Notch anzeigen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra volume e luminosità nel notch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar volumen y brillo en el notch"
+          }
+        }
+      }
+    },
+    "The level appears beside the notch for a moment when it changes. Brightness follows the built-in display's keys and needs Accessibility. The macOS indicator still appears.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poziom pojawia się na chwilę obok notcha, gdy się zmienia. Jasność śledzi klawisze wbudowanego ekranu i wymaga uprawnienia Dostępność. Wskaźnik macOS nadal się pokazuje."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Pegel erscheint kurz neben der Notch, wenn er sich ändert. Die Helligkeit folgt den Tasten des integrierten Displays und benötigt Bedienungshilfen. Die macOS-Anzeige erscheint weiterhin."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il livello compare per un attimo accanto al notch quando cambia. La luminosità segue i tasti del display integrato e richiede l'accesso Accessibilità. L'indicatore di macOS continua a comparire."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El nivel aparece un momento junto al notch cuando cambia. El brillo sigue las teclas de la pantalla integrada y necesita Accesibilidad. El indicador de macOS sigue apareciendo."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

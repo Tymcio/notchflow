@@ -13,6 +13,7 @@ enum NotchFlowLog {
     static let notifications = Logger(subsystem: subsystem, category: "Notifications")
     static let camera = Logger(subsystem: subsystem, category: "Camera")
     static let calendar = Logger(subsystem: subsystem, category: "Calendar")
+    static let hud = Logger(subsystem: subsystem, category: "HUD")
 
     /// Builds up to 1.0.44 appended call traces to a world-readable file in /tmp.
     /// Remove it if this user owns it (never follows a symlink: removes the link itself).

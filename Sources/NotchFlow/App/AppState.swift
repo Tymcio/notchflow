@@ -86,6 +86,7 @@ final class AppState {
             agentSession: hasAgentsAddon ? agentSessionManager.primaryActivity : nil,
             timer: focusTimerState.showsInIdleNotch ? focusTimerState.activity : nil,
             notification: notificationHub.peek,
+            hud: hudState,
             showsMedia: showsMediaIdle
         )
     }
@@ -113,6 +114,8 @@ final class AppState {
             )
         case .timer(let timer) where timer.isFinished && timer.isAlertMuted:
             return IdleTimerMetrics.preferredMutedRightWingWidth()
+        case .hud:
+            return IdleHUDMetrics.preferredRightWingWidth
         default:
             return nil
         }
@@ -184,6 +187,7 @@ final class AppState {
         hubNotifications = notificationHub.recentNotifications
         applyNotificationSettings()
         applyAgentUsagePolling()
+        applyLevelHUDSettings()
 
         if settings.localAPIEnabled {
             do {
@@ -207,6 +211,11 @@ final class AppState {
 
         notificationCenterObserver.setEnabled(notificationsEnabled)
         notifyLiveActivityChange()
+    }
+
+    /// Demo mode never listens to the real volume or brightness keys.
+    func applyLevelHUDSettings() {
+        hudManager.setEnabled(!DemoMode.isEnabled && settings.showsLevelHUD)
     }
 
     func applyAgentUsagePolling() {
@@ -297,9 +306,17 @@ final class AppState {
         }
 
         hudManager.onHUDChange = { [weak self] state in
-            withAnimation(.easeOut(duration: 0.2)) {
-                self?.hudState = state
+            guard let self else { return }
+            let presenceChanged = (state == nil) != (self.hudState == nil)
+            self.hudState = state
+            // Level updates while a key is held only redraw; showing / hiding re-lays the panel.
+            if presenceChanged {
+                self.notifyLiveActivityChange()
             }
+        }
+
+        settings.onLevelHUDChange = { [weak self] in
+            self?.applyLevelHUDSettings()
         }
 
         focusTimerManager.onStateChange = { [weak self] state in

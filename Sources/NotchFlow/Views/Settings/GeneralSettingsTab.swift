@@ -21,6 +21,12 @@ struct GeneralSettingsTab: View {
             }
 
             Section {
+                Toggle(loc("Show volume and brightness in the notch"), isOn: $settings.showsLevelHUD)
+            } footer: {
+                SettingsFooterCaption("The level appears beside the notch for a moment when it changes. Brightness follows the built-in display's keys and needs Accessibility. The macOS indicator still appears.")
+            }
+
+            Section {
                 Picker(loc("Language"), selection: $selectedLanguage) {
                     ForEach(AppLanguage.allCases) { language in
                         Text(language.displayName).tag(language)

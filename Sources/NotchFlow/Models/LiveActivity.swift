@@ -57,15 +57,18 @@ enum LiveActivityKind: Equatable, Sendable {
     case agentSession(AgentSessionActivity)
     case timer(FocusTimerActivity)
     case notification(NotificationPeekActivity)
+    /// A volume / brightness change, shown for a moment over media, timers and agents.
+    case hud(HUDOverlayState)
     case media
 
     var priority: Int {
         switch self {
         case .agentSession(let session) where session.needsAttention: 2
         case .notification: 3
-        case .agentSession: 4
-        case .timer: 5
-        case .media: 6
+        case .hud: 4
+        case .agentSession: 5
+        case .timer: 6
+        case .media: 7
         }
     }
 }
@@ -75,7 +78,9 @@ enum LiveActivityResolver {
         agentSession: AgentSessionActivity?,
         timer: FocusTimerActivity?,
         notification: NotificationPeekActivity?,
-        showsMedia: Bool
+        hud: HUDOverlayState? = nil,
+        showsMedia: Bool,
+        now: Date = Date()
     ) -> LiveActivityKind? {
         if let agentSession, agentSession.needsAttention {
             return .agentSession(agentSession)
@@ -83,6 +88,11 @@ enum LiveActivityResolver {
         // Transient notification peeks temporarily replace the focus timer in the island.
         if let notification, !notification.isExpired {
             return .notification(notification)
+        }
+        // Volume / brightness levels briefly replace whatever else sits in the wings; the
+        // previous activity returns when the level expires.
+        if let hud, hud.isActive(at: now) {
+            return .hud(hud)
         }
         if let agentSession {
             return .agentSession(agentSession)
