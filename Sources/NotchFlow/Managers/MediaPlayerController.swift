@@ -8,6 +8,7 @@ enum MediaTransportCommand: Sendable {
     case previous
 }
 
+/// Transport commands for Spotify / Music (AppleScript) or any other player (media keys).
 enum MediaPlayerController {
     static func perform(_ command: MediaTransportCommand, playerBundleID: String?) {
         switch resolvedPlayer(from: playerBundleID) {
@@ -64,10 +65,10 @@ enum MediaPlayerController {
         }
     }
 
+    /// Sends the command on the shared AppleScript queue — never blocks the caller (main).
+    /// Failures (e.g. missing Automation permission) are logged by the executor.
     private static func runScript(_ source: String) {
-        guard let script = NSAppleScript(source: source) else { return }
-        var error: NSDictionary?
-        script.executeAndReturnError(&error)
+        AppleScriptExecutor.shared.runDetached("with timeout of 5 seconds\n\(source)\nend timeout")
     }
 }
 

@@ -2,6 +2,8 @@ import AppKit
 import Foundation
 
 /// Event-driven media source using NSDistributedNotificationCenter (Music, Spotify, iTunes).
+/// Artwork bytes are forwarded only with the notification that carried them — `MediaMonitor`
+/// keeps a downsampled copy per track, so full-size art is not retained here.
 final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
     private let center = DistributedNotificationCenter.default()
     private var observers: [NSObjectProtocol] = []
@@ -93,12 +95,12 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
                 artist: artist,
                 album: album,
                 artworkURL: artworkURL,
-                artworkData: latestState.artworkData,
+                artworkData: nil,
                 isPlaying: false,
                 elapsed: timing.elapsed,
                 duration: timing.duration,
                 bundleIdentifier: bundleID,
-                lyricsSnippet: latestState.lyricsSnippet
+                lyricsSnippet: nil
             )
             handler?(latestState)
             return
@@ -135,7 +137,7 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
                         artist: capturedArtist,
                         album: capturedAlbum,
                         artworkURL: artworkURL,
-                        artworkData: data ?? self.latestState.artworkData,
+                        artworkData: data,
                         isPlaying: capturedIsPlaying,
                         timing: capturedTiming,
                         bundleID: expectedBundleID
@@ -150,7 +152,7 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
             artist: artist,
             album: album,
             artworkURL: artworkURL,
-            artworkData: latestState.artworkData,
+            artworkData: nil,
             isPlaying: isPlaying,
             timing: timing,
             bundleID: bundleID
@@ -167,7 +169,7 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
         timing: (elapsed: Double, duration: Double),
         bundleID: String?
     ) {
-        latestState = MediaPlaybackState(
+        let state = MediaPlaybackState(
             title: title.isEmpty ? MediaPlaybackState.notPlayingPlaceholder : title,
             artist: artist,
             album: album,
@@ -177,10 +179,10 @@ final class DistributedMediaSource: MediaSourceProviding, @unchecked Sendable {
             elapsed: timing.elapsed,
             duration: timing.duration,
             bundleIdentifier: bundleID,
-            lyricsSnippet: latestState.lyricsSnippet
+            lyricsSnippet: nil
         )
-
-        handler?(latestState)
+        latestState = state.with(artworkData: nil)
+        handler?(state)
     }
 
     private func parseTiming(

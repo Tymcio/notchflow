@@ -38,7 +38,8 @@ struct MediaPlayerView: View {
             .animation(IslandMotion.quick, value: state.lyricsSnippet)
 
             if state.hasUsableDuration {
-                TimelineView(.periodic(from: .now, by: 0.25)) { _ in
+                // Ticks only while playing — a paused position does not move.
+                TimelineView(.animation(minimumInterval: 0.25, paused: !state.isPlaying)) { _ in
                     MediaScrubberView(
                         position: state.interpolatedPosition(),
                         duration: state.duration,
@@ -127,7 +128,7 @@ struct ArtworkView: View {
             let expectedTrackKey = trackKey
             let url = artworkURL
             Task.detached(priority: .utility) {
-                let data = try? Data(contentsOf: url)
+                let data = (try? Data(contentsOf: url)).flatMap { ArtworkDownsampler.downsample($0) }
                 let image = data.flatMap { NSImage(data: $0) }
                 await MainActor.run {
                     guard expectedTrackKey == trackKey else { return }
@@ -140,7 +141,9 @@ struct ArtworkView: View {
 
         let expectedTrackKey = trackKey
         Task {
-            let data = await MusicArtworkFetcher.fetchFromURL(artworkURL)
+            let data = await Task.detached(priority: .utility) {
+                await MusicArtworkFetcher.fetchFromURL(artworkURL).flatMap { ArtworkDownsampler.downsample($0) }
+            }.value
             guard let data else { return }
             await MainActor.run {
                 decodeImage(from: data, expectedTrackKey: expectedTrackKey)
