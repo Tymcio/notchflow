@@ -58,9 +58,49 @@ enum ScreenFixtures {
         backingScaleFactor: 2
     )
 
-    static func notched(identifier: String, width: CGFloat, height: CGFloat) -> ScreenMetrics {
+    /// Notch share of the display width on the 14" MacBook Pro at its default 1512 pt; the notch
+    /// is part of the panel, so this share holds at every scaled ("looks like") resolution.
+    static let notchWidthRatio14: CGFloat = notchGapWidth / 1512
+    /// Same for the 16" (185 pt at 1728 pt) — the smallest notch share of any MacBook.
+    static let notchWidthRatio16: CGFloat = notchGapWidth / 1728
+
+    /// Every "looks like" resolution offered in System Settings → Displays, from "Larger Text"
+    /// to "More Space".
+    static let scaledNotchedModes: [(model: String, width: CGFloat, height: CGFloat, ratio: CGFloat)] = [
+        ("13\" MacBook Air", 1024, 665, notchWidthRatio14),
+        ("13\" MacBook Air", 1280, 832, notchWidthRatio14),
+        ("13\" MacBook Air", 1470, 956, notchWidthRatio14),
+        ("13\" MacBook Air", 1710, 1112, notchWidthRatio14),
+        ("14\" MacBook Pro", 1024, 665, notchWidthRatio14),
+        ("14\" MacBook Pro", 1147, 745, notchWidthRatio14),
+        ("14\" MacBook Pro", 1352, 878, notchWidthRatio14),
+        ("14\" MacBook Pro", 1512, 982, notchWidthRatio14),
+        ("14\" MacBook Pro", 1800, 1169, notchWidthRatio14),
+        ("16\" MacBook Pro", 1168, 755, notchWidthRatio16),
+        ("16\" MacBook Pro", 1312, 848, notchWidthRatio16),
+        ("16\" MacBook Pro", 1496, 967, notchWidthRatio16),
+        ("16\" MacBook Pro", 1728, 1117, notchWidthRatio16),
+        ("16\" MacBook Pro", 2056, 1329, notchWidthRatio16),
+    ]
+
+    /// A notched built-in display at a scaled resolution, its notch scaled by `ratio`.
+    static func scaledNotched(width: CGFloat, height: CGFloat, ratio: CGFloat) -> ScreenMetrics {
+        notched(
+            identifier: "Built-in Retina Display",
+            width: width,
+            height: height,
+            notchWidth: (width * ratio).rounded()
+        )
+    }
+
+    static func notched(
+        identifier: String,
+        width: CGFloat,
+        height: CGFloat,
+        notchWidth: CGFloat = notchGapWidth
+    ) -> ScreenMetrics {
         let safeTop: CGFloat = 32
-        let sideWidth = (width - notchGapWidth) / 2
+        let sideWidth = (width - notchWidth) / 2
         return ScreenMetrics(
             identifier: identifier,
             frame: CGRect(x: 0, y: 0, width: width, height: height),

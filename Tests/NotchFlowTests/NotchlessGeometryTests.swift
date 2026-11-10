@@ -184,6 +184,34 @@ final class NotchlessGeometryTests: XCTestCase {
         XCTAssertEqual(geometry(metrics).anchor, .besideSystemIsland)
     }
 
+    /// "Larger Text" and other scaled modes shrink the notch in points (to ~125 pt at 1024 pt);
+    /// it must still be wrapped, not left uncovered as a system island.
+    func testNotchIsRecognizedAtEveryScaledResolution() {
+        for mode in ScreenFixtures.scaledNotchedModes {
+            // Both notch shares, so every mode is covered at the narrowest plausible notch.
+            for ratio in [mode.ratio, ScreenFixtures.notchWidthRatio16] {
+                let metrics = ScreenFixtures.scaledNotched(width: mode.width, height: mode.height, ratio: ratio)
+                guard case .hardwareNotch = NotchGeometry.classifyTopCutout(metrics) else {
+                    XCTFail("\(mode.model) at \(Int(mode.width))×\(Int(mode.height)) (ratio \(ratio)) is not a notch")
+                    continue
+                }
+                XCTAssertEqual(geometry(metrics).anchor, .hardwareNotch)
+            }
+        }
+    }
+
+    func testDynamicIslandStaysASystemIslandAtScaledResolutions() {
+        let islandRatio: CGFloat = 112 / 1512
+        for mode in ScreenFixtures.scaledNotchedModes {
+            let metrics = ScreenFixtures.scaledNotched(width: mode.width, height: mode.height, ratio: islandRatio)
+            guard case .systemIsland(let gap?) = NotchGeometry.classifyTopCutout(metrics) else {
+                XCTFail("\(mode.model) at \(Int(mode.width)) pt should keep its system island")
+                continue
+            }
+            XCTAssertEqual(gap.width, (mode.width * islandRatio).rounded())
+        }
+    }
+
     func testOffCenterGapIsNotTreatedAsNotch() {
         var metrics = ScreenFixtures.macBookPro14
         metrics.auxiliaryTopLeftArea = CGRect(x: 0, y: 950, width: 900, height: 32)

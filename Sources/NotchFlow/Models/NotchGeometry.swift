@@ -378,18 +378,27 @@ extension NotchGeometry {
 // MARK: - Cutout detection
 
 extension NotchGeometry {
-    /// Narrowest auxiliary-area gap still treated as a MacBook camera notch. Notches measure
-    /// ~150–200 pt depending on the display scaling; anything narrower is a different cutout.
-    static let minimumHardwareNotchWidth: CGFloat = 120
-    /// Widest gap still treated as a notch; wider means the auxiliary areas describe something else.
-    static let maximumHardwareNotchWidth: CGFloat = 320
+    /// Narrowest auxiliary-area gap, as a fraction of the display width, still treated as a
+    /// MacBook camera notch.
+    ///
+    /// The notch is a fixed part of the panel, so in points it scales with the "looks like"
+    /// resolution: 185 pt at 1512 pt on a 14" MacBook Pro but only ~125 pt at 1024 pt
+    /// ("Larger Text"). Its share of the width does not change with scaling: 185 / 1512 ≈ 0.122
+    /// on the 14" (13" Air is similar) and 185 / 1728 ≈ 0.107 on the 16". An absolute point
+    /// threshold therefore misreads real notches at scaled modes; the ratio does not. The
+    /// modelled Dynamic Island (112 / 1512 ≈ 0.074) sits clearly below 0.09, the 16" clearly above.
+    static let minimumHardwareNotchWidthRatio: CGFloat = 0.09
+    /// Widest gap, as a fraction of the display width, still treated as a notch (≈ 300 pt at
+    /// 1512 pt); wider means the auxiliary areas describe something else.
+    static let maximumHardwareNotchWidthRatio: CGFloat = 0.2
     /// A notch is centered on the display; allow for odd-width frames and rounding.
     static let hardwareNotchCenterTolerance: CGFloat = 24
 
     /// Classifies the top-center of a display.
     ///
     /// A MacBook notch is the only cutout we wrap: macOS reports a top safe area *and* two
-    /// auxiliary areas whose gap is notch-sized and centered. Any other combination with a safe
+    /// auxiliary areas whose gap is centered and notch-sized relative to the display width
+    /// (see `minimumHardwareNotchWidthRatio`). Any other combination with a safe
     /// area (no auxiliary areas, a narrow gap such as a Dynamic Island, an off-center gap) is a
     /// system-owned cutout we must not cover. We cannot test those Macs, so they get the
     /// conservative capsule placement instead of guessing at their shape.
@@ -411,8 +420,9 @@ extension NotchGeometry {
             height: metrics.safeAreaTop
         )
         let isCentered = abs(gap.midX - metrics.frame.midX) <= hardwareNotchCenterTolerance
-        guard gapWidth >= minimumHardwareNotchWidth,
-              gapWidth <= maximumHardwareNotchWidth,
+        let widthRatio = metrics.frame.width > 0 ? gapWidth / metrics.frame.width : 0
+        guard widthRatio >= minimumHardwareNotchWidthRatio,
+              widthRatio <= maximumHardwareNotchWidthRatio,
               isCentered else {
             return .systemIsland(gap: gap)
         }
