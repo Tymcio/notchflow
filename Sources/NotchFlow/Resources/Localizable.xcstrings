@@ -3613,58 +3613,172 @@
         }
       }
     },
-    "NotchFlow only works on MacBooks with a display notch. This Mac has no notch, so the app cannot start.\n\nSupported: MacBook Pro / Air with notch (macOS 14+, Apple Silicon).": {
+    "Top center": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top center"
+          }
+        },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow działa tylko na MacBookach z wycięciem (notch) w ekranie. Ten Mac nie ma notcha, więc aplikacja nie może się uruchomić.\n\nObsługiwane: MacBook Pro / Air z notchem (macOS 14+, Apple Silicon)."
+            "value": "Na górze, pośrodku"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow funktioniert nur auf MacBooks mit Display-Notch. Dieser Mac hat keine Notch, daher kann die App nicht starten.\n\nUnterstützt: MacBook Pro / Air mit Notch (macOS 14+, Apple Silicon)."
+            "value": "Oben mittig"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow funziona solo su MacBook con notch nel display. Questo Mac non ha notch, quindi l'app non può avviarsi.\n\nSupportati: MacBook Pro / Air con notch (macOS 14+, Apple Silicon)."
+            "value": "In alto al centro"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow solo funciona en MacBook con notch en la pantalla. Este Mac no tiene notch, por lo que la app no puede iniciarse.\n\nCompatible: MacBook Pro / Air con notch (macOS 14+, Apple Silicon)."
+            "value": "Arriba en el centro"
           }
         }
       }
     },
-    "NotchFlow requires a MacBook with a notch": {
+    "Off (menu bar icon only)": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off (menu bar icon only)"
+          }
+        },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow wymaga MacBooka z notchem"
+            "value": "Wyłączona (tylko ikona na pasku menu)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow erfordert ein MacBook mit Notch"
+            "value": "Aus (nur Symbol in der Menüleiste)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow richiede un MacBook con notch"
+            "value": "Disattivata (solo icona nella barra dei menu)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "NotchFlow requiere un MacBook con notch"
+            "value": "Desactivada (solo icono en la barra de menús)"
+          }
+        }
+      }
+    },
+    "Display with the pointer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display with the pointer"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekranie z kursorem"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildschirm mit dem Zeiger"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schermo con il puntatore"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla con el puntero"
+          }
+        }
+      }
+    },
+    "Main display": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Main display"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ekranie głównym"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hauptbildschirm"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schermo principale"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla principal"
+          }
+        }
+      }
+    },
+    "Built-in display": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in display"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wbudowanym ekranie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Integrierter Bildschirm"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schermo integrato"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pantalla integrada"
           }
         }
       }

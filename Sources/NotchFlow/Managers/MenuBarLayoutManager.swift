@@ -12,6 +12,7 @@ final class MenuBarLayoutManager: ObservableObject {
     @Published private(set) var isAccessibilityTrusted = AXIsProcessTrusted()
 
     private var workspaceObserver: NSObjectProtocol?
+    private var capsuleScanCache: CapsuleScan?
     private var delayedRefreshTask: Task<Void, Never>?
     private var menuEdgePublishTask: Task<Void, Never>?
     private var menuEdgeByPID: [pid_t: CGFloat] = [:]
@@ -131,12 +132,198 @@ final class MenuBarLayoutManager: ObservableObject {
     }
 
     func menuRightEdgeX(for screen: NSScreen) -> CGFloat? {
+        menuRightEdgeX(inScreenFrame: screen.frame)
+    }
+
+    func menuRightEdgeX(inScreenFrame screenFrame: CGRect) -> CGFloat? {
         guard settings.avoidMenuOverlap, isAccessibilityTrusted else { return nil }
         guard let edge = appMenuRightEdgeX else { return nil }
 
-        let screenFrame = screen.frame
         guard edge >= screenFrame.minX, edge <= screenFrame.maxX else { return nil }
         return edge
+    }
+
+    // MARK: - Menu bar around an island drawn into the menu bar (displays without a notch)
+
+    private struct CapsuleScan {
+        let screenFrame: CGRect
+        let menuPID: pid_t?
+        let span: ClosedRange<CGFloat>
+        let date: Date
+        let appMenuRightEdgeX: CGFloat?
+        let statusItemsLeftEdgeX: CGFloat?
+    }
+
+    /// How long a menu bar scan stays valid while the frontmost app does not change.
+    private static let capsuleScanLifetime: TimeInterval = 2
+
+    /// Menu bar occupancy for an island drawn into the menu bar of `metrics`' display.
+    /// `span` is the x-range the island may cover (`NotchGeometry.menuBarCapsuleSpan`);
+    /// pass `nil` when nothing is drawn into the menu bar there.
+    func capsuleContext(
+        for metrics: ScreenMetrics,
+        span: ClosedRange<CGFloat>?,
+        forceRescan: Bool = false
+    ) -> NotchGeometry.MenuBarContext {
+        var context = NotchGeometry.MenuBarContext(
+            appMenuRightEdgeX: menuRightEdgeX(inScreenFrame: metrics.frame),
+            isFullScreenActive: Self.isFullScreenWindowPresent(on: metrics.frame)
+        )
+
+        guard let span,
+              settings.avoidMenuOverlap,
+              isAccessibilityTrusted,
+              !context.isFullScreenActive,
+              metrics.reservedMenuBarHeight > 0 else {
+            return context
+        }
+
+        let scan: CapsuleScan?
+        if !forceRescan,
+           let cached = capsuleScanCache,
+           cached.screenFrame == metrics.frame,
+           cached.menuPID == lastForegroundAppPID,
+           cached.span == span,
+           Date().timeIntervalSince(cached.date) < Self.capsuleScanLifetime {
+            scan = cached
+        } else if let items = Self.menuBarItems(
+            in: span,
+            atScreenY: metrics.frame.maxY - metrics.reservedMenuBarHeight / 2
+        ) {
+            let appMenuEdge = items.filter { !$0.isStatusItem }.map(\.frame.maxX).max()
+            let statusEdge = items.filter(\.isStatusItem).map(\.frame.minX).min()
+            let fresh = CapsuleScan(
+                screenFrame: metrics.frame,
+                menuPID: lastForegroundAppPID,
+                span: span,
+                date: Date(),
+                appMenuRightEdgeX: appMenuEdge,
+                statusItemsLeftEdgeX: statusEdge
+            )
+            capsuleScanCache = fresh
+            scan = fresh
+        } else {
+            // Our own panel was in the way; keep the last answer for this display.
+            scan = capsuleScanCache?.screenFrame == metrics.frame ? capsuleScanCache : nil
+        }
+
+        if let scan {
+            if let scannedEdge = scan.appMenuRightEdgeX {
+                context.appMenuRightEdgeX = max(context.appMenuRightEdgeX ?? scannedEdge, scannedEdge)
+            }
+            context.statusItemsLeftEdgeX = scan.statusItemsLeftEdgeX
+        }
+        return context
+    }
+
+    private struct MenuBarItemHit {
+        let frame: CGRect
+        let isStatusItem: Bool
+    }
+
+    /// Hit-tests the menu bar along `span` (screen coordinates) and returns the menu bar items found.
+    /// Status items belong to many processes, so asking each for its extras menu bar would be slow;
+    /// a handful of position queries across the island's span is cheap and finds both app menus
+    /// and status items. Returns `nil` when NotchFlow's own panel covers part of the span.
+    private static func menuBarItems(in span: ClosedRange<CGFloat>, atScreenY screenY: CGFloat) -> [MenuBarItemHit]? {
+        guard let primaryMaxY = NSScreen.screens.first?.frame.maxY else { return [] }
+        let systemWide = AXUIElementCreateSystemWide()
+        AXUIElementSetMessagingTimeout(systemWide, 0.05)
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        // Accessibility uses a top-left origin on the primary display.
+        let axY = Float(primaryMaxY - screenY)
+        let step: CGFloat = 8
+
+        var hits: [MenuBarItemHit] = []
+        var x = span.lowerBound
+        while x <= span.upperBound {
+            var elementRef: AXUIElement?
+            guard AXUIElementCopyElementAtPosition(systemWide, Float(x), axY, &elementRef) == .success,
+                  let element = elementRef,
+                  let item = menuBarItem(containing: element) else {
+                if let elementRef, pid(of: elementRef) == ownPID {
+                    return nil
+                }
+                x += step
+                continue
+            }
+            guard let frame = axFrame(for: item), frame.width > 0 else {
+                x += step
+                continue
+            }
+            let subrole = stringAttribute(kAXSubroleAttribute as CFString, of: item)
+            // AX frames use a top-left origin; only x matters here, which is shared.
+            hits.append(MenuBarItemHit(frame: frame, isStatusItem: subrole == "AXMenuExtra"))
+            x = max(x + step, frame.maxX + 1)
+        }
+        return hits
+    }
+
+    /// The element itself or its closest menu bar item ancestor (hit-tests may land on a child image).
+    private static func menuBarItem(containing element: AXUIElement) -> AXUIElement? {
+        var current: AXUIElement? = element
+        for _ in 0..<3 {
+            guard let candidate = current else { return nil }
+            let role = stringAttribute(kAXRoleAttribute as CFString, of: candidate)
+            if role == (kAXMenuBarItemRole as String) {
+                return candidate
+            }
+            // Empty menu bar space: nothing above it can be an item.
+            if role == (kAXMenuBarRole as String) || role == (kAXApplicationRole as String) {
+                return nil
+            }
+            var parentRef: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(candidate, kAXParentAttribute as CFString, &parentRef) == .success,
+                  let parentRef,
+                  CFGetTypeID(parentRef) == AXUIElementGetTypeID() else {
+                return nil
+            }
+            current = (parentRef as! AXUIElement)
+        }
+        return nil
+    }
+
+    private static func pid(of element: AXUIElement) -> pid_t? {
+        var pid: pid_t = 0
+        return AXUIElementGetPid(element, &pid) == .success ? pid : nil
+    }
+
+    private static func stringAttribute(_ attribute: CFString, of element: AXUIElement) -> String? {
+        var valueRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute, &valueRef) == .success else { return nil }
+        return valueRef as? String
+    }
+
+    /// True when another app shows a window covering the whole display (a full-screen Space or a
+    /// borderless full-screen window), in which case the menu bar only slides in on demand.
+    static func isFullScreenWindowPresent(on screenFrame: CGRect) -> Bool {
+        guard let primaryMaxY = NSScreen.screens.first?.frame.maxY,
+              let windows = CGWindowListCopyWindowInfo(
+                  [.optionOnScreenOnly, .excludeDesktopElements],
+                  kCGNullWindowID
+              ) as? [[String: Any]] else {
+            return false
+        }
+        // Window bounds use a top-left origin on the primary display.
+        let target = CGRect(
+            x: screenFrame.minX,
+            y: primaryMaxY - screenFrame.maxY,
+            width: screenFrame.width,
+            height: screenFrame.height
+        )
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        return windows.contains { info in
+            guard (info[kCGWindowLayer as String] as? Int) == 0,
+                  (info[kCGWindowOwnerPID as String] as? pid_t) != ownPID,
+                  let boundsDictionary = info[kCGWindowBounds as String] as? NSDictionary,
+                  let bounds = CGRect(dictionaryRepresentation: boundsDictionary as CFDictionary) else {
+                return false
+            }
+            return abs(bounds.minX - target.minX) <= 1
+                && abs(bounds.minY - target.minY) <= 1
+                && abs(bounds.width - target.width) <= 1
+                && abs(bounds.height - target.height) <= 1
+        }
     }
 
     private func startObservers() {

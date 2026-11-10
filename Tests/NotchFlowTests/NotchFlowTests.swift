@@ -1,52 +1,101 @@
 import XCTest
 @testable import NotchFlow
 
+/// Hardware-notch geometry, computed from fixed display fixtures so results do not depend on
+/// the Mac running the tests.
 @MainActor
 final class NotchGeometryTests: XCTestCase {
-    func testAnyConnectedScreenHasPhysicalNotchMatchesScreens() {
-        let expected = NSScreen.screens.contains { $0.safeAreaInsets.top > 0 }
-        XCTAssertEqual(NotchGeometry.anyConnectedScreenHasPhysicalNotch(), expected)
+    private let options = NotchGeometry.Options()
+    private let wing = NotchFlowConstants.idleWingProtrusion
+
+    private func geometry(
+        _ metrics: ScreenMetrics,
+        options: NotchGeometry.Options? = nil,
+        appMenuRightEdgeX: CGFloat? = nil
+    ) -> NotchGeometry {
+        NotchGeometry.make(
+            metrics: metrics,
+            options: options ?? self.options,
+            context: NotchGeometry.MenuBarContext(appMenuRightEdgeX: appMenuRightEdgeX)
+        )
     }
 
-    func testVirtualCapsuleDefaultsWhenNoNotch() {
-        let settings = NotchSettings.shared
-        guard let screen = NSScreen.main else { return }
+    func testNotchedMacBooksAreClassifiedAsHardwareNotch() {
+        for metrics in [ScreenFixtures.macBookPro14, ScreenFixtures.macBookPro16] {
+            let leftX = metrics.auxiliaryTopLeftArea!.maxX - NotchFlowConstants.notchWidthOverlapFudge / 2
+            XCTAssertEqual(
+                NotchGeometry.classifyTopCutout(metrics),
+                .hardwareNotch(leftX: leftX, width: ScreenFixtures.notchGapWidth + NotchFlowConstants.notchWidthOverlapFudge),
+                metrics.identifier
+            )
+            let geometry = geometry(metrics)
+            XCTAssertEqual(geometry.anchor, .hardwareNotch)
+            XCTAssertTrue(geometry.hasPhysicalNotch)
+            XCTAssertTrue(geometry.allowsAutomaticPresentation)
+            XCTAssertFalse(geometry.fillsIdleCenter)
+        }
+    }
 
-        let geometry = NotchGeometry.make(for: screen, settings: settings)
-        XCTAssertGreaterThan(geometry.expandedSize.width, 0)
-        XCTAssertGreaterThan(geometry.expandedSize.height, 0)
+    /// Guards the notched-MacBook layout against regressions from the notch-less work.
+    func testMacBookPro14GeometryMatchesNotchLayout() {
+        let geometry = geometry(ScreenFixtures.macBookPro14)
 
-        let configuredWidth = settings.isPremiumEnabled
-            ? min(settings.customIslandWidth, NotchFlowConstants.maxExpandedWidth)
-            : NotchFlowConstants.defaultExpandedWidth
+        XCTAssertEqual(geometry.notchLeftX, 661.5)
+        XCTAssertEqual(geometry.physicalNotchCutoutWidth, 189)
+        XCTAssertEqual(geometry.notchTopInset, 32)
+        XCTAssertEqual(geometry.contentTopInset, 32)
+        XCTAssertEqual(geometry.hoverTriggerRect, CGRect(x: 661.5, y: 950, width: 189, height: 32))
+        XCTAssertEqual(geometry.idleSize, CGSize(width: 297, height: 32))
+        XCTAssertEqual(geometry.expandedSize, CGSize(width: 569, height: 218))
+        XCTAssertEqual(geometry.frame(isExpanded: false, isIdle: true), CGRect(x: 608, y: 950, width: 297, height: 32))
+        XCTAssertEqual(geometry.frame(isExpanded: true), CGRect(x: 472, y: 764, width: 569, height: 218))
+        XCTAssertEqual(
+            geometry.hoverProximityRect(forExit: false),
+            CGRect(x: 653.5, y: 926, width: 205, height: 80)
+        )
+    }
+
+    func testMacBookPro16GeometryCentersOnNotch() {
+        let geometry = geometry(ScreenFixtures.macBookPro16)
+        let notchCenter = geometry.notchLeftX! + geometry.physicalNotchCutoutWidth / 2
+
+        XCTAssertEqual(notchCenter, 864)
+        XCTAssertEqual(geometry.frame(isExpanded: true).midX, notchCenter, accuracy: 0.5)
+        XCTAssertEqual(geometry.frame(isExpanded: false, isIdle: true).maxY, 1117)
+        XCTAssertEqual(geometry.hoverTriggerRect.minY, 1117 - 32)
+    }
+
+    func testExpandedWidthHonorsPremiumWidthAndTabBarMinimum() {
+        let premium = NotchGeometry.Options(isPremiumEnabled: true, customIslandWidth: 10_000)
+        XCTAssertEqual(geometry(ScreenFixtures.macBookPro14, options: premium).expandedSize.width, 569)
+
         let minimumWidth = max(
-            configuredWidth,
-            geometry.physicalNotchCutoutWidth + NotchFlowConstants.idleWingProtrusion * 2,
-            NotchGeometry.minimumExpandedWidthForTabBar(cutoutWidth: geometry.physicalNotchCutoutWidth)
+            NotchFlowConstants.defaultExpandedWidth,
+            189 + wing * 2,
+            NotchGeometry.minimumExpandedWidthForTabBar(cutoutWidth: 189)
         ).rounded()
-        XCTAssertGreaterThanOrEqual(geometry.expandedSize.width, minimumWidth)
+        XCTAssertEqual(geometry(ScreenFixtures.macBookPro14).expandedSize.width, minimumWidth)
     }
 
     func testIdleLeftWingHidesWhenMenuUnderFullWing() {
-        let defaultWing = NotchFlowConstants.idleWingProtrusion
         let notchLeftX: CGFloat = 700
 
         XCTAssertEqual(
-            NotchGeometry.idleLeftWingWidth(defaultWing: defaultWing, notchLeftX: notchLeftX, appMenuRightEdgeX: nil),
-            defaultWing
+            NotchGeometry.idleLeftWingWidth(defaultWing: wing, notchLeftX: notchLeftX, appMenuRightEdgeX: nil),
+            wing
         )
 
         // Enough room for the full wing (700 - 640 - margin >= 54): keep it.
         let fits = NotchGeometry.idleLeftWingWidth(
-            defaultWing: defaultWing,
+            defaultWing: wing,
             notchLeftX: notchLeftX,
             appMenuRightEdgeX: 640
         )
-        XCTAssertEqual(fits, defaultWing)
+        XCTAssertEqual(fits, wing)
 
         // Menu would sit under the wing: hide it entirely, no partial width.
         let hidden = NotchGeometry.idleLeftWingWidth(
-            defaultWing: defaultWing,
+            defaultWing: wing,
             notchLeftX: notchLeftX,
             appMenuRightEdgeX: 650
         )
@@ -54,37 +103,36 @@ final class NotchGeometryTests: XCTestCase {
     }
 
     func testIdleWingWidthsFullWhenAvoidMenuOverlapWithoutAXData() {
-        let settings = NotchSettings.shared
-        let previous = settings.avoidMenuOverlap
-        settings.avoidMenuOverlap = true
-        defer { settings.avoidMenuOverlap = previous }
-
         let wings = NotchGeometry.idleWingWidths(
-            settings: settings,
-            defaultWing: NotchFlowConstants.idleWingProtrusion,
+            avoidMenuOverlap: true,
+            defaultWing: wing,
             notchLeftX: 700,
             hasNotch: true,
             appMenuRightEdgeX: nil
         )
-        XCTAssertEqual(wings.left, NotchFlowConstants.idleWingProtrusion)
-        XCTAssertEqual(wings.right, NotchFlowConstants.idleWingProtrusion)
+        XCTAssertEqual(wings.left, wing)
+        XCTAssertEqual(wings.right, wing)
     }
 
     func testIdleWingWidthsHideLeftWhenMenuEdgeTooClose() {
-        let settings = NotchSettings.shared
-        let previous = settings.avoidMenuOverlap
-        settings.avoidMenuOverlap = true
-        defer { settings.avoidMenuOverlap = previous }
-
         let wings = NotchGeometry.idleWingWidths(
-            settings: settings,
-            defaultWing: NotchFlowConstants.idleWingProtrusion,
+            avoidMenuOverlap: true,
+            defaultWing: wing,
             notchLeftX: 700,
             hasNotch: true,
             appMenuRightEdgeX: 650
         )
         XCTAssertEqual(wings.left, 0)
-        XCTAssertEqual(wings.right, NotchFlowConstants.idleWingProtrusion)
+        XCTAssertEqual(wings.right, wing)
+
+        let ignored = NotchGeometry.idleWingWidths(
+            avoidMenuOverlap: false,
+            defaultWing: wing,
+            notchLeftX: 700,
+            hasNotch: true,
+            appMenuRightEdgeX: 650
+        )
+        XCTAssertEqual(ignored.left, wing)
     }
 
     func testMinimumExpandedWidthFitsTabBarAroundNotch() {
@@ -100,15 +148,14 @@ final class NotchGeometryTests: XCTestCase {
     }
 
     func testIdleFrameKeepsNotchAlignedWhenLeftWingHidden() {
-        let settings = NotchSettings.shared
-        guard let screen = NSScreen.main,
-              screen.safeAreaInsets.top > 0,
-              let notchLeftX = screen.auxiliaryTopLeftArea.map({ $0.maxX - NotchFlowConstants.notchWidthOverlapFudge / 2 }) else {
-            return
-        }
+        let metrics = ScreenFixtures.macBookPro14
+        let notchLeftX = metrics.auxiliaryTopLeftArea!.maxX - NotchFlowConstants.notchWidthOverlapFudge / 2
+        // The full wing needs notchLeftX - edge - margin >= wing, i.e. edge <= 601.5 here.
+        let fullWingEdge = notchLeftX - NotchFlowConstants.menuOverlapMargin - wing - 10
+        let hiddenWingEdge = notchLeftX - NotchFlowConstants.menuOverlapMargin - wing + 10
 
-        let full = NotchGeometry.make(for: screen, settings: settings, appMenuRightEdgeX: 640)
-        let hiddenLeft = NotchGeometry.make(for: screen, settings: settings, appMenuRightEdgeX: 650)
+        let full = geometry(metrics, appMenuRightEdgeX: fullWingEdge)
+        let hiddenLeft = geometry(metrics, appMenuRightEdgeX: hiddenWingEdge)
 
         XCTAssertGreaterThan(full.idleLeftWingWidth, 0)
         XCTAssertEqual(hiddenLeft.idleLeftWingWidth, 0)
@@ -116,12 +163,12 @@ final class NotchGeometryTests: XCTestCase {
         let fullFrame = full.frame(isExpanded: false, isIdle: true)
         let hiddenLeftFrame = hiddenLeft.frame(isExpanded: false, isIdle: true)
 
-        XCTAssertEqual(fullFrame.minX, notchLeftX - NotchFlowConstants.idleWingProtrusion)
+        XCTAssertEqual(fullFrame.minX, (notchLeftX - wing).rounded(.toNearestOrAwayFromZero))
         XCTAssertEqual(hiddenLeftFrame.minX, fullFrame.minX)
         XCTAssertEqual(hiddenLeftFrame.width, fullFrame.width)
         XCTAssertEqual(
             hiddenLeftFrame.width,
-            hiddenLeft.physicalNotchCutoutWidth + NotchFlowConstants.idleWingProtrusion + hiddenLeft.idleRightWingWidth
+            hiddenLeft.physicalNotchCutoutWidth + wing + hiddenLeft.idleRightWingWidth
         )
 
         let fullLayout = full.idleWingLayout()
@@ -136,13 +183,28 @@ final class NotchGeometryTests: XCTestCase {
     }
 
     func testShouldHideIdleOnlyWhenBothWingsUnavailable() {
-        let settings = NotchSettings.shared
-        guard let screen = NSScreen.main, screen.safeAreaInsets.top > 0 else { return }
-
-        let geometry = NotchGeometry.make(for: screen, settings: settings, appMenuRightEdgeX: 10_000)
+        let geometry = geometry(ScreenFixtures.macBookPro14, appMenuRightEdgeX: 10_000)
         XCTAssertEqual(geometry.idleLeftWingWidth, 0)
         XCTAssertGreaterThan(geometry.idleRightWingWidth, 0)
         XCTAssertFalse(geometry.shouldHideIdleForMenuOverlap)
+    }
+
+    func testNotchIgnoresNonNotchPlacementAndCapsuleContext() {
+        let off = NotchGeometry.Options(nonNotchPlacement: .off)
+        let context = NotchGeometry.MenuBarContext(statusItemsLeftEdgeX: 700, isFullScreenActive: true)
+        let geometry = NotchGeometry.make(metrics: ScreenFixtures.macBookPro14, options: off, context: context)
+
+        XCTAssertEqual(geometry, self.geometry(ScreenFixtures.macBookPro14))
+        XCTAssertTrue(geometry.allowsAutomaticPresentation)
+        XCTAssertFalse(geometry.suppressesIdleCapsule)
+        XCTAssertNil(NotchGeometry.menuBarCapsuleSpan(for: ScreenFixtures.macBookPro14))
+    }
+
+    func testWithExpandedHeightKeepsEverythingElse() {
+        let geometry = geometry(ScreenFixtures.macBookPro14)
+        let taller = geometry.withExpandedHeight(400.4)
+        XCTAssertEqual(taller.expandedSize, CGSize(width: geometry.expandedSize.width, height: 400))
+        XCTAssertEqual(taller.withExpandedHeight(geometry.expandedSize.height), geometry)
     }
 }
 

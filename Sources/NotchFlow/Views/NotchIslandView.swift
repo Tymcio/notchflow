@@ -125,6 +125,13 @@ struct NotchIslandView: View {
                 }()
             )
             .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight, alignment: .topLeading)
+            .background {
+                // No hardware notch behind the wings: paint the virtual one so wings and
+                // center read as a single capsule hanging from the top of the screen.
+                if geometry.fillsIdleCenter {
+                    MenuBarCapsuleShape().fill(islandFill)
+                }
+            }
             .clipShape(Rectangle())
         }
     }

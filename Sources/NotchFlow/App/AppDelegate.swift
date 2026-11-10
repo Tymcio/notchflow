@@ -12,11 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItemRestoreTask: Task<Void, Never>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        guard NotchGeometry.anyConnectedScreenHasPhysicalNotch() else {
-            showUnsupportedMacAlertAndTerminate()
-            return
-        }
-
+        // Every Mac is supported: displays without a notch get a capsule in the menu bar
+        // (see NotchGeometry.classifyTopCutout).
         NSApp.setActivationPolicy(.accessory)
         NotchFlowLog.removeLegacyCallTraceFile()
 
@@ -33,6 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         Task {
             await state.start()
+            #if DEBUG
+            applyDebugIslandOverride(state: state)
+            #endif
         }
 
         showFirstLaunchHintIfNeeded()
@@ -189,19 +189,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         #endif
     }
 
-    private func showUnsupportedMacAlertAndTerminate() {
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-
-        let alert = NSAlert()
-        alert.messageText = loc("NotchFlow requires a MacBook with a notch")
-        alert.informativeText = loc("NotchFlow only works on MacBooks with a display notch. This Mac has no notch, so the app cannot start.\n\nSupported: MacBook Pro / Air with notch (macOS 14+, Apple Silicon).")
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: loc("OK"))
-        alert.runModal()
-
-        NSApp.terminate(nil)
+    #if DEBUG
+    /// Debug builds only: show the island without hovering, to check layouts (for example with
+    /// `NOTCHFLOW_SIMULATE_NO_NOTCH=1`). `NOTCHFLOW_DEBUG_ISLAND=idle` starts a 25-minute
+    /// countdown so the idle wings appear; `expanded` opens the expanded island.
+    private func applyDebugIslandOverride(state: AppState) {
+        switch ProcessInfo.processInfo.environment["NOTCHFLOW_DEBUG_ISLAND"] {
+        case "idle":
+            state.focusTimerManager.startCountdown(minutes: 25)
+        case "expanded":
+            showIsland()
+        default:
+            break
+        }
     }
+    #endif
 
     private func showFirstLaunchHintIfNeeded() {
         let key = "hasSeenMenuBarHint"
