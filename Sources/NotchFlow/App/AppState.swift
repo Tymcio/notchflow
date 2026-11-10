@@ -158,7 +158,6 @@ final class AppState {
         displayManager.refreshGeometryNow()
 
         mediaMonitor.start()
-        hudManager.start()
         focusTimerManager.startMonitoring()
         // Only read the current status here; the system prompt is shown from the
         // calendar tab's "Udziel dostępu" button, where the user expects it.
