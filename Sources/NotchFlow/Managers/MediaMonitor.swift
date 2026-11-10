@@ -14,6 +14,9 @@ final class MediaMonitor {
 
     /// How long a failed (network / AppleScript) lookup is remembered before retrying.
     static let failedLookupRetryInterval: TimeInterval = 120
+    /// The player answered for a different track although this one is still current (its
+    /// metadata differs from the notification's); retry later instead of on every update.
+    static let trackMismatchRetryInterval: TimeInterval = 10
 
     var onStateChange: ((MediaPlaybackState) -> Void)?
 
@@ -195,24 +198,45 @@ final class MediaMonitor {
     private func startArtworkTask(for state: MediaPlaybackState, key: String, rawArtwork: Data?) {
         let artworkURL = state.artworkURL
         let bundleID = state.bundleIdentifier
+        let track = ArtworkTrackIdentity(key: key, title: state.title, artist: state.artist)
         let task = Task.detached(priority: .utility) { [weak self] in
-            let data = await MusicArtworkFetcher.artwork(
+            let result = await MusicArtworkFetcher.artwork(
                 rawData: rawArtwork,
                 artworkURL: artworkURL,
                 bundleID: bundleID,
-                trackKey: key
+                track: track
             )
             guard !Task.isCancelled else { return }
-            await self?.finishArtwork(data, key: key)
+            await self?.finishArtwork(result, key: key)
         }
         artworkTask = (key, task)
     }
 
-    private func finishArtwork(_ data: Data?, key: String) {
+    private func finishArtwork(_ result: ArtworkLookup, key: String) {
         if artworkTask?.key == key { artworkTask = nil }
-        artworkCache.store(data, for: key, ttl: data == nil ? Self.failedLookupRetryInterval : nil)
-        guard let data, currentState.trackKey == key, currentState.artworkData == nil else { return }
+        let isCurrent = currentState.trackKey == key
+        if let entry = Self.artworkCacheEntry(for: result, isCurrentTrack: isCurrent) {
+            artworkCache.store(entry.data, for: key, ttl: entry.ttl)
+        }
+        guard case .found(let data) = result, isCurrent, currentState.artworkData == nil else { return }
         publish(currentState.with(artworkData: data))
+    }
+
+    /// What to remember for a finished artwork lookup, or `nil` to remember nothing.
+    /// Artwork is only ever stored under the track it was verified for; a miss is only
+    /// trusted while that track is still playing, since the player answers for its current track.
+    static func artworkCacheEntry(
+        for result: ArtworkLookup,
+        isCurrentTrack: Bool
+    ) -> (data: Data?, ttl: TimeInterval?)? {
+        switch result {
+        case .found(let data):
+            return (data, nil)
+        case .notFound:
+            return isCurrentTrack ? (nil, failedLookupRetryInterval) : nil
+        case .trackChanged:
+            return isCurrentTrack ? (nil, trackMismatchRetryInterval) : nil
+        }
     }
 
     private func startLyricsTask(for state: MediaPlaybackState, key: String) {
