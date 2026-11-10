@@ -377,10 +377,10 @@ final class AppState {
 
         // Real Claude-style consent: jump so the prompt is visible.
         // Cursor jump-only heuristics are often false positives — pulse the notch, don't steal focus.
-        agentSessionManager.onNeedsAttention = { [weak self] session in
-            guard session.showsNotchApproval else { return }
-            self?.agentSessionManager.jumpIfNeeded(for: session)
-        }
+        // Prompts are answered in the notch, so nothing jumps to the agent's app on its own:
+        // activating another app (often on another Space) pulled the screen away mid-work.
+        // The island's jump button still takes you there.
+        agentSessionManager.onNeedsAttention = nil
 
         notificationHub.onStateChange = { [weak self] in
             guard let self else { return }

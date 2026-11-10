@@ -45,6 +45,36 @@ final class AgentPermissionTests: XCTestCase {
         XCTAssertNil(manager.sessions.first?.permission)
     }
 
+    func testClaudeNotificationKeepsThePendingPrompt() {
+        let manager = AgentSessionManager()
+        manager.ingestEvent(permissionEvent(session: "s1", id: "a", summary: "npm test"))
+        // Claude Code sends this right after PermissionRequest.
+        manager.ingestEvent(["agent": "claude", "event": "notification", "sessionId": "s1", "detail": ""])
+
+        let session = manager.sessions.first
+        XCTAssertEqual(session?.permission?.id, "a")
+        XCTAssertEqual(session?.phase, .waitingPermission)
+        XCTAssertEqual(session?.detail, "npm test")
+    }
+
+    func testNotificationAloneDoesNotInventAPrompt() {
+        let manager = AgentSessionManager()
+        manager.ingestEvent(["agent": "claude", "event": "notification", "sessionId": "s2", "detail": ""])
+        XCTAssertNil(manager.sessions.first?.permission)
+        XCTAssertEqual(manager.sessions.first?.phase, .running)
+    }
+
+    func testHookTreatsNotificationSeparatelyAndReportsTheHostApp() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources/NotchFlow/Resources/AgentHooks/notchflow-agent-hook.sh")
+        let script = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertTrue(script.contains("Notification) NF_EVENT=\"notification\""))
+        XCTAssertTrue(script.contains("BUNDLE=\"${__CFBundleIdentifier:-}\""))
+    }
+
     func testHookScriptNeverDecidesForCursorAndUsesUniqueIDs() throws {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

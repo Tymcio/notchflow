@@ -257,10 +257,10 @@ final class LocalAPIServer {
             }
             appState.agentSessionManager.ingestEvent(payload)
             appState.notifyAgentActivityChange()
-            if appState.agentSessionManager.attentionCount > 0 {
-                AppController.appDelegate?.showIsland()
-                appState.activeModule = .agents
-            }
+            // A waiting prompt shows in the idle wings with Allow / Deny. Opening the whole
+            // island here re-expanded it on every later event from the agent (Notification,
+            // other tools' results) and it collapsed again each time, so the notch kept
+            // opening and closing while Claude Code waited.
             return httpResponse(status: 200, reason: "OK", body: encode(LocalAPIOKResponse(ok: true)))
 
         case ("GET", "/v1/agents/sessions"):

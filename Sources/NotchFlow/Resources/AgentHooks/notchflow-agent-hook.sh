@@ -155,7 +155,9 @@ case "$EVENT_NAME" in
     ;;
   SessionStart|sessionStart) NF_EVENT="session.started" ;;
   SessionEnd|sessionEnd|Stop|stop|StopFailure) NF_EVENT="done" ;;
-  Notification) NF_EVENT="progress" ;;
+  # Claude Code sends Notification right after PermissionRequest ("needs your permission")
+  # and when idle. It is not progress: it must not clear a prompt waiting in the notch.
+  Notification) NF_EVENT="notification" ;;
   PostToolUse|postToolUse|afterShellExecution|afterFileEdit) NF_EVENT="tool" ;;
   *) NF_EVENT="progress" ;;
 esac
@@ -194,10 +196,15 @@ elif [[ -n "$EVENT_NAME" ]]; then
   DETAIL="$EVENT_NAME"
 fi
 
-BUNDLE=""
+# The app the agent runs in (Terminal, iTerm, VS Code, the Claude app…): macOS passes the
+# launching app's bundle id down to child processes. Used when you click to jump back.
+BUNDLE="${__CFBundleIdentifier:-}"
 case "$AGENT" in
   cursor) BUNDLE="com.todesktop.230313mzl4w4u92" ;;
 esac
+if [[ "$NF_EVENT" == "notification" ]]; then
+  DETAIL=""
+fi
 
 PAYLOAD=$(
   AGENT="$AGENT" NF_EVENT="$NF_EVENT" SESSION_ID="$SESSION_ID" TOOL_NAME="$TOOL_NAME" \

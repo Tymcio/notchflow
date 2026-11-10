@@ -125,7 +125,8 @@ final class AgentSessionManager {
         session.agent = agent
         // Headline stays the agent name; tool/path live in detail (avoids idle "Write").
         session.title = agent.displayName
-        if !detail.isEmpty {
+        // A notification says nothing new about the work: keep the prompt's text.
+        if !detail.isEmpty, event != "notification" {
             session.detail = detail
         }
         if let cwd { session.cwd = cwd }
@@ -148,6 +149,12 @@ final class AgentSessionManager {
             session.permission = nil
             queuedPermissions[sessionID] = nil
             session.question = nil
+        case "notification":
+            // Claude Code's Notification hook ("needs your permission", "waiting for your
+            // input"). Keep any pending prompt and phase; only a new session starts running.
+            if session.permission == nil, session.question == nil, session.phase != .waitingPermission {
+                session.phase = .running
+            }
         case "attention", "needs.input", "needs_input":
             // Cursor-style: consent stays in the agent UI — notch pulses; user jumps manually.
             session.phase = .waitingPermission
