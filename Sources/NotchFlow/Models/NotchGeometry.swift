@@ -143,6 +143,12 @@ struct NotchGeometry: Equatable {
     /// Never set for a hardware notch.
     let suppressesIdleCapsule: Bool
 
+    /// A notch-less display set to "Top center" keeps its capsule in the menu bar even when
+    /// nothing is playing or running: there is no hardware notch to show where to hover.
+    var showsCapsuleWhileIdle: Bool {
+        anchor == .menuBarCapsule && allowsAutomaticPresentation && !shouldHideIdleForMenuOverlap
+    }
+
     var shouldHideIdleForMenuOverlap: Bool {
         // Left-wing width already drops to 0 when the app menu is too wide; keep the right wing visible.
         (idleLeftWingWidth == 0 && idleRightWingWidth == 0) || suppressesIdleCapsule

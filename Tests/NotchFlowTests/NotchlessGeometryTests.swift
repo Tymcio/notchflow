@@ -146,6 +146,18 @@ final class NotchlessGeometryTests: XCTestCase {
         XCTAssertTrue(fullScreen.allowsAutomaticPresentation)
     }
 
+    func testTopCenterCapsuleStaysVisibleWithoutALiveActivity() {
+        XCTAssertTrue(geometry(ScreenFixtures.macMini1080p).showsCapsuleWhileIdle)
+        XCTAssertTrue(geometry(ScreenFixtures.externalDisplay).showsCapsuleWhileIdle)
+
+        // Not for the other placements, hidden menu bars, full screen, or a hardware notch.
+        XCTAssertFalse(geometry(ScreenFixtures.macMini1080p, options: .init(nonNotchPlacement: .hoverOnly)).showsCapsuleWhileIdle)
+        XCTAssertFalse(geometry(ScreenFixtures.macMini1080p, options: .init(nonNotchPlacement: .off)).showsCapsuleWhileIdle)
+        XCTAssertFalse(geometry(ScreenFixtures.macMini1080pAutoHiddenMenuBar).showsCapsuleWhileIdle)
+        XCTAssertFalse(geometry(ScreenFixtures.macMini1080p, context: .init(isFullScreenActive: true)).showsCapsuleWhileIdle)
+        XCTAssertFalse(geometry(ScreenFixtures.macBookPro14).showsCapsuleWhileIdle)
+    }
+
     func testPlacementOffDisablesAutomaticPresentation() {
         let geometry = geometry(ScreenFixtures.macMini1080p, options: .init(nonNotchPlacement: .off))
         XCTAssertFalse(geometry.allowsAutomaticPresentation)

@@ -47,6 +47,8 @@ struct NotchIslandView: View {
                 expandedIsland(geometry: geometry)
             } else if let activity = appState.activeLiveActivity {
                 idleIsland(geometry: geometry, activity: activity)
+            } else if geometry.showsCapsuleWhileIdle {
+                bareCapsule(geometry: geometry)
             }
         }
     }
@@ -118,6 +120,16 @@ struct NotchIslandView: View {
             }
             .clipShape(Rectangle())
         }
+    }
+
+    /// "Top center" on a display without a notch, with nothing playing or running: the empty
+    /// virtual notch, so there is always something in the menu bar to hover.
+    private func bareCapsule(geometry: NotchGeometry) -> some View {
+        let wingLayout = geometry.idleWingLayout()
+        return MenuBarCapsuleShape()
+            .fill(islandFill)
+            .frame(width: wingLayout.panelWidth, height: wingLayout.panelHeight)
+            .accessibilityLabel(Text(verbatim: "NotchFlow"))
     }
 
     @ViewBuilder
