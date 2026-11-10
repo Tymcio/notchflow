@@ -251,19 +251,24 @@ final class MenuBarLayoutManager: ObservableObject {
         guard let request = pendingCapsuleScan, !isCapsuleScanRunning else { return }
         pendingCapsuleScan = nil
         isCapsuleScanRunning = true
-        Self.capsuleScanQueue.async { [weak self] in
-            let isFullScreen = Self.isFullScreenWindowPresent(on: request.screenFrame, primaryMaxY: request.primaryMaxY)
-            var items: [MenuBarItemHit]?
-            if let span = request.span, !isFullScreen {
-                items = Self.menuBarItems(in: span, atScreenY: request.menuBarScreenY, primaryMaxY: request.primaryMaxY)
-            }
-            let outcome = CapsuleScanOutcome(isFullScreenActive: isFullScreen, items: items)
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated {
-                    self?.finishCapsuleScan(request, outcome: outcome)
+        Task { @MainActor [weak self] in
+            let outcome = await withCheckedContinuation { continuation in
+                Self.capsuleScanQueue.async {
+                    continuation.resume(returning: Self.performCapsuleScan(request))
                 }
             }
+            self?.finishCapsuleScan(request, outcome: outcome)
         }
+    }
+
+    /// Window list and menu bar hit-tests. Runs on `capsuleScanQueue`.
+    nonisolated private static func performCapsuleScan(_ request: CapsuleScanRequest) -> CapsuleScanOutcome {
+        let isFullScreen = isFullScreenWindowPresent(on: request.screenFrame, primaryMaxY: request.primaryMaxY)
+        var items: [MenuBarItemHit]?
+        if let span = request.span, !isFullScreen {
+            items = menuBarItems(in: span, atScreenY: request.menuBarScreenY, primaryMaxY: request.primaryMaxY)
+        }
+        return CapsuleScanOutcome(isFullScreenActive: isFullScreen, items: items)
     }
 
     private struct CapsuleScanOutcome: Sendable {
