@@ -2,6 +2,14 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.49] - 2026-11-10
+
+### Changed
+
+- The Agents tab lists sessions waiting for you first, with the command and Allow / Deny, then running sessions, with usage limits below
+- A permission prompt that arrives while the island is open keeps it open on the Agents tab instead of folding it away
+- Resting the pointer on the notch for a moment during a prompt opens the Agents tab with the prompt on top; a quick click on the wing's Allow / Deny still works
+
 ## [1.0.48] - 2026-11-10
 
 ### Added
