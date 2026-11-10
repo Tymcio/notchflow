@@ -2,6 +2,37 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.46] - 2026-11-10
+
+### Added
+
+- NotchFlow runs on every Mac. On a Mac mini, Mac Studio, iMac or any display without a notch, the island is a small capsule in the middle of the menu bar that opens on hover
+- General settings: where the island sits on displays without a notch (Top center, Show on hover only, Off) and which display shows it. Existing installs on a notched MacBook keep the hover-only behaviour on external displays
+- Camera Mirror finds external and Continuity cameras, and says when no camera is connected
+
+### Changed
+
+- Notification banners are picked up from Notification Center events instead of constant polling, and all Accessibility work runs off the main thread
+- Media updates show immediately; artwork and lyrics load per track, are cached, and never carry over to the next song
+- Timers, the agent watchdog, mute detection, calendar refresh and the scrubber no longer wake the Mac while idle
+- Removed the shelved call detection code
+
+### Fixed
+
+- The app shows in the language you picked; local builds fell back to English
+- Calendar month and weekday names follow the app language
+- The island follows the pointer to another display right away
+- Larger Text display modes keep the notch layout on notched MacBooks
+
+### Security
+
+- Cursor and Grok Bot tokens refreshed by NotchFlow stay in memory and are no longer saved to disk
+- The Local API reads whole requests, limits size and time, and refuses requests from web pages
+- Agent hooks no longer put the API token on the command line, and connecting agents keeps symlinked or hand-edited Claude, Cursor and Grok config files intact (with a one-time backup)
+- Clipboard history skips copies from password managers and transient copies
+- Updates use a signed appcast, and release builds are signed with actions pinned to exact versions
+- Licenses are matched to their Polar product, and a stale or future-dated validation is checked again
+
 ## [1.0.45] - 2026-11-10
 
 ### Security
