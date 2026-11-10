@@ -1,4 +1,5 @@
 import Foundation
+import os
 import SQLite3
 
 /// Cursor desktop login from its `state.vscdb` (Electron safeStorage) or `~/.cursor/auth.json`.
@@ -18,9 +19,11 @@ enum CursorUsageProvider: AgentUsageProvider {
         do {
             return try await loadUsage(allowKeychainPrompt: false)
         } catch FetchError.needsKeychainAccess {
-            let shouldPrompt = allowKeychainPrompt || !didPromptForKeychain
-            guard shouldPrompt else { throw FetchError.needsKeychainAccess }
-            didPromptForKeychain = true
+            let firstPrompt = state.withLock { state in
+                defer { state.didPromptForKeychain = true }
+                return !state.didPromptForKeychain
+            }
+            guard allowKeychainPrompt || firstPrompt else { throw FetchError.needsKeychainAccess }
             return try await loadUsage(allowKeychainPrompt: true)
         }
     }
@@ -76,11 +79,19 @@ enum CursorUsageProvider: AgentUsageProvider {
     }
 
     private static let safeStoragePrefix = "cursor-safe-storage:v1:"
-    private static var didPromptForKeychain = false
-    private static var cachedSafeStorageKey: Data?
+
+    private struct State: Sendable {
+        var didPromptForKeychain = false
+        var safeStorageKey: Data?
+    }
+
+    /// Read from the monitor and from background fetches, so every access takes the lock.
+    private static let state = OSAllocatedUnfairLock(initialState: State())
+    /// Tokens NotchFlow refreshed itself. Memory only; never written to disk.
+    private static let rotated = RotatedTokenCache()
 
     /// Reads the Cursor login already on this Mac. A rotated access token is kept in
-    /// NotchFlow's cache. Cursor's database and `auth.json` are never written.
+    /// NotchFlow's memory for this launch. Cursor's database and `auth.json` are never written.
     private static func login(now: Date = Date()) -> Login {
         let stored = storedLogin()
         let cached = cachedAccessToken(refreshToken: stored.refreshToken)
@@ -123,7 +134,7 @@ enum CursorUsageProvider: AgentUsageProvider {
             stored = try unlockedLogin(allowKeychainPrompt: allowKeychainPrompt)
         }
         let cached = cachedSession(refreshToken: stored.refreshToken)
-        let refreshToken = cached?.refreshToken ?? stored.refreshToken
+        let refreshToken = cached.flatMap { $0.refreshToken.isEmpty ? nil : $0.refreshToken } ?? stored.refreshToken
         guard let refreshToken, !refreshToken.isEmpty else { return nil }
         let refreshed = try await refresh(refreshToken: refreshToken)
         let fingerprint = AgentUsageKeychain.secretFingerprint(stored.refreshToken ?? refreshToken)
@@ -184,7 +195,7 @@ enum CursorUsageProvider: AgentUsageProvider {
     }
 
     private static func safeStorageKey(allowPrompt: Bool) throws -> Data? {
-        if let cachedSafeStorageKey { return cachedSafeStorageKey }
+        if let cached = state.withLock({ $0.safeStorageKey }) { return cached }
         let accounts = ["Cursor", "Cursor Key"]
         var locked = false
         for account in accounts {
@@ -202,7 +213,7 @@ enum CursorUsageProvider: AgentUsageProvider {
             }
             guard let password, let key = ClaudeDesktopCredentials.deriveKey(password: password) else { continue }
             guard safeStorageKeyOpensStoredTokens(key) else { continue }
-            cachedSafeStorageKey = key
+            state.withLock { $0.safeStorageKey = key }
             return key
         }
         if locked { throw FetchError.needsKeychainAccess }
@@ -330,16 +341,6 @@ enum CursorUsageProvider: AgentUsageProvider {
         return token.isEmpty ? nil : token
     }
 
-    private static var oauthCacheURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("NotchFlow/Agents/cursor-oauth.json")
-    }
-
-    private struct CachedSession {
-        var accessToken: String
-        var refreshToken: String
-    }
-
     private static func cachedAccessToken(refreshToken: String?) -> String? {
         guard let session = cachedSession(refreshToken: refreshToken),
               !tokenIsExpired(session.accessToken, now: Date()) else {
@@ -348,28 +349,23 @@ enum CursorUsageProvider: AgentUsageProvider {
         return session.accessToken
     }
 
-    private static func cachedSession(refreshToken: String?) -> CachedSession? {
+    /// The pair NotchFlow last refreshed, while Cursor still stores the same refresh token.
+    private static func cachedSession(refreshToken: String?) -> RotatedTokenSession? {
         guard let refreshToken, !refreshToken.isEmpty else { return nil }
         let fingerprint = AgentUsageKeychain.secretFingerprint(refreshToken)
-        guard let data = try? Data(contentsOf: oauthCacheURL),
-              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              root["fingerprint"] as? String == fingerprint,
-              let access = root["accessToken"] as? String,
-              !access.isEmpty else {
+        guard let session = rotated.session(matching: fingerprint),
+              !session.accessToken.isEmpty else {
             return nil
         }
-        let cachedRefresh = (root["refreshToken"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? refreshToken
-        return CachedSession(accessToken: access, refreshToken: cachedRefresh)
+        return session
     }
 
     private static func storeSession(fingerprint: String, accessToken: String, refreshToken: String) {
-        let payload: [String: String] = [
-            "fingerprint": fingerprint,
-            "accessToken": accessToken,
-            "refreshToken": refreshToken,
-        ]
-        guard let data = try? JSONSerialization.data(withJSONObject: payload) else { return }
-        try? SecureFileWriter.write(data, to: oauthCacheURL)
+        rotated.store(RotatedTokenSession(
+            fingerprint: fingerprint,
+            accessToken: accessToken,
+            refreshToken: refreshToken
+        ))
     }
 
     private struct RefreshedToken {

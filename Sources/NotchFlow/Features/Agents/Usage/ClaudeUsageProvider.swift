@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Security
 
 /// Claude Code (CLI file or Keychain item) with Claude Desktop as a fallback.
@@ -115,12 +116,21 @@ enum ClaudeUsageProvider: AgentUsageProvider {
     /// Last Claude Code secret read this process. Re-reading the login item on
     /// every session update raises the Keychain dialog again: Claude replaces
     /// the item when it refreshes the login, which drops "Always Allow".
-    private static var cachedKeychainPayload: Data?
-    private static var keychainNeedsUnlock = false
+    private struct KeychainCache: Sendable {
+        var payload: Data?
+        var needsUnlock = false
+    }
+
+    /// Touched from the monitor's credential check and from background fetches.
+    private static let keychainCache = OSAllocatedUnfairLock(initialState: KeychainCache())
+
+    private static var keychainNeedsUnlock: Bool {
+        get { keychainCache.withLock { $0.needsUnlock } }
+        set { keychainCache.withLock { $0.needsUnlock = newValue } }
+    }
 
     private static func invalidateKeychainCache() {
-        cachedKeychainPayload = nil
-        keychainNeedsUnlock = false
+        keychainCache.withLock { $0 = KeychainCache() }
     }
 
     private static func cliCredentials(allowKeychainPrompt: Bool) -> CLICredentials {
@@ -141,8 +151,7 @@ enum ClaudeUsageProvider: AgentUsageProvider {
 
         switch copyKeychain(allowPrompt: allowKeychainPrompt) {
         case .data(let data):
-            cachedKeychainPayload = data
-            keychainNeedsUnlock = false
+            keychainCache.withLock { $0 = KeychainCache(payload: data, needsUnlock: false) }
             let fresh = freshKeychainPayload()
             if fresh == nil {
                 // Expired or unreadable. Don't ask Keychain again until a manual refresh.
@@ -159,7 +168,7 @@ enum ClaudeUsageProvider: AgentUsageProvider {
 
     /// Keeps a granted secret until it expires so later polls do not touch Keychain.
     private static func freshKeychainPayload() -> Data? {
-        guard let cached = cachedKeychainPayload else { return nil }
+        guard let cached = keychainCache.withLock({ $0.payload }) else { return nil }
         guard let creds = decodeCredentials(cached) else { return nil }
         if let expiresAt = creds.expiresAt, expiresAt <= Date() { return nil }
         return cached

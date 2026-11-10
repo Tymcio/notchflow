@@ -47,10 +47,8 @@ enum GrokBotUsageProvider: AgentUsageProvider {
             .appendingPathComponent("Library/Application Support/Grok Bot/sand-secrets.json")
     }
 
-    private static var oauthCacheURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("NotchFlow/Agents/grokbot-oauth.json")
-    }
+    /// Tokens NotchFlow refreshed itself. Memory only; never written to disk.
+    private static let rotated = RotatedTokenCache()
 
     private static func loadSession(allowKeychainPrompt: Bool) throws -> Session {
         guard let data = try? Data(contentsOf: secretsURL) else {
@@ -133,33 +131,23 @@ enum GrokBotUsageProvider: AgentUsageProvider {
         )
     }
 
-    private struct CachedSession {
-        var accessToken: String
-        var refreshToken: String
-    }
-
-    /// NotchFlow's own rotated pair. The fingerprint is the refresh token still in Grok Bot's file.
-    private static func cachedSession(fingerprint: String) -> CachedSession? {
-        guard let data = try? Data(contentsOf: oauthCacheURL),
-              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              root["fingerprint"] as? String == fingerprint,
-              let token = root["accessToken"] as? String,
-              !token.isEmpty else {
+    /// NotchFlow's own rotated pair for this launch. The fingerprint is the refresh token
+    /// still in Grok Bot's file.
+    private static func cachedSession(fingerprint: String) -> RotatedTokenSession? {
+        guard let session = rotated.session(matching: fingerprint),
+              !session.accessToken.isEmpty,
+              !session.refreshToken.isEmpty else {
             return nil
         }
-        let refresh = (root["refreshToken"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? ""
-        guard !refresh.isEmpty else { return nil }
-        return CachedSession(accessToken: token, refreshToken: refresh)
+        return session
     }
 
     private static func storeSession(fingerprint: String, accessToken: String, refreshToken: String) {
-        let payload: [String: String] = [
-            "fingerprint": fingerprint,
-            "accessToken": accessToken,
-            "refreshToken": refreshToken,
-        ]
-        guard let data = try? JSONSerialization.data(withJSONObject: payload) else { return }
-        try? SecureFileWriter.write(data, to: oauthCacheURL)
+        rotated.store(RotatedTokenSession(
+            fingerprint: fingerprint,
+            accessToken: accessToken,
+            refreshToken: refreshToken
+        ))
     }
 
     private static func postUsage(token: String) async throws -> [String: Any] {

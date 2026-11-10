@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import os
 import Security
 
 /// One provider's usage meter: finds the login already on this Mac and asks the provider
@@ -96,6 +97,64 @@ enum AgentUsageClient {
 
     static func decodeGrokBotSecretsForTest(_ data: Data, password: String) -> (accessToken: String, refreshToken: String)? {
         GrokBotUsageProvider.decodeSecrets(data, password: password)
+    }
+
+    // MARK: - Legacy files
+
+    /// Earlier builds wrote refreshed Cursor and Grok Bot tokens to these files in plain text.
+    static let legacyTokenCacheNames = ["cursor-oauth.json", "grokbot-oauth.json"]
+
+    static var legacyTokenCacheDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("NotchFlow/Agents", isDirectory: true)
+    }
+
+    /// Deletes token caches older builds left on disk. Returns the files it removed.
+    @discardableResult
+    static func removeLegacyTokenCaches(in directory: URL = legacyTokenCacheDirectory) -> [URL] {
+        var removed: [URL] = []
+        for name in legacyTokenCacheNames {
+            let url = directory.appendingPathComponent(name)
+            guard FileManager.default.fileExists(atPath: url.path) else { continue }
+            do {
+                try FileManager.default.removeItem(at: url)
+                removed.append(url)
+            } catch {
+                NotchFlowLog.agents.error("Could not remove legacy token cache \(name, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        if !removed.isEmpty {
+            NotchFlowLog.agents.info("Removed \(removed.count, privacy: .public) legacy token cache file(s)")
+        }
+        return removed
+    }
+}
+
+/// A token pair NotchFlow refreshed itself for another app's login. Kept in memory for the
+/// life of the process only; another app's decrypted tokens are never written to disk.
+struct RotatedTokenSession: Equatable, Sendable {
+    /// Fingerprint of the refresh token still stored by the other app.
+    var fingerprint: String
+    var accessToken: String
+    var refreshToken: String
+}
+
+final class RotatedTokenCache: Sendable {
+    private let state = OSAllocatedUnfairLock<RotatedTokenSession?>(initialState: nil)
+
+    func session(matching fingerprint: String) -> RotatedTokenSession? {
+        state.withLock { session in
+            guard let session, session.fingerprint == fingerprint else { return nil }
+            return session
+        }
+    }
+
+    func store(_ session: RotatedTokenSession) {
+        state.withLock { $0 = session }
+    }
+
+    func clear() {
+        state.withLock { $0 = nil }
     }
 }
 
