@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         NSApp.setActivationPolicy(.accessory)
+        NotchFlowLog.removeLegacyCallTraceFile()
 
         let state = AppState()
         appState = state

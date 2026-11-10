@@ -9,6 +9,9 @@ final class AgentSessionManager {
 
     private(set) var sessions: [AgentSession] = []
     private var permissionDecisions: [String: AgentPermissionDecision] = [:]
+    /// Consent prompts displaced by a newer one in the same session, newest last.
+    /// Shown again one by one, so every Allow in the notch answers a prompt the user saw.
+    private var queuedPermissions: [String: [AgentPermissionRequest]] = [:]
     private var questionAnswers: [String: String] = [:]
     private var finishClearTasks: [String: Task<Void, Never>] = [:]
     private var staleWatchdogTask: Task<Void, Never>?
@@ -126,6 +129,7 @@ final class AgentSessionManager {
             finishOtherRunningSessions(of: agent, except: sessionID)
             session.phase = .running
             session.permission = nil
+            queuedPermissions[sessionID] = nil
             session.question = nil
             if session.detail.isEmpty {
                 session.detail = loc("Working…")
@@ -133,11 +137,13 @@ final class AgentSessionManager {
         case "tool", "tool.started", "progress":
             session.phase = .running
             session.permission = nil
+            queuedPermissions[sessionID] = nil
             session.question = nil
         case "attention", "needs.input", "needs_input":
             // Cursor-style: consent stays in the agent UI — notch pulses; user jumps manually.
             session.phase = .waitingPermission
             session.permission = nil
+            queuedPermissions[sessionID] = nil
             session.question = nil
             if session.detail.isEmpty {
                 session.detail = loc("Needs approval")
@@ -149,6 +155,9 @@ final class AgentSessionManager {
             let summary = stringValue(payload["summary"])
                 ?? stringValue(payload["command"])
                 ?? (detail.isEmpty ? toolName : detail)
+            if let shown = session.permission, shown.id != permissionID {
+                queuedPermissions[sessionID, default: []].append(shown)
+            }
             session.phase = .waitingPermission
             session.detail = summary
             session.permission = AgentPermissionRequest(
@@ -192,7 +201,24 @@ final class AgentSessionManager {
 
     func decidePermission(id: String, decision: AgentPermissionDecision) {
         permissionDecisions[id] = decision
+        for key in Array(queuedPermissions.keys) {
+            queuedPermissions[key]?.removeAll { $0.id == id }
+            if queuedPermissions[key]?.isEmpty == true {
+                queuedPermissions[key] = nil
+            }
+        }
         if let index = sessions.firstIndex(where: { $0.permission?.id == id }) {
+            let sessionID = sessions[index].id
+            if var queue = queuedPermissions[sessionID], let next = queue.popLast() {
+                // Another prompt from this session is still waiting: show it next.
+                queuedPermissions[sessionID] = queue.isEmpty ? nil : queue
+                sessions[index].permission = next
+                sessions[index].phase = .waitingPermission
+                sessions[index].detail = next.summary
+                sessions[index].updatedAt = Date()
+                onStateChange?()
+                return
+            }
             sessions[index].permission = nil
             sessions[index].phase = decision == .allow ? .running : .error
             sessions[index].detail = decision == .allow ? loc("Approved") : loc("Denied")
@@ -231,6 +257,7 @@ final class AgentSessionManager {
     func clearFinished() {
         for session in sessions where session.phase == .done || session.phase == .error {
             cancelFinishClear(for: session.id)
+            queuedPermissions[session.id] = nil
         }
         sessions.removeAll { $0.phase == .done || $0.phase == .error }
         onStateChange?()
@@ -350,6 +377,7 @@ final class AgentSessionManager {
 
         for id in ids {
             cancelFinishClear(for: id)
+            queuedPermissions[id] = nil
             if let index = sessions.firstIndex(where: { $0.id == id }) {
                 sessions[index].phase = phase
                 sessions[index].detail = detail
@@ -452,12 +480,15 @@ final class AgentSessionManager {
         // Keep a reasonable history.
         if sessions.count > 20 {
             sessions = Array(sessions.prefix(20))
+            let kept = Set(sessions.map(\.id))
+            queuedPermissions = queuedPermissions.filter { kept.contains($0.key) }
         }
         onStateChange?()
     }
 
     private func removeSession(id: String) {
         cancelFinishClear(for: id)
+        queuedPermissions[id] = nil
         sessions.removeAll { $0.id == id }
         onStateChange?()
     }

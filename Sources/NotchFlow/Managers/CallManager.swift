@@ -153,18 +153,8 @@ final class CallManager {
         onStateChange?()
     }
 
-    private static func callDebugTrace(_ message: String) {
-        let line = "\(ISO8601DateFormatter().string(from: Date())) CallManager \(message)\n"
-        let url = URL(fileURLWithPath: "/tmp/notchflow-call-debug.log")
-        guard let data = line.data(using: .utf8) else { return }
-        if FileManager.default.fileExists(atPath: url.path),
-           let handle = try? FileHandle(forWritingTo: url) {
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
-        } else {
-            try? data.write(to: url)
-        }
+    private static func callDebugTrace(_ message: @autoclosure () -> String) {
+        NotchFlowLog.callTrace("CallManager \(message())")
     }
 
     func reconcile(with banners: [ParsedNotificationBanner]) {

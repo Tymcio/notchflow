@@ -123,7 +123,9 @@ case "$EVENT_NAME" in
       NF_EVENT="tool"
     else
       NF_EVENT="permission"
-      PERMISSION_ID="${SESSION_ID}-$(date +%s)"
+      # Unique per request: two prompts in the same second must never share an id,
+      # or one Allow in the notch would approve both (including one the user never saw).
+      PERMISSION_ID="$(/usr/bin/uuidgen)"
       if [[ -z "$TOOL_NAME" ]]; then
         TOOL_NAME="Permission"
       fi
@@ -222,11 +224,14 @@ if [[ "$AGENT" == "grok" ]]; then
   exit 0
 fi
 
-# Cursor (and any before* observe hooks): never block the agent loop.
+# Cursor (and any before* observe hooks): never block the agent loop, and never decide.
+# A "permission" field would override Cursor's own approval flow ("allow" skips the
+# Skip/Run prompt for every command). Answer with no decision so Cursor applies its
+# allowlist and asks the user exactly as it would without NotchFlow.
 if [[ "$AGENT" == "cursor" ]]; then
   case "$EVENT_NAME" in
     beforeShellExecution|beforeMCPExecution|preToolUse)
-      printf '%s\n' '{"continue":true,"permission":"allow"}'
+      printf '%s\n' '{"continue":true}'
       exit 0
       ;;
   esac

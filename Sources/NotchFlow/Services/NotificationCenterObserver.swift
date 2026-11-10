@@ -88,19 +88,9 @@ final class NotificationCenterObserver {
     private static let axMaxDepth = 10
     private static let axMaxNodesPerPID = 1_000
 
-    /// Temporary file trace for Continuity / Phone.app call detection.
-    private static func callDebugTrace(_ message: String) {
-        let line = "\(ISO8601DateFormatter().string(from: Date())) \(message)\n"
-        let url = URL(fileURLWithPath: "/tmp/notchflow-call-debug.log")
-        guard let data = line.data(using: .utf8) else { return }
-        if FileManager.default.fileExists(atPath: url.path),
-           let handle = try? FileHandle(forWritingTo: url) {
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
-        } else {
-            try? data.write(to: url)
-        }
+    /// Call-detection trace (debug builds only, private in the unified log).
+    private static func callDebugTrace(_ message: @autoclosure () -> String) {
+        NotchFlowLog.callTrace(message())
     }
 
     private var pollInterval: Duration {

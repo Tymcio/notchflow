@@ -2,6 +2,14 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.45] - 2026-11-10
+
+### Security
+
+- Cursor hooks no longer approve shell and MCP commands on your behalf. NotchFlow returns no decision, so Cursor's allowlist and Skip/Run prompts work exactly as without NotchFlow
+- One Allow in the notch approves only the Claude Code prompt you see. Each request gets its own id, and a second prompt from the same session waits its turn instead of being approved with the first
+- Call and notification traces are no longer written to a shared file in /tmp. They log only in debug builds, kept private, and the old file is removed on launch
+
 ## [1.0.44] - 2026-11-10
 
 ### Fixed
