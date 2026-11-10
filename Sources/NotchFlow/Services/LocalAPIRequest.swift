@@ -132,8 +132,10 @@ enum LocalAPIRequestParser {
         if request.header("origin") != nil {
             return .crossOrigin
         }
+        // Browsers always send Host, so a missing one is a hand-rolled local client, not a
+        // DNS-rebinding page. Every route still requires the bearer token.
         guard let host = request.header("host") else {
-            return .badHost
+            return nil
         }
         return isAllowedHost(host, port: port) ? nil : .badHost
     }

@@ -162,6 +162,8 @@ if [[ -n "${SPARKLE_PUBLIC_ED_KEY:-}" ]]; then
   <string>${SPARKLE_PUBLIC_ED_KEY}</string>
   <key>SURequireSignedFeed</key>
   <true/>
+  <key>SUVerifyUpdateBeforeExtraction</key>
+  <true/>
 SPARKLE
 )"
 fi

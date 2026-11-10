@@ -149,20 +149,17 @@ final class PolarBenefitIDTests: XCTestCase {
         XCTAssertFalse(agents.status.isPremium)
     }
 
-    func testUnknownBenefitIsRejectedWhenBothListsAreConfigured() {
+    func testUnknownBenefitKeepsThePaidKeyAndFallsBackToTheNameGuess() throws {
         let ids = PolarBenefitIDs(premium: [premiumID], agents: [agentsID])
-        XCTAssertThrowsError(try PolarLicenseClient.parseSession(
-            json: validateResponse(benefitID: "33333333-3333-3333-3333-333333333333"),
-            key: "NOTCHFLOW_X",
-            benefitIDs: ids
-        )) { error in
-            XCTAssertEqual(error as? LicenseValidationError, .invalidKey)
+        for benefit in ["33333333-3333-3333-3333-333333333333", nil] {
+            let session = try PolarLicenseClient.parseSession(
+                json: validateResponse(benefitID: benefit),
+                key: "NOTCHFLOW_X",
+                benefitIDs: ids
+            )
+            XCTAssertFalse(session.productVerifiedByBenefit)
+            XCTAssertTrue(session.isAgentsProduct, "display name mentions the addon")
         }
-        XCTAssertThrowsError(try PolarLicenseClient.parseSession(
-            json: validateResponse(benefitID: nil),
-            key: "NOTCHFLOW_X",
-            benefitIDs: ids
-        ))
     }
 
     func testActivationResponseNestsTheBenefitInLicenseKey() throws {
@@ -186,10 +183,16 @@ final class PolarBenefitIDTests: XCTestCase {
         XCTAssertFalse(guessed.productVerifiedByBenefit)
     }
 
-    func testOnlyOneListConfiguredTreatsOtherBenefitsAsTheOtherProduct() {
+    func testOnlyListedBenefitsAreMatched() {
         let agentsOnly = PolarBenefitIDs(premium: [], agents: [agentsID])
         XCTAssertEqual(agentsOnly.product(forBenefitID: agentsID), .agents)
-        XCTAssertEqual(agentsOnly.product(forBenefitID: premiumID), .premium)
+        XCTAssertNil(agentsOnly.product(forBenefitID: premiumID))
         XCTAssertNil(agentsOnly.product(forBenefitID: nil))
+    }
+
+    func testEnforcedBuildsIgnoreBenefitIDsFromTheEnvironment() {
+        let env = ["POLAR_PREMIUM_BENEFIT_IDS": agentsID]
+        XCTAssertFalse(PolarBenefitIDs.fromBundle(.main, environment: env, allowEnvironment: false).isConfigured)
+        XCTAssertEqual(PolarBenefitIDs.fromBundle(.main, environment: env, allowEnvironment: true).premium, [agentsID])
     }
 }

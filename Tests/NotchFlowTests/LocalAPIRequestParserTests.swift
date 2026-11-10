@@ -106,7 +106,7 @@ final class LocalAPIRequestParserTests: XCTestCase {
         XCTAssertEqual(LocalAPIRequestParser.rejection(for: rebinding, port: 47800), .badHost)
 
         let noHost = try XCTUnwrap(complete(LocalAPIRequestParser.parse(request("GET /v1/status HTTP/1.1"))))
-        XCTAssertEqual(LocalAPIRequestParser.rejection(for: noHost, port: 47800), .badHost)
+        XCTAssertNil(LocalAPIRequestParser.rejection(for: noHost, port: 47800))
 
         let local = try XCTUnwrap(complete(LocalAPIRequestParser.parse(request("""
         GET /v1/status HTTP/1.1
