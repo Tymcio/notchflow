@@ -1,4 +1,6 @@
+import AppKit
 import Foundation
+import IOKit.ps
 import SwiftUI
 
 @Observable
@@ -129,10 +131,49 @@ final class NotchSettings {
         static let ramboxAllowlistMigrated = "notificationAllowlistRamboxRemoved"
         static let nonNotchIslandPlacement = "nonNotchIslandPlacement"
         static let islandDisplay = "islandDisplay"
+
+        static let all = [
+            launchAtLogin, customIslandWidth, customIslandHeight, selectedTheme, hiddenAppBundleIDs,
+            clipboardMonitoringEnabled, localAPIEnabled, agentUsagePollingEnabled, avoidMenuOverlap,
+            urlSchemeAutomationEnabled, lyricsSharingEnabled, appNotificationsEnabled,
+            allowedNotificationBundleIDs, allowedNativeNotificationBundleIDs,
+            allowedRamboxAggregatorBundleIDs, allowedRamboxServiceBundleIDs, hideNotificationBody,
+            dismissSystemBanners, timerAlertSoundName, ramboxAllowlistMigrated,
+            nonNotchIslandPlacement, islandDisplay,
+        ]
+    }
+
+    /// Whether this Mac's built-in display has a camera notch: `nil` when it cannot be seen
+    /// (a MacBook with its lid closed), `false` on Macs without a built-in display.
+    private static func builtInDisplayHasNotch() -> Bool? {
+        for screen in NSScreen.screens {
+            guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
+                  CGDisplayIsBuiltin(displayID) != 0 else { continue }
+            if case .hardwareNotch = NotchGeometry.classifyTopCutout(ScreenMetrics(screen: screen)) {
+                return true
+            }
+            return false
+        }
+        return hasInternalBattery() ? nil : false
+    }
+
+    private static func hasInternalBattery() -> Bool {
+        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] else {
+            return false
+        }
+        return sources.contains { source in
+            guard let description = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any] else {
+                return false
+            }
+            return description[kIOPSTypeKey] as? String == kIOPSInternalBatteryType
+        }
     }
 
     private init() {
         let defaults = UserDefaults.standard
+        // Before anything below writes a key: did an earlier NotchFlow version run here?
+        let isExistingInstall = Keys.all.contains { $0 != Keys.nonNotchIslandPlacement && defaults.object(forKey: $0) != nil }
         launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         customIslandWidth = defaults.object(forKey: Keys.customIslandWidth) as? CGFloat ?? NotchFlowConstants.defaultExpandedWidth
         let savedHeight = defaults.object(forKey: Keys.customIslandHeight) as? CGFloat
@@ -161,8 +202,18 @@ final class NotchSettings {
         dismissSystemBanners = defaults.object(forKey: Keys.dismissSystemBanners) as? Bool ?? true
         let savedTimerSound = defaults.string(forKey: Keys.timerAlertSoundName) ?? TimerAlertSound.defaultID
         timerAlertSoundName = TimerAlertSound.migratedID(savedTimerSound)
-        nonNotchIslandPlacement = defaults.string(forKey: Keys.nonNotchIslandPlacement)
-            .flatMap(NonNotchIslandPlacement.init(rawValue:)) ?? .topCenter
+        if let saved = defaults.string(forKey: Keys.nonNotchIslandPlacement)
+            .flatMap(NonNotchIslandPlacement.init(rawValue:)) {
+            nonNotchIslandPlacement = saved
+        } else {
+            let resolved = NonNotchIslandPlacement.defaultPlacement(
+                isExistingInstall: isExistingInstall,
+                builtInDisplayHasNotch: Self.builtInDisplayHasNotch()
+            )
+            nonNotchIslandPlacement = resolved
+            // Saved once, so the next launch (which would look like an existing install) keeps it.
+            defaults.set(resolved.rawValue, forKey: Keys.nonNotchIslandPlacement)
+        }
         islandDisplay = defaults.string(forKey: Keys.islandDisplay)
             .flatMap(IslandDisplayPreference.init(rawValue:)) ?? .followPointer
     }
@@ -215,6 +266,9 @@ final class NotchSettings {
 enum NonNotchIslandPlacement: String, CaseIterable, Identifiable, Sendable {
     /// A compact island in the middle of the menu bar, opened by hovering it.
     case topCenter
+    /// Nothing is shown while idle; hovering the middle of the menu bar still opens the island.
+    /// How displays without a notch behaved before the menu bar capsule existed.
+    case hoverOnly
     /// No island on such displays; it opens only from the menu bar icon.
     case off
 
@@ -223,8 +277,24 @@ enum NonNotchIslandPlacement: String, CaseIterable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .topCenter: loc("Top center")
+        case .hoverOnly: loc("Show on hover only")
         case .off: loc("Off (menu bar icon only)")
         }
+    }
+
+    /// No idle capsule is drawn into the menu bar.
+    var hidesIdleIsland: Bool {
+        self != .topCenter
+    }
+
+    /// Default when the user never chose a placement. Existing installs on a notched MacBook
+    /// keep what they had (an external display showed nothing until hovered), so an update does
+    /// not suddenly put a capsule into their external menu bar. New installs and Macs without
+    /// a notch get the visible capsule. A built-in display that cannot be seen (lid closed)
+    /// counts as notched for existing installs, which again keeps their old behaviour.
+    static func defaultPlacement(isExistingInstall: Bool, builtInDisplayHasNotch: Bool?) -> NonNotchIslandPlacement {
+        guard isExistingInstall, builtInDisplayHasNotch != false else { return .topCenter }
+        return .hoverOnly
     }
 }
 

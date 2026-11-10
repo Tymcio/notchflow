@@ -124,8 +124,9 @@ struct NotchGeometry: Equatable {
     /// False when the user turned the island off for displays without a notch:
     /// no hover trigger and no idle wings; the menu bar icon still opens it.
     let allowsAutomaticPresentation: Bool
-    /// Idle capsule would sit on top of menus, or the menu bar it lives in is hidden
-    /// (auto-hide, full screen). Never set for a hardware notch.
+    /// Idle capsule would sit on top of menus, the menu bar it lives in is hidden (auto-hide,
+    /// full screen), or the user chose not to show it while idle ("Show on hover only").
+    /// Never set for a hardware notch.
     let suppressesIdleCapsule: Bool
 
     var shouldHideIdleForMenuOverlap: Bool {
@@ -627,6 +628,7 @@ extension NotchGeometry {
             notchLeftX: center.leftX,
             allowsAutomaticPresentation: options.nonNotchPlacement != .off,
             suppressesIdleCapsule: obstacles.centerBlocked || isMenuBarHidden || context.isFullScreenActive
+                || options.nonNotchPlacement.hidesIdleIsland
         )
     }
 
@@ -674,6 +676,7 @@ extension NotchGeometry {
             // Wings stay meaningful without their center, so only a covered menu or a
             // full-screen window hides them.
             suppressesIdleCapsule: obstacles.centerBlocked || context.isFullScreenActive
+                || options.nonNotchPlacement.hidesIdleIsland
         )
     }
 
@@ -716,7 +719,7 @@ extension NotchGeometry {
             appMenuRightEdgeX: context.appMenuRightEdgeX,
             notchLeftX: center.leftX,
             allowsAutomaticPresentation: options.nonNotchPlacement != .off,
-            suppressesIdleCapsule: context.isFullScreenActive
+            suppressesIdleCapsule: context.isFullScreenActive || options.nonNotchPlacement.hidesIdleIsland
         )
     }
 

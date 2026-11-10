@@ -187,9 +187,11 @@ final class DisplayManager: ObservableObject {
             capsuleContext = NotchGeometry.MenuBarContext()
             return
         }
+        // Menu bar items only matter when an idle capsule is drawn there.
+        let span = settings.nonNotchIslandPlacement.hidesIdleIsland ? nil : NotchGeometry.menuBarCapsuleSpan(for: metrics)
         capsuleContext = menuBarLayoutManager.capsuleContext(
             for: metrics,
-            span: NotchGeometry.menuBarCapsuleSpan(for: metrics),
+            span: span,
             forceRescan: forceRescan
         )
     }
