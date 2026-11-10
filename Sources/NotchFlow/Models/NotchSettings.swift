@@ -41,6 +41,12 @@ final class NotchSettings {
         didSet { UserDefaults.standard.set(agentUsagePollingEnabled, forKey: Keys.agentUsagePollingEnabled) }
     }
 
+    /// Raw values of agents the user switched off in Settings → Integrations → Agents.
+    /// Detected agents are selected by default.
+    var deselectedAgentHooks: [String] {
+        didSet { UserDefaults.standard.set(deselectedAgentHooks, forKey: Keys.deselectedAgentHooks) }
+    }
+
     var avoidMenuOverlap: Bool {
         didSet {
             UserDefaults.standard.set(avoidMenuOverlap, forKey: Keys.avoidMenuOverlap)
@@ -128,6 +134,7 @@ final class NotchSettings {
         static let clipboardMonitoringEnabled = "clipboardMonitoringEnabled"
         static let localAPIEnabled = "localAPIEnabled"
         static let agentUsagePollingEnabled = "agentUsagePollingEnabled"
+        static let deselectedAgentHooks = "deselectedAgentHooks"
         static let avoidMenuOverlap = "avoidMenuOverlap"
         static let urlSchemeAutomationEnabled = "urlSchemeAutomationEnabled"
         static let lyricsSharingEnabled = "lyricsSharingEnabled"
@@ -204,6 +211,7 @@ final class NotchSettings {
         clipboardMonitoringEnabled = defaults.bool(forKey: Keys.clipboardMonitoringEnabled)
         localAPIEnabled = defaults.object(forKey: Keys.localAPIEnabled) as? Bool ?? false
         agentUsagePollingEnabled = defaults.object(forKey: Keys.agentUsagePollingEnabled) as? Bool ?? true
+        deselectedAgentHooks = defaults.stringArray(forKey: Keys.deselectedAgentHooks) ?? []
         avoidMenuOverlap = defaults.object(forKey: Keys.avoidMenuOverlap) as? Bool ?? true
         urlSchemeAutomationEnabled = defaults.bool(forKey: Keys.urlSchemeAutomationEnabled)
         lyricsSharingEnabled = defaults.bool(forKey: Keys.lyricsSharingEnabled)

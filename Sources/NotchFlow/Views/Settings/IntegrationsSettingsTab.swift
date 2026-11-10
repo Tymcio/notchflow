@@ -7,13 +7,6 @@ struct IntegrationsSettingsTab: View {
     @State private var copiedToken = false
     @State private var copiedURL = false
     @State private var apiBaseURL = ""
-    @State private var agentsMessage = ""
-    @State private var agentsMessageIsError = false
-    @State private var isInstallingAgents = false
-
-    private var agentsSetup: AgentHooksInstaller.SetupStatus {
-        AgentHooksInstaller.currentStatus(localAPIEnabled: appState.settings.localAPIEnabled)
-    }
 
     var body: some View {
         SettingsFormContent {
@@ -94,22 +87,10 @@ struct IntegrationsSettingsTab: View {
 
                 if appState.hasAgentsAddon {
                     LabeledContent(loc("Local API")) {
-                        Text(agentsSetup.localAPIEnabled ? loc("On") : loc("Off"))
-                    }
-                    LabeledContent("Claude Code") {
-                        Text(agentsSetup.claudeHooksInstalled ? loc("Connected") : loc("Not connected"))
-                    }
-                    LabeledContent("Cursor") {
-                        Text(agentsSetup.cursorHooksInstalled ? loc("Connected") : loc("Not connected"))
-                    }
-                    LabeledContent("Grok Build") {
-                        Text(agentsSetup.grokHooksInstalled ? loc("Connected") : loc("Not connected"))
+                        Text(appState.settings.localAPIEnabled ? loc("On") : loc("Off"))
                     }
 
-                    Button(isInstallingAgents ? loc("Connecting…") : loc("Connect agents (Claude, Cursor, Grok)")) {
-                        installAgents()
-                    }
-                    .disabled(isInstallingAgents)
+                    AgentConnectionsView(appState: appState)
 
                     Button(loc("Reveal hooks folder")) {
                         let url = AgentHooksInstaller.hookScriptURL.deletingLastPathComponent()
@@ -138,21 +119,11 @@ struct IntegrationsSettingsTab: View {
                         Text(loc("3. Start Agent Chat — live status appears in the notch and clears when the agent finishes."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(loc("Claude Code: Allow / Deny in the notch. Cursor: keeps its own Skip/Run — the notch pulses on likely consent moments; tap to jump (no auto-focus)."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                         Text(loc("Grok Build: session status in the notch. Allow and Deny stay in the terminal. Restart the grok CLI after connecting. Grok Bot shows its weekly limit only."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     .padding(.top, 4)
-
-                    if !agentsMessage.isEmpty {
-                        Text(agentsMessage)
-                            .font(.caption)
-                            .foregroundStyle(agentsMessageIsError ? Color.red : Color.green)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
                 } else {
                     Button(loc("Open license activation")) {
                         appState.openLicenseSettings()
@@ -167,28 +138,6 @@ struct IntegrationsSettingsTab: View {
         }
         .onAppear {
             refreshAPIInfo()
-        }
-    }
-
-    private func installAgents() {
-        isInstallingAgents = true
-        agentsMessage = ""
-        agentsMessageIsError = false
-        Task {
-            do {
-                if !appState.settings.localAPIEnabled {
-                    appState.settings.localAPIEnabled = true
-                    try await appState.localAPIServer.start(appState: appState)
-                }
-                _ = try APIAuth.token()
-                let url = try AgentHooksInstaller.install()
-                refreshAPIInfo()
-                agentsMessage = locFormat("Hooks installed. Restart Cursor, then use Agent Chat. Folder: %@", url.path)
-            } catch {
-                agentsMessage = error.localizedDescription
-                agentsMessageIsError = true
-            }
-            isInstallingAgents = false
         }
     }
 

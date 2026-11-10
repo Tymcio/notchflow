@@ -9318,6 +9318,230 @@
           }
         }
       }
+    },
+    "Disconnect": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odłącz"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trennen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scollega"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectar"
+          }
+        }
+      }
+    },
+    "No supported coding agents found on this Mac.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na tym Macu nie znaleziono obsługiwanych agentów kodujących."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem Mac wurden keine unterstützten Coding-Agenten gefunden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Su questo Mac non è stato trovato nessun agente di programmazione supportato."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se encontró ningún agente de programación compatible en este Mac."
+          }
+        }
+      }
+    },
+    "Select at least one agent.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zaznacz co najmniej jednego agenta."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle mindestens einen Agenten aus."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seleziona almeno un agente."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecciona al menos un agente."
+          }
+        }
+      }
+    },
+    "Connected: %@. Restart running agents so they load the hooks.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Połączono: %@. Uruchom ponownie działających agentów, żeby wczytali hooki."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbunden: %@. Starte laufende Agenten neu, damit sie die Hooks laden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collegati: %@. Riavvia gli agenti in esecuzione perché carichino gli hook."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectados: %@. Reinicia los agentes en ejecución para que carguen los hooks."
+          }
+        }
+      }
+    },
+    "Approve the NotchFlow hook once with /hooks in Codex.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zatwierdź raz hook NotchFlow poleceniem /hooks w Codex."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestätige den NotchFlow-Hook einmal mit /hooks in Codex."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approva una volta l’hook di NotchFlow con /hooks in Codex."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aprueba una vez el hook de NotchFlow con /hooks en Codex."
+          }
+        }
+      }
+    },
+    "Disconnected. NotchFlow’s hooks were removed from each agent.": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odłączono. Hooki NotchFlow zostały usunięte z każdego agenta."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getrennt. Die Hooks von NotchFlow wurden aus jedem Agenten entfernt."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scollegato. Gli hook di NotchFlow sono stati rimossi da ogni agente."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado. Los hooks de NotchFlow se han quitado de cada agente."
+          }
+        }
+      }
+    },
+    "Allow / Deny in the notch": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow / Deny w notchu"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow / Deny in der Notch"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow / Deny nel notch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow / Deny en el notch"
+          }
+        }
+      }
+    },
+    "Status only — answer prompts in the agent": {
+      "localizations": {
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tylko status — na pytania odpowiadasz w agencie"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Status — Rückfragen beantwortest du im Agenten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo stato — rispondi alle richieste nell’agente"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo estado — responde a las solicitudes en el agente"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
