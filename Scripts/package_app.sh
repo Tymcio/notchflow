@@ -16,10 +16,15 @@ FRAMEWORKS_DIR="$CONTENTS_DIR/Frameworks"
 echo "Building release binary..."
 swift build -c release --arch arm64
 
-BIN_PATH="$ROOT_DIR/.build/arm64-apple-macosx/release/${APP_NAME}"
+# Ask SwiftPM where it put the products. Hardcoded paths broke when SwiftPM moved to
+# .build/out/Products/Release and a stale .build/arm64-apple-macosx binary got packaged.
+BIN_DIR="$(swift build -c release --arch arm64 --show-bin-path)"
+BIN_PATH="$BIN_DIR/${APP_NAME}"
 if [[ ! -f "$BIN_PATH" ]]; then
-  BIN_PATH="$ROOT_DIR/.build/release/${APP_NAME}"
+  echo "ERROR: built binary not found at $BIN_PATH" >&2
+  exit 1
 fi
+echo "Binary: $BIN_PATH"
 
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" "$FRAMEWORKS_DIR"
@@ -30,8 +35,7 @@ chmod +x "$MACOS_DIR/${APP_NAME}"
 # Copy SPM resource bundle (icons, String Catalog localizations)
 RESOURCE_BUNDLE=""
 for candidate in \
-  "$ROOT_DIR/.build/arm64-apple-macosx/release/NotchFlow_NotchFlow.bundle" \
-  "$ROOT_DIR/.build/release/NotchFlow_NotchFlow.bundle"; do
+  "$BIN_DIR/NotchFlow_NotchFlow.bundle"; do
   if [[ -d "$candidate" ]]; then
     RESOURCE_BUNDLE="$candidate"
     break
@@ -83,8 +87,7 @@ fi
 # Copy Sparkle framework — required at runtime (@rpath)
 SPARKLE_FW=""
 for candidate in \
-  "$ROOT_DIR/.build/arm64-apple-macosx/release/Sparkle.framework" \
-  "$ROOT_DIR/.build/release/Sparkle.framework" \
+  "$BIN_DIR/Sparkle.framework" \
   "$ROOT_DIR/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"; do
   if [[ -d "$candidate" ]]; then
     SPARKLE_FW="$candidate"

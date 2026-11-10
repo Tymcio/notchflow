@@ -1,16 +1,24 @@
 import Foundation
 
-struct PolarLicenseClient {
+struct PolarLicenseClient: LicenseAPI {
     private let activateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/activate")!
     private let validateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/validate")!
     private let deactivateURL = URL(string: "https://api.polar.sh/v1/customer-portal/license-keys/deactivate")!
+
+    /// Public Polar organization ID (not a secret). Used when the build did not inject
+    /// `PolarOrganizationID` — e.g. local `compile_and_run.sh` builds — so license
+    /// validation works the same as in release builds.
+    static let defaultOrganizationID = "8a00b3a5-7845-4e8f-99b5-ae1ec8d49fca"
 
     private var organizationID: String {
         if let bundled = Bundle.main.object(forInfoDictionaryKey: "PolarOrganizationID") as? String,
            !bundled.isEmpty {
             return bundled
         }
-        return ProcessInfo.processInfo.environment["POLAR_ORGANIZATION_ID"] ?? ""
+        if let env = ProcessInfo.processInfo.environment["POLAR_ORGANIZATION_ID"], !env.isEmpty {
+            return env
+        }
+        return Self.defaultOrganizationID
     }
 
     func activate(key: String, instanceName: String) async throws -> PolarLicenseSession {

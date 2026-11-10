@@ -181,6 +181,7 @@ final class AppState {
         licenseStatus = licenseManager.status
         settings.isPremiumEnabled = isPremium
         await licenseManager.refreshIfNeeded()
+        licenseManager.startObservingSystemEvents()
         licenseStatus = licenseManager.status
         settings.isPremiumEnabled = isPremium
         displayManager.refreshGeometryNow()

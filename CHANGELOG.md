@@ -2,6 +2,14 @@
 
 All notable changes to NotchFlow are documented here. Version numbers follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.43] - 2026-11-10
+
+### Fixed
+
+- Licenses no longer drop to Free after the Mac sleeps or starts without a network connection. NotchFlow keeps the last valid license during the 14-day grace period, retries in the background, and checks again after wake
+- Licenses are stored in Application Support instead of the Keychain, so local and release builds share them. Existing licenses move over automatically on first launch
+- Local builds package the freshly built app instead of an old binary left in the build folder
+
 ## [1.0.42] - 2026-11-01
 
 ### Fixed
