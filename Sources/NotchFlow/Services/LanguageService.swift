@@ -64,7 +64,15 @@ enum LanguageService {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
         // Wait for this instance to exit before opening the new one, so we never run two copies.
-        process.arguments = ["-c", "while /bin/kill -0 \(pid) 2>/dev/null; do /bin/sleep 0.1; done; /usr/bin/open \"\(bundlePath)\""]
+        // The pid and bundle path are positional arguments ($1, $2), never part of the script,
+        // so quotes or `$(…)` in the install path cannot run as shell code.
+        process.arguments = [
+            "-c",
+            #"while /bin/kill -0 "$1" 2>/dev/null; do /bin/sleep 0.1; done; /usr/bin/open "$2""#,
+            "notchflow-relaunch",
+            String(pid),
+            bundlePath,
+        ]
         try? process.run()
         NSApp.terminate(nil)
     }
