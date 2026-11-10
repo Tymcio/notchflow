@@ -117,7 +117,7 @@ final class DisplayManager: ObservableObject {
     }
 
     func refreshActiveScreen() {
-        let entry = preferredScreenEntry(at: NSEvent.mouseLocation)
+        let entry = preferredScreenEntry(at: NSEvent.mouseLocation).map(remeasuredIfMenuBarMissing)
         activate(entry)
         menuBarLayoutManager.refresh(for: entry?.screen)
         refreshCapsuleContext()
@@ -722,10 +722,20 @@ final class DisplayManager: ObservableObject {
               entry.screen !== activeScreen else {
             return
         }
-        activate(entry)
-        menuBarLayoutManager.refresh(for: entry.screen)
+        let current = remeasuredIfMenuBarMissing(entry)
+        activate(current)
+        menuBarLayoutManager.refresh(for: current.screen)
         refreshCapsuleContext()
-        recomputeGeometry(for: entry.screen)
+        recomputeGeometry(for: current.screen)
+    }
+
+    /// A notch-less display that showed no menu bar when it was cached (just connected, or the
+    /// menu bar was hidden then) may have one now: measure it again before drawing the capsule.
+    /// Runs only when the island moves to such a display, never per mouse move.
+    private func remeasuredIfMenuBarMissing(_ entry: CachedScreen) -> CachedScreen {
+        guard entry.metrics.safeAreaTop <= 0, entry.metrics.reservedMenuBarHeight <= 0 else { return entry }
+        rebuildScreenCache()
+        return cachedEntry(for: entry.screen) ?? entry
     }
 
     private func handleMouseMove(_ location: NSPoint) {

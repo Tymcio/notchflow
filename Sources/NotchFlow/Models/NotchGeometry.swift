@@ -85,6 +85,20 @@ extension ScreenMetrics {
         if simulateNoNotch {
             self = withoutTopCutout()
         }
+        // Some displays draw a menu bar without reserving it in `visibleFrame`. Without a
+        // cutout the capsule needs the real menu bar height, so ask the window server.
+        if safeAreaTop <= 0, reservedMenuBarHeight <= 0 {
+            let primaryMaxY = NSScreen.screens.first?.frame.maxY ?? frame.maxY
+            let height = MenuBarWindowProbe.visibleMenuBarHeight(on: frame, primaryMaxY: primaryMaxY)
+            if height > 0 {
+                visibleFrame = CGRect(
+                    x: visibleFrame.minX,
+                    y: visibleFrame.minY,
+                    width: visibleFrame.width,
+                    height: max(0, frame.maxY - height - visibleFrame.minY)
+                )
+            }
+        }
     }
 }
 
