@@ -27,10 +27,11 @@ NotchFlow turns the top of your screen into a useful, non-intrusive island — a
 
 The Agents add-on keeps an eye on your AI coding agents while you work in other windows:
 
-- **Claude Code**: permission prompts appear in the island; read the exact command and click Allow or Deny (uses Claude Code's own `PermissionRequest` hook)
-- **Session status** for Claude Code, Cursor, Grok Build and others: running, waiting for you, or done, with one click back to the right terminal or editor
+- **Allow / Deny in the island** for Claude Code, Codex, Copilot CLI and Qwen Code: read the exact command and answer the permission prompt there (each agent's own `PermissionRequest` hook)
+- **Session status** for Claude Code, Codex, Copilot CLI, Qwen Code, Gemini CLI, OpenCode, Kilo Code, Crush, Droid, Cursor and Grok Build: running, waiting for you, or done, with one click back to the right terminal or editor. Status-only agents pulse the island when they ask for permission and keep the prompt in the agent
+- **One click to connect**: Settings lists the agents installed on your Mac; Connect adds NotchFlow's hooks, Disconnect removes only NotchFlow's entries
 - **Usage limits**: remaining 5-hour and weekly quota for Claude and Codex with reset times, Cursor's included usage, Grok Build and Grok Bot weekly limits
-- Reuses the logins already on your Mac; requests go only to Anthropic, OpenAI, Cursor and xAI. Cursor and Grok hooks are monitor-only and never answer permission prompts for you
+- Reuses the logins already on your Mac; requests go only to Anthropic, OpenAI, Cursor and xAI. Status-only hooks never answer permission prompts for you
 
 Setup and details: [docs/agents.md](docs/agents.md)
 
