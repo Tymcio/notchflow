@@ -15,6 +15,11 @@ final class MenuBarLayoutManager: ObservableObject {
     // after the last reference is gone.
     nonisolated(unsafe) private var workspaceObserver: NSObjectProtocol?
     private var capsuleScanCache: CapsuleScan?
+    private var pendingCapsuleScan: CapsuleScanRequest?
+    private var capsuleScanDebounceTask: Task<Void, Never>?
+    private var isCapsuleScanRunning = false
+    /// Called on the main actor after a background menu bar scan stored a new result.
+    var onCapsuleScanUpdate: (() -> Void)?
     private var delayedRefreshTask: Task<Void, Never>?
     private var menuEdgePublishTask: Task<Void, Never>?
     private var menuEdgeByPID: [pid_t: CGFloat] = [:]
@@ -37,6 +42,7 @@ final class MenuBarLayoutManager: ObservableObject {
         }
         delayedRefreshTask?.cancel()
         menuEdgePublishTask?.cancel()
+        capsuleScanDebounceTask?.cancel()
     }
 
     func setActiveScreen(_ screen: NSScreen?) {
@@ -148,105 +154,194 @@ final class MenuBarLayoutManager: ObservableObject {
 
     // MARK: - Menu bar around an island drawn into the menu bar (displays without a notch)
 
-    private struct CapsuleScan {
+    /// What a background menu bar scan looks at. Equal requests within `capsuleScanLifetime`
+    /// reuse the cached result.
+    private struct CapsuleScanRequest: Equatable, Sendable {
         let screenFrame: CGRect
         let menuPID: pid_t?
-        let span: ClosedRange<CGFloat>
+        /// `nil` when menu bar items are not needed (only the full-screen check runs).
+        let span: ClosedRange<CGFloat>?
+        /// Height of the primary display, to convert to the top-left origin used by AX and
+        /// the window server. Read on the main thread, since `NSScreen` is main-thread only.
+        let primaryMaxY: CGFloat
+        let menuBarScreenY: CGFloat
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.screenFrame == rhs.screenFrame && lhs.menuPID == rhs.menuPID && lhs.span == rhs.span
+        }
+    }
+
+    private struct CapsuleScan: Sendable {
+        let request: CapsuleScanRequest
         let date: Date
+        let isFullScreenActive: Bool
+        /// When the hit-test could not run (our own panel in the way), the edges carry over
+        /// the previous answer for this display.
         let appMenuRightEdgeX: CGFloat?
         let statusItemsLeftEdgeX: CGFloat?
     }
 
     /// How long a menu bar scan stays valid while the frontmost app does not change.
     private static let capsuleScanLifetime: TimeInterval = 2
+    /// Coalesces bursts of requests (app switch + screen switch + idle presentation).
+    private static let capsuleScanDebounce: Duration = .milliseconds(60)
+    /// Accessibility hit-tests and the window list are IPC; they never run on the main thread.
+    private static let capsuleScanQueue = DispatchQueue(label: "\(NotchFlowConstants.bundleID).menu-bar-scan", qos: .utility)
 
     /// Menu bar occupancy for an island drawn into the menu bar of `metrics`' display.
     /// `span` is the x-range the island may cover (`NotchGeometry.menuBarCapsuleSpan`);
     /// pass `nil` when nothing is drawn into the menu bar there.
+    ///
+    /// Returns the last scan for this display right away and, when it is missing or stale,
+    /// schedules a scan on a background queue; `onCapsuleScanUpdate` fires when it lands.
     func capsuleContext(
         for metrics: ScreenMetrics,
         span: ClosedRange<CGFloat>?,
         forceRescan: Bool = false
     ) -> NotchGeometry.MenuBarContext {
         var context = NotchGeometry.MenuBarContext(
-            appMenuRightEdgeX: menuRightEdgeX(inScreenFrame: metrics.frame),
-            isFullScreenActive: Self.isFullScreenWindowPresent(on: metrics.frame)
+            appMenuRightEdgeX: menuRightEdgeX(inScreenFrame: metrics.frame)
         )
 
-        guard let span,
-              settings.avoidMenuOverlap,
-              isAccessibilityTrusted,
-              !context.isFullScreenActive,
-              metrics.reservedMenuBarHeight > 0 else {
+        let wantsMenuItems = span != nil
+            && settings.avoidMenuOverlap
+            && isAccessibilityTrusted
+            && metrics.reservedMenuBarHeight > 0
+        let request = CapsuleScanRequest(
+            screenFrame: metrics.frame,
+            menuPID: lastForegroundAppPID,
+            span: wantsMenuItems ? span : nil,
+            primaryMaxY: NSScreen.screens.first?.frame.maxY ?? metrics.frame.maxY,
+            menuBarScreenY: metrics.frame.maxY - metrics.reservedMenuBarHeight / 2
+        )
+
+        let cached = capsuleScanCache?.request.screenFrame == metrics.frame ? capsuleScanCache : nil
+        if forceRescan
+            || cached == nil
+            || cached?.request != request
+            || Date().timeIntervalSince(cached?.date ?? .distantPast) >= Self.capsuleScanLifetime {
+            scheduleCapsuleScan(request)
+        }
+
+        guard let cached else { return context }
+        context.isFullScreenActive = cached.isFullScreenActive
+        guard wantsMenuItems, !cached.isFullScreenActive, cached.request.span != nil else {
             return context
         }
-
-        let scan: CapsuleScan?
-        if !forceRescan,
-           let cached = capsuleScanCache,
-           cached.screenFrame == metrics.frame,
-           cached.menuPID == lastForegroundAppPID,
-           cached.span == span,
-           Date().timeIntervalSince(cached.date) < Self.capsuleScanLifetime {
-            scan = cached
-        } else if let items = Self.menuBarItems(
-            in: span,
-            atScreenY: metrics.frame.maxY - metrics.reservedMenuBarHeight / 2
-        ) {
-            let appMenuEdge = items.filter { !$0.isStatusItem }.map(\.frame.maxX).max()
-            let statusEdge = items.filter(\.isStatusItem).map(\.frame.minX).min()
-            let fresh = CapsuleScan(
-                screenFrame: metrics.frame,
-                menuPID: lastForegroundAppPID,
-                span: span,
-                date: Date(),
-                appMenuRightEdgeX: appMenuEdge,
-                statusItemsLeftEdgeX: statusEdge
-            )
-            capsuleScanCache = fresh
-            scan = fresh
-        } else {
-            // Our own panel was in the way; keep the last answer for this display.
-            scan = capsuleScanCache?.screenFrame == metrics.frame ? capsuleScanCache : nil
-        }
-
-        if let scan {
-            if let scannedEdge = scan.appMenuRightEdgeX {
-                context.appMenuRightEdgeX = max(context.appMenuRightEdgeX ?? scannedEdge, scannedEdge)
-            }
-            context.statusItemsLeftEdgeX = scan.statusItemsLeftEdgeX
+        // Status items do not depend on the frontmost app; its menus do.
+        context.statusItemsLeftEdgeX = cached.statusItemsLeftEdgeX
+        if cached.request.menuPID == request.menuPID, let scannedEdge = cached.appMenuRightEdgeX {
+            context.appMenuRightEdgeX = max(context.appMenuRightEdgeX ?? scannedEdge, scannedEdge)
         }
         return context
     }
 
-    private struct MenuBarItemHit {
+    private func scheduleCapsuleScan(_ request: CapsuleScanRequest) {
+        pendingCapsuleScan = request
+        guard capsuleScanDebounceTask == nil, !isCapsuleScanRunning else { return }
+        capsuleScanDebounceTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: Self.capsuleScanDebounce)
+            guard let self, !Task.isCancelled else { return }
+            self.capsuleScanDebounceTask = nil
+            self.startPendingCapsuleScan()
+        }
+    }
+
+    private func startPendingCapsuleScan() {
+        guard let request = pendingCapsuleScan, !isCapsuleScanRunning else { return }
+        pendingCapsuleScan = nil
+        isCapsuleScanRunning = true
+        Self.capsuleScanQueue.async { [weak self] in
+            let isFullScreen = Self.isFullScreenWindowPresent(on: request.screenFrame, primaryMaxY: request.primaryMaxY)
+            var items: [MenuBarItemHit]?
+            if let span = request.span, !isFullScreen {
+                items = Self.menuBarItems(in: span, atScreenY: request.menuBarScreenY, primaryMaxY: request.primaryMaxY)
+            }
+            let outcome = CapsuleScanOutcome(isFullScreenActive: isFullScreen, items: items)
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    self?.finishCapsuleScan(request, outcome: outcome)
+                }
+            }
+        }
+    }
+
+    private struct CapsuleScanOutcome: Sendable {
+        let isFullScreenActive: Bool
+        /// `nil` when the hit-test was skipped or NotchFlow's own panel was in the way.
+        let items: [MenuBarItemHit]?
+    }
+
+    private func finishCapsuleScan(_ request: CapsuleScanRequest, outcome: CapsuleScanOutcome) {
+        isCapsuleScanRunning = false
+        let previous = capsuleScanCache?.request.screenFrame == request.screenFrame ? capsuleScanCache : nil
+        let appMenuEdge: CGFloat?
+        let statusEdge: CGFloat?
+        if let items = outcome.items {
+            appMenuEdge = items.filter { !$0.isStatusItem }.map(\.frame.maxX).max()
+            statusEdge = items.filter(\.isStatusItem).map(\.frame.minX).min()
+        } else {
+            // Our own panel was in the way (or nothing was hit-tested); keep the last answer
+            // for this display.
+            appMenuEdge = previous?.appMenuRightEdgeX
+            statusEdge = previous?.statusItemsLeftEdgeX
+        }
+        capsuleScanCache = CapsuleScan(
+            request: request,
+            date: Date(),
+            isFullScreenActive: outcome.isFullScreenActive,
+            appMenuRightEdgeX: appMenuEdge,
+            statusItemsLeftEdgeX: statusEdge
+        )
+        onCapsuleScanUpdate?()
+        // A request that arrived while this scan ran.
+        if pendingCapsuleScan != nil, capsuleScanDebounceTask == nil {
+            startPendingCapsuleScan()
+        }
+    }
+
+    private struct MenuBarItemHit: Sendable {
         let frame: CGRect
         let isStatusItem: Bool
     }
 
+    /// Per-element Accessibility timeout for menu bar hit-test results. Set on each element, never
+    /// on the system-wide element: that would change the default for every AX call in the process.
+    nonisolated private static let hitTestElementTimeout: Float = 0.05
+    /// A scan that takes longer than this (a busy app answering hit-tests slowly) is abandoned.
+    nonisolated private static let hitTestBudget: TimeInterval = 0.5
+
     /// Hit-tests the menu bar along `span` (screen coordinates) and returns the menu bar items found.
     /// Status items belong to many processes, so asking each for its extras menu bar would be slow;
     /// a handful of position queries across the island's span is cheap and finds both app menus
-    /// and status items. Returns `nil` when NotchFlow's own panel covers part of the span.
-    private static func menuBarItems(in span: ClosedRange<CGFloat>, atScreenY screenY: CGFloat) -> [MenuBarItemHit]? {
-        guard let primaryMaxY = NSScreen.screens.first?.frame.maxY else { return [] }
+    /// and status items. Returns `nil` when NotchFlow's own panel covers part of the span or the
+    /// scan ran out of time. Runs on `capsuleScanQueue`.
+    nonisolated private static func menuBarItems(
+        in span: ClosedRange<CGFloat>,
+        atScreenY screenY: CGFloat,
+        primaryMaxY: CGFloat
+    ) -> [MenuBarItemHit]? {
         let systemWide = AXUIElementCreateSystemWide()
-        AXUIElementSetMessagingTimeout(systemWide, 0.05)
         let ownPID = ProcessInfo.processInfo.processIdentifier
         // Accessibility uses a top-left origin on the primary display.
         let axY = Float(primaryMaxY - screenY)
         let step: CGFloat = 8
+        let deadline = Date().addingTimeInterval(hitTestBudget)
 
         var hits: [MenuBarItemHit] = []
         var x = span.lowerBound
         while x <= span.upperBound {
+            guard Date() < deadline else { return nil }
             var elementRef: AXUIElement?
             guard AXUIElementCopyElementAtPosition(systemWide, Float(x), axY, &elementRef) == .success,
-                  let element = elementRef,
-                  let item = menuBarItem(containing: element) else {
-                if let elementRef, pid(of: elementRef) == ownPID {
-                    return nil
-                }
+                  let element = elementRef else {
+                x += step
+                continue
+            }
+            if pid(of: element) == ownPID {
+                return nil
+            }
+            guard let item = menuBarItem(containing: element) else {
                 x += step
                 continue
             }
@@ -263,10 +358,11 @@ final class MenuBarLayoutManager: ObservableObject {
     }
 
     /// The element itself or its closest menu bar item ancestor (hit-tests may land on a child image).
-    private static func menuBarItem(containing element: AXUIElement) -> AXUIElement? {
+    nonisolated private static func menuBarItem(containing element: AXUIElement) -> AXUIElement? {
         var current: AXUIElement? = element
         for _ in 0..<3 {
             guard let candidate = current else { return nil }
+            AXUIElementSetMessagingTimeout(candidate, hitTestElementTimeout)
             let role = stringAttribute(kAXRoleAttribute as CFString, of: candidate)
             if role == (kAXMenuBarItemRole as String) {
                 return candidate
@@ -286,12 +382,12 @@ final class MenuBarLayoutManager: ObservableObject {
         return nil
     }
 
-    private static func pid(of element: AXUIElement) -> pid_t? {
+    nonisolated private static func pid(of element: AXUIElement) -> pid_t? {
         var pid: pid_t = 0
         return AXUIElementGetPid(element, &pid) == .success ? pid : nil
     }
 
-    private static func stringAttribute(_ attribute: CFString, of element: AXUIElement) -> String? {
+    nonisolated private static func stringAttribute(_ attribute: CFString, of element: AXUIElement) -> String? {
         var valueRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute, &valueRef) == .success else { return nil }
         return valueRef as? String
@@ -299,12 +395,12 @@ final class MenuBarLayoutManager: ObservableObject {
 
     /// True when another app shows a window covering the whole display (a full-screen Space or a
     /// borderless full-screen window), in which case the menu bar only slides in on demand.
-    static func isFullScreenWindowPresent(on screenFrame: CGRect) -> Bool {
-        guard let primaryMaxY = NSScreen.screens.first?.frame.maxY,
-              let windows = CGWindowListCopyWindowInfo(
-                  [.optionOnScreenOnly, .excludeDesktopElements],
-                  kCGNullWindowID
-              ) as? [[String: Any]] else {
+    /// Window server IPC; runs on `capsuleScanQueue`.
+    nonisolated static func isFullScreenWindowPresent(on screenFrame: CGRect, primaryMaxY: CGFloat) -> Bool {
+        guard let windows = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements],
+            kCGNullWindowID
+        ) as? [[String: Any]] else {
             return false
         }
         // Window bounds use a top-left origin on the primary display.
@@ -356,7 +452,7 @@ final class MenuBarLayoutManager: ObservableObject {
     }
 
     /// Right edge of the last menu item in the left cluster (before the notch).
-    static func readLeftMenuClusterRightEdgeX(for pid: pid_t, leftMenuBounds: CGRect?) -> CGFloat? {
+    nonisolated static func readLeftMenuClusterRightEdgeX(for pid: pid_t, leftMenuBounds: CGRect?) -> CGFloat? {
         let appElement = AXUIElementCreateApplication(pid)
         // These reads run on the main thread; never wait long for an unresponsive process.
         AXUIElementSetMessagingTimeout(appElement, 0.25)
@@ -416,7 +512,7 @@ final class MenuBarLayoutManager: ObservableObject {
         return maxRightX
     }
 
-    private static func isHidden(_ element: AXUIElement) -> Bool {
+    nonisolated private static func isHidden(_ element: AXUIElement) -> Bool {
         var hiddenRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(element, kAXHiddenAttribute as CFString, &hiddenRef) == .success,
            let hidden = hiddenRef as? Bool, hidden {
@@ -425,7 +521,7 @@ final class MenuBarLayoutManager: ObservableObject {
         return false
     }
 
-    private static func axFrame(for element: AXUIElement) -> CGRect? {
+    nonisolated private static func axFrame(for element: AXUIElement) -> CGRect? {
         guard let origin = axValuePoint(for: element, attribute: kAXPositionAttribute as CFString),
               let size = axValueSize(for: element, attribute: kAXSizeAttribute as CFString),
               size.width > 0, size.height > 0 else {
@@ -435,7 +531,7 @@ final class MenuBarLayoutManager: ObservableObject {
         return CGRect(origin: origin, size: size)
     }
 
-    private static func axValuePoint(for element: AXUIElement, attribute: CFString) -> CGPoint? {
+    nonisolated private static func axValuePoint(for element: AXUIElement, attribute: CFString) -> CGPoint? {
         var valueRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute, &valueRef) == .success,
               let valueRef else {
@@ -449,7 +545,7 @@ final class MenuBarLayoutManager: ObservableObject {
         return point
     }
 
-    private static func axValueSize(for element: AXUIElement, attribute: CFString) -> CGSize? {
+    nonisolated private static func axValueSize(for element: AXUIElement, attribute: CFString) -> CGSize? {
         var valueRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute, &valueRef) == .success,
               let valueRef else {

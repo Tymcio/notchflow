@@ -44,7 +44,8 @@ final class DisplayManager: ObservableObject {
     private var cachedScreens: [CachedScreen] = []
     private var activeScreenEntry: CachedScreen?
     /// Menu bar occupancy for screens without a hardware notch; refreshed on app switches,
-    /// screen changes and before the idle island is presented.
+    /// screen changes and before the idle island is presented. The scan itself runs off the
+    /// main thread; this holds its last result and is updated when a new one lands.
     private var capsuleContext = NotchGeometry.MenuBarContext()
     private var measuredExpandedHeight: CGFloat?
     private var measuredHeightsByModule: [IslandModule: CGFloat] = [:]
@@ -331,8 +332,9 @@ final class DisplayManager: ObservableObject {
         return NotchFlowConstants.expandedTotalHeight(forContentHeight: contentCap)
     }
 
-    /// Synchronously re-reads the app menu edge and rebuilds geometry.
-    /// Called right before presenting the idle island so wing widths are fresh.
+    /// Re-reads the app menu edge and rebuilds geometry right before the idle island is presented.
+    /// On displays without a notch the menu bar scan is asynchronous: this uses the last scan
+    /// and geometry is rebuilt again when a fresher one lands.
     func refreshMenuLayoutNow() {
         menuBarLayoutManager.refresh(for: activeScreen, publishImmediately: true)
         refreshCapsuleContext()
@@ -349,6 +351,11 @@ final class DisplayManager: ObservableObject {
     }
 
     private func bindMenuBarLayout() {
+        menuBarLayoutManager.onCapsuleScanUpdate = { [weak self] in
+            guard let self else { return }
+            self.refreshCapsuleContext()
+            self.recomputeGeometry(for: self.activeScreen)
+        }
         menuBarLayoutManager.$appMenuRightEdgeX
             .sink { [weak self] _ in
                 guard let self else { return }
