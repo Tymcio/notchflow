@@ -102,6 +102,7 @@ actor ScriptingBridgeMediaSource: MediaSourceProviding {
     private var handler: (@Sendable (MediaPlaybackState) -> Void)?
     private var pollTask: Task<Void, Never>?
     private var isPolling = false
+    private var lastPollingRequest = 0
     private var latestState = MediaPlaybackState.empty
     private let executor: AppleScriptExecutor
 
@@ -123,7 +124,12 @@ actor ScriptingBridgeMediaSource: MediaSourceProviding {
         handler = nil
     }
 
-    func setPollingActive(_ active: Bool) {
+    /// `request` increases with every caller-side change; stale (reordered) requests are ignored.
+    func setPollingActive(_ active: Bool, request: Int? = nil) {
+        if let request {
+            guard request > lastPollingRequest else { return }
+            lastPollingRequest = request
+        }
         guard active != isPolling else { return }
         isPolling = active
         pollTask?.cancel()

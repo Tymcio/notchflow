@@ -25,6 +25,7 @@ final class MediaMonitor {
     private var islandExpanded = false
     private var activeModule: IslandModule = .media
     private var scriptingPollingActive = false
+    private var scriptingPollingRequest = 0
     private var playerTerminateObserver: NSObjectProtocol?
 
     private var artworkCache = MediaEnrichmentCache<Data>(capacity: 32)
@@ -150,9 +151,12 @@ final class MediaMonitor {
             && activeModule == .media
         guard needsPolling != scriptingPollingActive else { return }
         scriptingPollingActive = needsPolling
+        scriptingPollingRequest += 1
+        let request = scriptingPollingRequest
         let scriptingSource = scriptingSource
         Task {
-            await scriptingSource.setPollingActive(needsPolling)
+            // Tasks may start out of order; the source ignores superseded requests.
+            await scriptingSource.setPollingActive(needsPolling, request: request)
         }
     }
 
