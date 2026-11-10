@@ -229,10 +229,16 @@ final class AppState {
     }
 
     func replyToHubNotification(_ text: String) {
-        if !notificationHub.replyToActivePeek(text: text, using: notificationCenterObserver) {
-            notificationHub.openActivePeekApp()
+        let peekID = notificationHub.peek?.id
+        Task { @MainActor in
+            // The AX reply runs off the main thread; only fall back to opening the app if the
+            // same notification is still shown.
+            if await !notificationHub.replyToActivePeek(text: text, using: notificationCenterObserver),
+               notificationHub.peek?.id == peekID {
+                notificationHub.openActivePeekApp()
+            }
+            notifyLiveActivityChange()
         }
-        notifyLiveActivityChange()
     }
 
     func setClipboardMonitoringEnabled(_ enabled: Bool) {

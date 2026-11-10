@@ -5,15 +5,19 @@ import Foundation
 /// Detects Notification Center banners and hands them to the notification hub.
 ///
 /// Detection is event-driven: an `AXObserver` on each Notification Center process triggers a
-/// short burst of scans when its UI changes, and a slow safety poll catches anything the
-/// observer missed. The Accessibility tree walk itself runs on `NotificationBannerScanner`'s
+/// short burst of scans when its UI changes, and a safety poll catches anything the observer
+/// missed. On Tahoe toasts are children of a persistent full-screen dialog and those events
+/// are not guaranteed, so the safety poll stays short (see docs/performance.md). The Accessibility tree walk itself runs on `NotificationBannerScanner`'s
 /// background queue; only bookkeeping happens on the main actor.
 @MainActor
 final class NotificationCenterObserver {
     var onBannerDetected: ((ParsedNotificationBanner) -> Void)?
 
-    /// Fallback scan interval while enabled. Banners are found through AX events first.
-    static let safetyPollInterval: Duration = .seconds(5)
+    /// Fallback scan interval while enabled. Banners are found through AX events first, but
+    /// Tahoe does not reliably send them for toasts added to its persistent Notification Center
+    /// dialog, so this bounds the worst-case delay until event delivery is verified on hardware.
+    static let safetyPollInterval: Duration = .milliseconds(1_500)
+    static let safetyPollTolerance: Duration = .milliseconds(500)
     /// Scans after an AX event — the first tick after a toast appears is often still empty.
     static let burstScanDelays: [Int] = [0, 150, 400, 800]
 
@@ -25,10 +29,13 @@ final class NotificationCenterObserver {
     private var scanPending = false
     private var seenFingerprints: [String: Date] = [:]
     private var axObservers: [pid_t: AXObserver] = [:]
+    /// Bumped on every enable/disable, so work that awaited across a toggle can tell it is stale.
+    private var enableGeneration = 0
 
     func setEnabled(_ enabled: Bool) {
         guard enabled != isEnabled else { return }
         isEnabled = enabled
+        enableGeneration &+= 1
         if enabled {
             startSafetyPoll()
         } else {
@@ -60,9 +67,12 @@ final class NotificationCenterObserver {
     }
 
     /// Best-effort quick reply via AX text field / Reply button on the live NC banner.
+    /// The AX tree walk runs on the scanner's background queue, serialised with scans.
     @discardableResult
-    func sendReply(on banner: ParsedNotificationBanner, text: String) -> Bool {
-        NotificationBannerActions.sendReply(on: banner, text: text)
+    func sendReply(on banner: ParsedNotificationBanner, text: String) async -> Bool {
+        await scanner.run {
+            NotificationBannerActions.sendReply(on: banner, text: text)
+        }
     }
 
     // MARK: - Scheduling
@@ -72,7 +82,7 @@ final class NotificationCenterObserver {
         safetyPollTask = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.scanForBanners()
-                try? await Task.sleep(for: Self.safetyPollInterval, tolerance: .seconds(1))
+                try? await Task.sleep(for: Self.safetyPollInterval, tolerance: Self.safetyPollTolerance)
             }
         }
     }
@@ -119,11 +129,13 @@ final class NotificationCenterObserver {
 
         repeat {
             scanPending = false
+            let generation = enableGeneration
             let pids = AXHelpers.notificationCenterPIDs()
             guard !pids.isEmpty else { return }
             await installAXObserversIfNeeded(pids: pids)
+            guard isEnabled, generation == enableGeneration else { return }
             let banners = await scanner.scan(pids: pids)
-            guard isEnabled else { return }
+            guard isEnabled, generation == enableGeneration else { return }
             deliver(banners)
         } while scanPending && isEnabled
     }
@@ -159,14 +171,17 @@ final class NotificationCenterObserver {
     }
 
     private func installAXObserversIfNeeded(pids: [pid_t]) async {
+        let generation = enableGeneration
         // Forget observers of Notification Center processes that have exited.
         for pid in axObservers.keys where !pids.contains(pid) {
             if let observer = axObservers.removeValue(forKey: pid) {
-                CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
+                Self.detach(observer)
             }
         }
 
         for pid in pids where axObservers[pid] == nil {
+            // Disabled (or toggled) while the previous registration was awaited: create nothing more.
+            guard isEnabled, generation == enableGeneration else { return }
             let callback: AXObserverCallback = { _, element, notification, refcon in
                 guard let refcon else { return }
                 let instance = Unmanaged<NotificationCenterObserver>.fromOpaque(refcon).takeUnretainedValue()
@@ -181,17 +196,31 @@ final class NotificationCenterObserver {
                 NotchFlowLog.notifications.debug("AXObserverCreate failed for pid \(pid)")
                 continue
             }
-            CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(created), .defaultMode)
+            // Common modes: the default mode alone drops events while a menu is being tracked.
+            CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(created), .commonModes)
             axObservers[pid] = created
             let handle = AXObserverHandle(observer: created, pid: pid, refcon: refcon)
             await scanner.run { NotificationBannerScanner.register(handle) }
+            guard isEnabled, generation == enableGeneration else {
+                // `removeAXObservers` ran during the await; drop this observer if it survived
+                // (a re-enable may already have installed a newer one for the same process).
+                if let current = axObservers[pid], current === created {
+                    axObservers.removeValue(forKey: pid)
+                }
+                Self.detach(created)
+                return
+            }
         }
     }
 
     private func removeAXObservers() {
         for observer in axObservers.values {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
+            Self.detach(observer)
         }
         axObservers.removeAll()
+    }
+
+    private static func detach(_ observer: AXObserver) {
+        CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .commonModes)
     }
 }
