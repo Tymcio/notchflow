@@ -298,8 +298,11 @@ final class MenuBarLayoutManager: ObservableObject {
             appMenuRightEdgeX: appMenuEdge,
             statusItemsLeftEdgeX: statusEdge
         )
+        // A request that arrived while this scan ran, unless it asked for what was just scanned.
+        if pendingCapsuleScan == request {
+            pendingCapsuleScan = nil
+        }
         onCapsuleScanUpdate?()
-        // A request that arrived while this scan ran.
         if pendingCapsuleScan != nil, capsuleScanDebounceTask == nil {
             startPendingCapsuleScan()
         }
